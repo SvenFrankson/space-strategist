@@ -17,10 +17,23 @@ class Main {
 
         Main.Light = new BABYLON.HemisphericLight("AmbientLight", BABYLON.Axis.Y, Main.Scene);
 
+        new SpaceshipMaterial(Main.Scene);
+
         let admiralSpaceship = new Spaceship("admiral-ship");
         admiralSpaceship.instantiate();
 
-        let admiralCamera = new AdmiralCamera(admiralSpaceship);
+        new AdmiralCamera(admiralSpaceship);
+
+        for (let i = 0; i < 5; i++) {
+            let dummySpaceship = new Spaceship("fighter-1");
+            dummySpaceship.position.copyFromFloats(- 10 + Math.random() * 20, 10 + Math.random() * 5, 50 + Math.random() * 20);
+            dummySpaceship.rotationQuaternion = BABYLON.Quaternion.RotationAxis(
+                new BABYLON.Vector3(Math.random(), Math.random(), Math.random()),
+                Math.random() * Math.PI * 2
+            );
+            dummySpaceship.instantiate();
+            new AIControler(dummySpaceship);
+        }
     }
 
     public animate(): void {

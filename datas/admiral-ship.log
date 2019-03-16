@@ -115,7 +115,7 @@ Exporter version: 5.4.2, Blender version: 2.78 (sub 0)
 		num colors         :  0
 		num indices        :  18
 	processing begun of mesh:  HQ-glass
-		processing begun of Standard material:  Glass
+		processing begun of Standard material:  transparentGlass
 		num positions      :  72
 		num normals        :  72
 		num uvs            :  0
@@ -157,4 +157,4 @@ Exporter version: 5.4.2, Blender version: 2.78 (sub 0)
 ========= Writing of scene file started =========
 ========= Writing of scene file completed =========
 ========= end of processing =========
-elapsed time:  0 min, 0.693 secs
+elapsed time:  0 min, 0.7684 secs
