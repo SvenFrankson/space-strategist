@@ -50,13 +50,13 @@ class Spaceship extends BABYLON.TransformNode {
 
         let roll = BABYLON.Quaternion.RotationAxis(
             this.getDirection(BABYLON.Axis.Z),
-            this.roll * dt
+            - this.roll * dt
         );
         this.rotationQuaternion.multiplyInPlace(roll);
 
         let pitch = BABYLON.Quaternion.RotationAxis(
             this.getDirection(BABYLON.Axis.X),
-            this.pitch * dt
+            - this.pitch * dt
         );
         this.rotationQuaternion.multiplyInPlace(pitch);
     }
