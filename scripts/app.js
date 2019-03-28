@@ -158,8 +158,8 @@ class Math2D {
         let randomDir = Math.random() * Math.PI * 2;
         Math2D._Tmp0.x = Math.cos(randomDir);
         Math2D._Tmp0.y = Math.sin(randomDir);
-        for (let i = 0; i < path.length - 1; i++) {
-            if (Math2D.RaySegmentIntersection(point, Math2D._Tmp0, path[i], path[i + 1])) {
+        for (let i = 0; i < path.length; i++) {
+            if (Math2D.RaySegmentIntersection(point, Math2D._Tmp0, path[i], path[(i + 1) % path.length])) {
                 count++;
             }
         }
@@ -345,12 +345,25 @@ class NavGraph {
             for (let j = 0; j < o.shape.length; j++) {
                 let ngPoint = new NavGraphPoint(counter++, o.shape);
                 ngPoint.position = o.shape[j];
+                this.obstacles.forEach((otherObstacle) => {
+                    if (otherObstacle !== o) {
+                        if (Math2D.IsPointInPath(ngPoint.position, otherObstacle.shape)) {
+                            ngPoint.unreachable = true;
+                        }
+                    }
+                });
                 ngPoints.push(ngPoint);
             }
             for (let j = 0; j < ngPoints.length; j++) {
-                NavGraphPoint.Connect(ngPoints[j], ngPoints[(j + 1) % ngPoints.length]);
+                let p1 = ngPoints[j];
+                let p2 = ngPoints[(j + 1) % ngPoints.length];
+                if (!p1.unreachable && !p2.unreachable) {
+                    NavGraphPoint.Connect(p1, p2);
+                }
+                if (!p1.unreachable) {
+                    this.points.push(p1);
+                }
             }
-            this.points.push(...ngPoints);
         }
         for (let i = 0; i < this.points.length; i++) {
             for (let j = i + 1; j < this.points.length; j++) {
@@ -451,6 +464,7 @@ class NavGraphPoint {
         this.shape = [];
         this.neighbourgs = [];
         this.distanceToEnd = Infinity;
+        this.unreachable = false;
         this.index = index;
         this.shape = shape;
     }

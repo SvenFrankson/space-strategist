@@ -29,12 +29,27 @@ class NavGraph {
             for (let j = 0; j < o.shape.length; j++) {
                 let ngPoint = new NavGraphPoint(counter++, o.shape);
                 ngPoint.position = o.shape[j];
+                this.obstacles.forEach(
+                    (otherObstacle) => {
+                        if (otherObstacle !== o) {
+                            if (Math2D.IsPointInPath(ngPoint.position, otherObstacle.shape)) {
+                                ngPoint.unreachable = true;
+                            }
+                        }
+                    }
+                )
                 ngPoints.push(ngPoint);
             }
             for (let j = 0; j < ngPoints.length; j++) {
-                NavGraphPoint.Connect(ngPoints[j], ngPoints[(j + 1) % ngPoints.length]);
+                let p1 = ngPoints[j];
+                let p2 = ngPoints[(j + 1) % ngPoints.length];
+                if (!p1.unreachable && !p2.unreachable) {
+                    NavGraphPoint.Connect(p1, p2);
+                }
+                if (!p1.unreachable) {
+                    this.points.push(p1);
+                }
             }
-            this.points.push(...ngPoints);
         }
         for (let i = 0; i < this.points.length; i++) {
             for (let j = i + 1; j < this.points.length; j++) {

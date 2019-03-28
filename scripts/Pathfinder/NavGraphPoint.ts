@@ -5,6 +5,7 @@ class NavGraphPoint {
     public position: BABYLON.Vector2;
     public neighbourgs: NavGraphPoint[] = [];
     public distanceToEnd: number = Infinity;
+    public unreachable: boolean = false;
 
     constructor(index: number, shape: BABYLON.Vector2[]) {
         this.index = index;

@@ -132,8 +132,8 @@ class Math2D {
         let randomDir = Math.random() * Math.PI * 2;
         Math2D._Tmp0.x = Math.cos(randomDir);
         Math2D._Tmp0.y = Math.sin(randomDir);
-        for (let i = 0; i < path.length - 1; i++) {
-            if (Math2D.RaySegmentIntersection(point, Math2D._Tmp0, path[i], path[i + 1])) {
+        for (let i = 0; i < path.length; i++) {
+            if (Math2D.RaySegmentIntersection(point, Math2D._Tmp0, path[i], path[(i + 1) % path.length])) {
                 count++;
             }
         }
