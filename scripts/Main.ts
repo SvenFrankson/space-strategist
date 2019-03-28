@@ -15,25 +15,28 @@ class Main {
     createScene(): void {
         Main.Scene = new BABYLON.Scene(Main.Engine);
 
-        Main.Light = new BABYLON.HemisphericLight("AmbientLight", BABYLON.Axis.Y, Main.Scene);
+        Main.Light = new BABYLON.HemisphericLight("AmbientLight", new BABYLON.Vector3(1, 3, 2), Main.Scene);
 
-        new SpaceshipMaterial(Main.Scene);
+        var camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 1, BABYLON.Vector3.Zero(), Main.Scene);
+        camera.setPosition(new BABYLON.Vector3(0, 5, -10));
+        camera.attachControl(Main.Canvas, true);
 
-        let admiralSpaceship = new Spaceship("admiral-ship");
-        admiralSpaceship.instantiate();
+        let start = new BABYLON.Vector2(-5, -5);
+        BABYLON.MeshBuilder.CreateSphere("start", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(-5, 0, -5);
+        let end = new BABYLON.Vector2(5, 5);
+        BABYLON.MeshBuilder.CreateSphere("end", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(5, 0, 5);
 
-        new AdmiralCamera(admiralSpaceship);
-
-        for (let i = 0; i < 5; i++) {
-            let dummySpaceship = new Spaceship("fighter-1");
-            dummySpaceship.position.copyFromFloats(- 10 + Math.random() * 20, 10 + Math.random() * 5, 50 + Math.random() * 20);
-            dummySpaceship.rotationQuaternion = BABYLON.Quaternion.RotationAxis(
-                new BABYLON.Vector3(Math.random(), Math.random(), Math.random()),
-                Math.random() * Math.PI * 2
-            );
-            dummySpaceship.instantiate();
-            new AIControler(dummySpaceship);
+        let navGraph = new NavGraph();
+        navGraph.setStart(start);
+        navGraph.setEnd(end);
+        navGraph.obstacles = [];
+        for (let i = 0; i < 10; i++) {
+            let o = Obstacle.CreateHexagon(Math.random() * 8 - 4, Math.random() * 8 - 4, Math.random() * 2.5 + 0.5);
+            o.display(Main.Scene);
+            navGraph.obstacles.push(o);
         }
+        navGraph.update();
+        navGraph.display(Main.Scene);
     }
 
     public animate(): void {

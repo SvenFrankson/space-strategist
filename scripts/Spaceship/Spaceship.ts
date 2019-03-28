@@ -3,8 +3,9 @@ class Spaceship extends BABYLON.TransformNode {
     private speed: number = 0;
 
     public thrust: number = 0;
-    public roll: number = 0;
     public pitch: number = 0;
+    public yaw: number = 0;
+    public roll: number = 0;
 
     constructor(name: string) {
         super(name);
@@ -52,12 +53,18 @@ class Spaceship extends BABYLON.TransformNode {
             this.getDirection(BABYLON.Axis.Z),
             - this.roll * dt
         );
-        this.rotationQuaternion.multiplyInPlace(roll);
+        this.rotationQuaternion = roll.multiply(this.rotationQuaternion);
+
+        let yaw = BABYLON.Quaternion.RotationAxis(
+            this.getDirection(BABYLON.Axis.Y),
+            this.yaw * dt
+        );
+        this.rotationQuaternion = yaw.multiply(this.rotationQuaternion);
 
         let pitch = BABYLON.Quaternion.RotationAxis(
             this.getDirection(BABYLON.Axis.X),
             - this.pitch * dt
         );
-        this.rotationQuaternion.multiplyInPlace(pitch);
+        this.rotationQuaternion = pitch.multiply(this.rotationQuaternion);
     }
 }
