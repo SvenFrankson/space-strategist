@@ -14,6 +14,9 @@ class Main {
         BABYLON.MeshBuilder.CreateSphere("start", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(-5, 0, -5);
         let end = new BABYLON.Vector2(5, 5);
         BABYLON.MeshBuilder.CreateSphere("end", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(5, 0, 5);
+        let worker = new DroneWorker();
+        worker.position2D = start;
+        worker.instantiate();
         let navGraph = new NavGraph();
         navGraph.setStart(start);
         navGraph.setEnd(end);
@@ -278,6 +281,24 @@ class AdmiralCamera extends BABYLON.FreeCamera {
         this.attachControl(Main.Canvas);
     }
 }
+class DroneWorker extends BABYLON.Mesh {
+    constructor() {
+        super("droneWorker");
+        this._update = () => {
+            this.position.x = this.position2D.x;
+            this.position.z = this.position2D.y;
+        };
+        this.position2D = BABYLON.Vector2.Zero();
+        this.getScene().onBeforeRenderObservable.add(this._update);
+    }
+    instantiate() {
+        BABYLON.SceneLoader.ImportMesh("", "./datas/worker.babylon", "", Main.Scene, (meshes) => {
+            for (let i = 0; i < meshes.length; i++) {
+                meshes[i].parent = this;
+            }
+        });
+    }
+}
 class SpaceshipControler {
     constructor(spaceship) {
         this.spaceship = spaceship;
@@ -458,6 +479,21 @@ class NavGraph {
         }
     }
 }
+class NavGraphManager {
+    static GetForRadius(radius) {
+        let navGraph = NavGraphManager._Instance._navGraphs.get(radius);
+        if (!navGraph) {
+            navGraph = new NavGraph();
+            NavGraphManager._Instance._navGraphs.set(radius, navGraph);
+        }
+        return navGraph;
+    }
+    constructor() {
+        NavGraphManager._Instance = this;
+        this._rawNavGraph = new NavGraph();
+        this._navGraphs = new Map();
+    }
+}
 class NavGraphPoint {
     constructor(index, shape) {
         this.index = 0;
@@ -527,6 +563,24 @@ class Obstacle {
         }
         points.push(points[0]);
         return BABYLON.MeshBuilder.CreateLines("shape", { points: points }, scene);
+    }
+}
+class Container extends BABYLON.Mesh {
+    constructor() {
+        super("container");
+        this._update = () => {
+            this.position.x = this.position2D.x;
+            this.position.z = this.position2D.y;
+        };
+        this.position2D = BABYLON.Vector2.Zero();
+        this.getScene().onBeforeRenderObservable.add(this._update);
+    }
+    instantiate() {
+        BABYLON.SceneLoader.ImportMesh("", "./datas/worker.babylon", "", Main.Scene, (meshes) => {
+            for (let i = 0; i < meshes.length; i++) {
+                meshes[i].parent = this;
+            }
+        });
     }
 }
 class Spaceship extends BABYLON.TransformNode {

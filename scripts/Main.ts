@@ -26,6 +26,10 @@ class Main {
         let end = new BABYLON.Vector2(5, 5);
         BABYLON.MeshBuilder.CreateSphere("end", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(5, 0, 5);
 
+        let worker = new DroneWorker();
+        worker.position2D = start;
+        worker.instantiate();
+
         let navGraph = new NavGraph();
         navGraph.setStart(start);
         navGraph.setEnd(end);
