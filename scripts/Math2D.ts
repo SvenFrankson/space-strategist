@@ -1,5 +1,38 @@
 class Math2D {
 
+    public static StepFromToCirular(from: number, to: number, step: number = Math.PI / 30): number {
+        while (from < 0) {
+            from += 2 * Math.PI;
+        }
+        while (from >= 2 * Math.PI) {
+            from -= 2 * Math.PI;
+        }
+        while (to < 0) {
+            to += 2 * Math.PI;
+        }
+        while (to >= 2 * Math.PI) {
+            to -= 2 * Math.PI;
+        }
+        if (Math.abs(to - from) <= step) {
+            return to;
+        }
+        if (Math.abs(to - from) >= 2 * Math.PI - step) {
+            return to;
+        }
+        if (to - from >= 0) {
+            if (Math.abs(to - from) <= Math.PI) {
+                return from + step;
+            }
+            return from - step;
+        }
+        if (to - from < 0) {
+            if (Math.abs(to - from) <= Math.PI) {
+                return from - step;
+            }
+            return from + step;
+        }
+    }
+
     public static Dot(vector1: BABYLON.Vector2, vector2: BABYLON.Vector2): number {
         return vector1.x * vector2.x + vector1.y * vector2.y;
     }

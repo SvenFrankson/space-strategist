@@ -59,12 +59,12 @@ class NavGraphPoint {
         }
     }
 
-    public appendNextPathPoint(path: NavGraphPoint[]): void {
+    public appendNextPathPoint(path: BABYLON.Vector2[]): void {
         this.links.sort((l1, l2) => { return (l1.length + l1.other(this).distanceToEnd) - (l2.length + l2.other(this).distanceToEnd); });
         if (this.links[0]) {
             let other = this.links[0].other(this);
             if (other.distanceToEnd < Infinity) {
-                path.push(other);
+                path.push(other.position);
                 if (other.distanceToEnd > 0) {
                     other.appendNextPathPoint(path);
                 }

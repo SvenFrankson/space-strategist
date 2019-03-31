@@ -21,25 +21,26 @@ class Main {
         camera.setPosition(new BABYLON.Vector3(0, 5, -10));
         camera.attachControl(Main.Canvas, true);
 
-        let start = new BABYLON.Vector2(-5, -5);
+        let start = new BABYLON.Vector2(-10, -10);
         BABYLON.MeshBuilder.CreateSphere("start", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(-5, 0, -5);
-        let end = new BABYLON.Vector2(5, 5);
+        let end = new BABYLON.Vector2(10, 10);
         BABYLON.MeshBuilder.CreateSphere("end", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(5, 0, 5);
 
         let worker = new DroneWorker();
         worker.position2D = start;
         worker.instantiate();
 
-        let navGraph = new NavGraph();
-        navGraph.obstacles = [];
-        for (let i = 0; i < 10; i++) {
-            let o = Obstacle.CreateHexagon(Math.random() * 8 - 4, Math.random() * 8 - 4, Math.random() * 2.5 + 0.5);
-            o.display(Main.Scene);
-            navGraph.obstacles.push(o);
+        new NavGraphManager();
+        for (let i = 0; i < 5; i++) {
+            let container = new Container(new BABYLON.Vector2(Math.random() * 16 - 8, Math.random() * 16 - 8), Math.random() * Math.PI * 2);
+            container.instantiate();
         }
+        let navGraph = NavGraphManager.GetForRadius(0);
         navGraph.update();
         navGraph.computePathFromTo(start, end);
         navGraph.display(Main.Scene);
+
+        worker.currentPath = navGraph.path;
     }
 
     public animate(): void {

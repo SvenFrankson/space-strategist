@@ -1,19 +1,25 @@
 class Container extends BABYLON.Mesh {
 
     public position2D: BABYLON.Vector2;
+    public rotation2D: number;
 
     public obstacle: Obstacle;
 
-    constructor() {
+    constructor(position2D: BABYLON.Vector2, rotation2D: number) {
         super("container");
-        this.position2D = BABYLON.Vector2.Zero();
-        this.getScene().onBeforeRenderObservable.add(this._update);
+        this.position2D = position2D;
+        this.rotation2D = rotation2D;
+        this.position.x = this.position2D.x;
+        this.position.z = this.position2D.y;
+        this.rotation.y = - rotation2D;
+        this.obstacle = Obstacle.CreateRect(this.position2D.x, this.position2D.y, 2, 4, this.rotation2D);
+        NavGraphManager.AddObstacle(this.obstacle);
     }
 
     public instantiate(): void {
         BABYLON.SceneLoader.ImportMesh(
             "",
-            "./datas/worker.babylon",
+            "./datas/container.babylon",
             "",
             Main.Scene,
             (meshes) => {
@@ -22,10 +28,5 @@ class Container extends BABYLON.Mesh {
                 }
             }
         )
-    }
-
-    private _update = () => {
-        this.position.x = this.position2D.x;
-        this.position.z = this.position2D.y;
     }
 }

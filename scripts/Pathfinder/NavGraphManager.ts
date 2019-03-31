@@ -1,22 +1,44 @@
 class NavGraphManager {
 
-    private static _Instance: NavGraphManager;
+    public static Instance: NavGraphManager;
+
+    private _navGraphZero: NavGraph;
+    private _navGraphs: Map<number, NavGraph>;
+
+    constructor() {
+        NavGraphManager.Instance = this;
+        this._navGraphs = new Map<number, NavGraph>();
+        this._navGraphZero = new NavGraph();
+        this._navGraphZero.offset = 0;
+        this._navGraphs.set(0, new NavGraph());
+    }
 
     public static GetForRadius(radius: number): NavGraph {
-        let navGraph = NavGraphManager._Instance._navGraphs.get(radius);
+        return NavGraphManager.Instance.getForOffset(radius);
+    }
+
+    public getForOffset(offset: number): NavGraph {
+        let navGraph = this._navGraphs.get(offset);
         if (!navGraph) {
             navGraph = new NavGraph();
-            NavGraphManager._Instance._navGraphs.set(radius, navGraph);
+            navGraph.offset = offset;
+            for (let i = 0; i < this._navGraphZero.obstacles.length; i++) {
+                navGraph.obstacles.push(this._navGraphZero.obstacles[i]);
+            }
+            this._navGraphs.set(offset, navGraph);
         }
         return navGraph;
     }
 
-    private _rawNavGraph: NavGraph;
-    private _navGraphs: Map<number, NavGraph>;
+    public static AddObstacle(obstacle: Obstacle): void {
+        return NavGraphManager.Instance.addObstacle(obstacle);
+    }
 
-    constructor() {
-        NavGraphManager._Instance = this;
-        this._rawNavGraph = new NavGraph();
-        this._navGraphs = new Map<number, NavGraph>();
+    public addObstacle(obstacle: Obstacle): void {
+        this._navGraphs.forEach(
+            (navGraph) => {
+                navGraph.obstacles.push(obstacle);
+            }
+        )
     }
 }

@@ -1,6 +1,7 @@
 class NavGraph {
 
-    public path: NavGraphPoint[];
+    public offset: number = 1;
+    public path: BABYLON.Vector2[];
     public start: NavGraphPoint;
     public end: NavGraphPoint;
     public points: NavGraphPoint[];
@@ -23,16 +24,22 @@ class NavGraph {
     public update(): void {
         this.points = [];
         let counter = 2;
+        this.obstacles.forEach(
+            (o) => {
+                o.computePath(this.offset);
+            }
+        )
         for (let i = 0; i < this.obstacles.length; i++) {
             let o = this.obstacles[i];
+            let path = o.getPath(this.offset);
             let ngPoints = [];
-            for (let j = 0; j < o.path.length; j++) {
-                let ngPoint = new NavGraphPoint(counter++, o, o.path);
-                ngPoint.position = o.path[j];
+            for (let j = 0; j < path.length; j++) {
+                let ngPoint = new NavGraphPoint(counter++, o, path);
+                ngPoint.position = path[j];
                 this.obstacles.forEach(
                     (otherObstacle) => {
                         if (otherObstacle !== o) {
-                            if (Math2D.IsPointInPath(ngPoint.position, otherObstacle.path)) {
+                            if (Math2D.IsPointInPath(ngPoint.position, otherObstacle.getPath(this.offset))) {
                                 ngPoint.unreachable = true;
                             }
                         }
@@ -90,9 +97,10 @@ class NavGraph {
                             for (let i = 0; i < this.obstacles.length; i++) {
                                 let o = this.obstacles[i];
                                 if (o !== p1.obstacle && o !== p2.obstacle) {
-                                    for (let j = 0; j < o.path.length; j++) {
-                                        let s1 = o.path[j];
-                                        let s2 = o.path[(j + 1) % o.path.length];
+                                    let path = o.getPath(this.offset);
+                                    for (let j = 0; j < path.length; j++) {
+                                        let s1 = path[j];
+                                        let s2 = path[(j + 1) % path.length];
                                         if (Math2D.SegmentSegmentIntersection(p1.position, p2.position, s1, s2)) {
                                             crossOtherShape = true;
                                         }
@@ -109,7 +117,7 @@ class NavGraph {
         }
     }
 
-    public computePathFromTo(from: BABYLON.Vector2, to: BABYLON.Vector2): NavGraphPoint[] {
+    public computePathFromTo(from: BABYLON.Vector2, to: BABYLON.Vector2): BABYLON.Vector2[] {
         this.setStart(from);
         this.setEnd(to);        
         this.points.push(this.start, this.end);
@@ -153,10 +161,11 @@ class NavGraph {
                             let crossOtherShape = false;
                             for (let i = 0; i < this.obstacles.length; i++) {
                                 let o = this.obstacles[i];
+                                let path = o.getPath(this.offset);
                                 if (o !== p1.obstacle && o !== p2.obstacle) {
-                                    for (let j = 0; j < o.path.length; j++) {
-                                        let s1 = o.path[j];
-                                        let s2 = o.path[(j + 1) % o.path.length];
+                                    for (let j = 0; j < path.length; j++) {
+                                        let s1 = path[j];
+                                        let s2 = path[(j + 1) % path.length];
                                         if (Math2D.SegmentSegmentIntersection(p1.position, p2.position, s1, s2)) {
                                             crossOtherShape = true;
                                         }
@@ -174,7 +183,7 @@ class NavGraph {
 
         this.end.distanceToEnd = 0;
         this.end.propagateDistanceToEnd();
-        this.path = [this.start];
+        this.path = [this.start.position];
         this.start.appendNextPathPoint(this.path);
 
         this.start.remove();
@@ -213,7 +222,7 @@ class NavGraph {
             let colors: BABYLON.Color4[] = [];
             for (let i = 0; i < this.path.length; i++) {
                 let p = this.path[i];
-                points.push(new BABYLON.Vector3(p.position.x, 0.1, p.position.y));
+                points.push(new BABYLON.Vector3(p.x, 0.1, p.y));
                 colors.push(new BABYLON.Color4(1, 0, 0, 1));
             }
             BABYLON.MeshBuilder.CreateLines("shape", { points: points, colors: colors }, scene);

@@ -10,23 +10,23 @@ class Main {
         var camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 1, BABYLON.Vector3.Zero(), Main.Scene);
         camera.setPosition(new BABYLON.Vector3(0, 5, -10));
         camera.attachControl(Main.Canvas, true);
-        let start = new BABYLON.Vector2(-5, -5);
+        let start = new BABYLON.Vector2(-10, -10);
         BABYLON.MeshBuilder.CreateSphere("start", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(-5, 0, -5);
-        let end = new BABYLON.Vector2(5, 5);
+        let end = new BABYLON.Vector2(10, 10);
         BABYLON.MeshBuilder.CreateSphere("end", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(5, 0, 5);
         let worker = new DroneWorker();
         worker.position2D = start;
         worker.instantiate();
-        let navGraph = new NavGraph();
-        navGraph.obstacles = [];
-        for (let i = 0; i < 10; i++) {
-            let o = Obstacle.CreateHexagon(Math.random() * 8 - 4, Math.random() * 8 - 4, Math.random() * 2.5 + 0.5);
-            o.display(Main.Scene);
-            navGraph.obstacles.push(o);
+        new NavGraphManager();
+        for (let i = 0; i < 5; i++) {
+            let container = new Container(new BABYLON.Vector2(Math.random() * 16 - 8, Math.random() * 16 - 8), Math.random() * Math.PI * 2);
+            container.instantiate();
         }
+        let navGraph = NavGraphManager.GetForRadius(0);
         navGraph.update();
         navGraph.computePathFromTo(start, end);
         navGraph.display(Main.Scene);
+        worker.currentPath = navGraph.path;
     }
     animate() {
         Main.Engine.runRenderLoop(() => {
@@ -43,6 +43,38 @@ window.addEventListener("DOMContentLoaded", () => {
     game.animate();
 });
 class Math2D {
+    static StepFromToCirular(from, to, step = Math.PI / 30) {
+        while (from < 0) {
+            from += 2 * Math.PI;
+        }
+        while (from >= 2 * Math.PI) {
+            from -= 2 * Math.PI;
+        }
+        while (to < 0) {
+            to += 2 * Math.PI;
+        }
+        while (to >= 2 * Math.PI) {
+            to -= 2 * Math.PI;
+        }
+        if (Math.abs(to - from) <= step) {
+            return to;
+        }
+        if (Math.abs(to - from) >= 2 * Math.PI - step) {
+            return to;
+        }
+        if (to - from >= 0) {
+            if (Math.abs(to - from) <= Math.PI) {
+                return from + step;
+            }
+            return from - step;
+        }
+        if (to - from < 0) {
+            if (Math.abs(to - from) <= Math.PI) {
+                return from - step;
+            }
+            return from + step;
+        }
+    }
     static Dot(vector1, vector2) {
         return vector1.x * vector2.x + vector1.y * vector2.y;
     }
@@ -283,11 +315,31 @@ class AdmiralCamera extends BABYLON.FreeCamera {
 class DroneWorker extends BABYLON.Mesh {
     constructor() {
         super("droneWorker");
+        this.position2D = BABYLON.Vector2.Zero();
+        this.rotation2D = 0;
         this._update = () => {
             this.position.x = this.position2D.x;
             this.position.z = this.position2D.y;
+            this.rotation.y = -this.rotation2D;
+            this._moveOnPath();
         };
-        this.position2D = BABYLON.Vector2.Zero();
+        this._moveOnPath = () => {
+            if (this.currentPath && this.currentPath.length > 0) {
+                let next = this.currentPath[0];
+                let distanceToNext = Math2D.Distance(this.position2D, next);
+                if (distanceToNext <= 0.05) {
+                    this.currentPath.splice(0, 1);
+                    return this._moveOnPath();
+                }
+                let stepToNext = next.subtract(this.position2D).normalize();
+                let rotationToNext = Math2D.AngleFromTo(new BABYLON.Vector2(0, 1), stepToNext);
+                stepToNext.scaleInPlace(Math.min(distanceToNext, 0.05));
+                this.position2D.addInPlace(stepToNext);
+                if (isFinite(rotationToNext)) {
+                    this.rotation2D = Math2D.StepFromToCirular(this.rotation2D, rotationToNext, Math.PI / 60);
+                }
+            }
+        };
         this.getScene().onBeforeRenderObservable.add(this._update);
     }
     instantiate() {
@@ -342,6 +394,7 @@ class SpaceshipMaterial {
 }
 class NavGraph {
     constructor() {
+        this.offset = 1;
         this.obstacles = [];
     }
     setStart(s) {
@@ -359,15 +412,19 @@ class NavGraph {
     update() {
         this.points = [];
         let counter = 2;
+        this.obstacles.forEach((o) => {
+            o.computePath(this.offset);
+        });
         for (let i = 0; i < this.obstacles.length; i++) {
             let o = this.obstacles[i];
+            let path = o.getPath(this.offset);
             let ngPoints = [];
-            for (let j = 0; j < o.path.length; j++) {
-                let ngPoint = new NavGraphPoint(counter++, o, o.path);
-                ngPoint.position = o.path[j];
+            for (let j = 0; j < path.length; j++) {
+                let ngPoint = new NavGraphPoint(counter++, o, path);
+                ngPoint.position = path[j];
                 this.obstacles.forEach((otherObstacle) => {
                     if (otherObstacle !== o) {
-                        if (Math2D.IsPointInPath(ngPoint.position, otherObstacle.path)) {
+                        if (Math2D.IsPointInPath(ngPoint.position, otherObstacle.getPath(this.offset))) {
                             ngPoint.unreachable = true;
                         }
                     }
@@ -424,9 +481,10 @@ class NavGraph {
                             for (let i = 0; i < this.obstacles.length; i++) {
                                 let o = this.obstacles[i];
                                 if (o !== p1.obstacle && o !== p2.obstacle) {
-                                    for (let j = 0; j < o.path.length; j++) {
-                                        let s1 = o.path[j];
-                                        let s2 = o.path[(j + 1) % o.path.length];
+                                    let path = o.getPath(this.offset);
+                                    for (let j = 0; j < path.length; j++) {
+                                        let s1 = path[j];
+                                        let s2 = path[(j + 1) % path.length];
                                         if (Math2D.SegmentSegmentIntersection(p1.position, p2.position, s1, s2)) {
                                             crossOtherShape = true;
                                         }
@@ -485,10 +543,11 @@ class NavGraph {
                             let crossOtherShape = false;
                             for (let i = 0; i < this.obstacles.length; i++) {
                                 let o = this.obstacles[i];
+                                let path = o.getPath(this.offset);
                                 if (o !== p1.obstacle && o !== p2.obstacle) {
-                                    for (let j = 0; j < o.path.length; j++) {
-                                        let s1 = o.path[j];
-                                        let s2 = o.path[(j + 1) % o.path.length];
+                                    for (let j = 0; j < path.length; j++) {
+                                        let s1 = path[j];
+                                        let s2 = path[(j + 1) % path.length];
                                         if (Math2D.SegmentSegmentIntersection(p1.position, p2.position, s1, s2)) {
                                             crossOtherShape = true;
                                         }
@@ -505,7 +564,7 @@ class NavGraph {
         }
         this.end.distanceToEnd = 0;
         this.end.propagateDistanceToEnd();
-        this.path = [this.start];
+        this.path = [this.start.position];
         this.start.appendNextPathPoint(this.path);
         this.start.remove();
         this.end.remove();
@@ -538,7 +597,7 @@ class NavGraph {
             let colors = [];
             for (let i = 0; i < this.path.length; i++) {
                 let p = this.path[i];
-                points.push(new BABYLON.Vector3(p.position.x, 0.1, p.position.y));
+                points.push(new BABYLON.Vector3(p.x, 0.1, p.y));
                 colors.push(new BABYLON.Color4(1, 0, 0, 1));
             }
             BABYLON.MeshBuilder.CreateLines("shape", { points: points, colors: colors }, scene);
@@ -546,18 +605,35 @@ class NavGraph {
     }
 }
 class NavGraphManager {
+    constructor() {
+        NavGraphManager.Instance = this;
+        this._navGraphs = new Map();
+        this._navGraphZero = new NavGraph();
+        this._navGraphZero.offset = 0;
+        this._navGraphs.set(0, new NavGraph());
+    }
     static GetForRadius(radius) {
-        let navGraph = NavGraphManager._Instance._navGraphs.get(radius);
+        return NavGraphManager.Instance.getForOffset(radius);
+    }
+    getForOffset(offset) {
+        let navGraph = this._navGraphs.get(offset);
         if (!navGraph) {
             navGraph = new NavGraph();
-            NavGraphManager._Instance._navGraphs.set(radius, navGraph);
+            navGraph.offset = offset;
+            for (let i = 0; i < this._navGraphZero.obstacles.length; i++) {
+                navGraph.obstacles.push(this._navGraphZero.obstacles[i]);
+            }
+            this._navGraphs.set(offset, navGraph);
         }
         return navGraph;
     }
-    constructor() {
-        NavGraphManager._Instance = this;
-        this._rawNavGraph = new NavGraph();
-        this._navGraphs = new Map();
+    static AddObstacle(obstacle) {
+        return NavGraphManager.Instance.addObstacle(obstacle);
+    }
+    addObstacle(obstacle) {
+        this._navGraphs.forEach((navGraph) => {
+            navGraph.obstacles.push(obstacle);
+        });
     }
 }
 class NavGraphLink {
@@ -612,7 +688,7 @@ class NavGraphPoint {
         if (this.links[0]) {
             let other = this.links[0].other(this);
             if (other.distanceToEnd < Infinity) {
-                path.push(other);
+                path.push(other.position);
                 if (other.distanceToEnd > 0) {
                     other.appendNextPathPoint(path);
                 }
@@ -656,11 +732,8 @@ class NavGraphPoint {
     }
 }
 class Obstacle {
-    get path() {
-        if (!this._path) {
-            this.updatePath();
-        }
-        return this._path;
+    constructor() {
+        this._path = new Map();
     }
     static CreateRect(x, y, w = 1, h = 1, rotation = 0) {
         let rect = new Obstacle();
@@ -675,8 +748,17 @@ class Obstacle {
         hexagon.shape.position = new BABYLON.Vector2(x, y);
         return hexagon;
     }
-    updatePath() {
-        this._path = this.shape.getPath();
+    getPath(offset = 1, forceCompute = false) {
+        let path = this._path.get(offset);
+        if (!path || forceCompute) {
+            path = this.computePath(offset);
+            this._path.set(offset, path);
+            console.log(path);
+        }
+        return path;
+    }
+    computePath(offset = 1) {
+        return this.shape.getPath(offset);
     }
     display(scene) {
         let path = this.shape.getPath();
@@ -734,17 +816,18 @@ class Hexagon extends Shape {
     }
 }
 class Container extends BABYLON.Mesh {
-    constructor() {
+    constructor(position2D, rotation2D) {
         super("container");
-        this._update = () => {
-            this.position.x = this.position2D.x;
-            this.position.z = this.position2D.y;
-        };
-        this.position2D = BABYLON.Vector2.Zero();
-        this.getScene().onBeforeRenderObservable.add(this._update);
+        this.position2D = position2D;
+        this.rotation2D = rotation2D;
+        this.position.x = this.position2D.x;
+        this.position.z = this.position2D.y;
+        this.rotation.y = -rotation2D;
+        this.obstacle = Obstacle.CreateRect(this.position2D.x, this.position2D.y, 2, 4, this.rotation2D);
+        NavGraphManager.AddObstacle(this.obstacle);
     }
     instantiate() {
-        BABYLON.SceneLoader.ImportMesh("", "./datas/worker.babylon", "", Main.Scene, (meshes) => {
+        BABYLON.SceneLoader.ImportMesh("", "./datas/container.babylon", "", Main.Scene, (meshes) => {
             for (let i = 0; i < meshes.length; i++) {
                 meshes[i].parent = this;
             }

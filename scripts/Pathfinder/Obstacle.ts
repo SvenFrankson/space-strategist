@@ -1,13 +1,7 @@
 class Obstacle {
 
     public shape: Shape;
-    private _path: BABYLON.Vector2[];
-    public get path(): BABYLON.Vector2[] {
-        if (!this._path) {
-            this.updatePath();
-        }
-        return this._path;
-    }
+    private _path: Map<number, BABYLON.Vector2[]> = new Map<number, BABYLON.Vector2[]>();
 
     public static CreateRect(x: number, y: number, w: number = 1, h: number = 1, rotation: number = 0): Obstacle {
         let rect = new Obstacle();
@@ -24,8 +18,18 @@ class Obstacle {
         return hexagon;
     }
 
-    public updatePath(): void {
-        this._path = this.shape.getPath();
+    public getPath(offset: number = 1, forceCompute: boolean = false): BABYLON.Vector2[] {
+        let path = this._path.get(offset);
+        if (!path || forceCompute) {
+            path = this.computePath(offset);
+            this._path.set(offset, path)
+            console.log(path);
+        }
+        return path;
+    }
+
+    public computePath(offset: number = 1): BABYLON.Vector2[] {
+        return this.shape.getPath(offset);
     }
 
     public display(scene: BABYLON.Scene): BABYLON.LinesMesh {
