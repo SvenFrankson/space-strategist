@@ -31,6 +31,7 @@ class Main {
         worker.instantiate();
 
         new NavGraphManager();
+        /*
         let container1 = new Container("c1", new BABYLON.Vector2(1, -5), Math.PI * 0.5);
         container1.instantiate();
         let container2 = new Container("c2", new BABYLON.Vector2(3, 0), Math.PI * 0.5);
@@ -39,6 +40,27 @@ class Main {
         container3.instantiate();
         let container4 = new Container("c4", new BABYLON.Vector2(-2, 5), Math.PI * 0.5);
         container4.instantiate();
+        */
+        let container1 = new Container("c1", new BABYLON.Vector2(-3, -2), 0);
+        container1.instantiate();
+
+        let container2 = new Container("c1", new BABYLON.Vector2(-1.5, 1.75), Math.PI * 0.5);
+        container2.instantiate();
+
+        let container21 = new Container("c1", new BABYLON.Vector2(-6, 1.75), Math.PI * 0.5);
+        container21.instantiate();
+        
+        let container3 = new Container("c1", new BABYLON.Vector2(1.5, - 1.75), Math.PI * 0.5);
+        container3.instantiate();
+        
+        let container4 = new Container("c1", new BABYLON.Vector2(3, 2), 0);
+        container4.instantiate();
+        
+        let container41 = new Container("c1", new BABYLON.Vector2(5.5, 2), 0);
+        container41.instantiate();
+        
+        let container5 = new Container("c1", new BABYLON.Vector2(1.5, 5.25), Math.PI * 0.5);
+        container5.instantiate();
 
         let navGraph = NavGraphManager.GetForRadius(0);
         navGraph.update();

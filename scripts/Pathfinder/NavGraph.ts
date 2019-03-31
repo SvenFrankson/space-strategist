@@ -57,23 +57,7 @@ class NavGraph {
                         if (o !== otherObstacle) {
                             let intersections = Math2D.SegmentShapeIntersection(p1.position, p2.position, otherObstacle.getPath(this.offset));
                             if (intersections.length > 0) {
-                                console.log("Oh ! " + intersections.length);
-                                console.log(o.name + " " + otherObstacle.name);
                                 crossesAnotherShape = true;
-                                BABYLON.MeshBuilder.CreateLines(
-                                    "line",
-                                    { 
-                                        points: [
-                                            new BABYLON.Vector3(p1.position.x, - 0.1, p1.position.y),
-                                            new BABYLON.Vector3(p2.position.x, - 0.1, p2.position.y)
-                                        ],
-                                        colors: [
-                                            new BABYLON.Color4(0.1, 0.9, 0.5, 1),
-                                            new BABYLON.Color4(0.1, 0.9, 0.5, 1)
-                                        ]
-                                    },
-                                    Main.Scene
-                                );
                                 break;
                             }
                         }
