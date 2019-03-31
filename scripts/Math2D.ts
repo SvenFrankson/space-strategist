@@ -173,6 +173,19 @@ class Math2D {
         return count % 2 === 1;
     }
 
+    public static SegmentShapeIntersection(segA: BABYLON.Vector2, segB: BABYLON.Vector2, shape: BABYLON.Vector2[]): BABYLON.Vector2[] {
+        let intersections: BABYLON.Vector2[] = [];
+        for (let i = 0; i < shape.length; i++) {
+            let shapeA = shape[i];
+            let shapeB = shape[(i + 1) % shape.length];
+            let intersection = Math2D.SegmentSegmentIntersection(segA, segB, shapeA, shapeB);
+            if (intersection) {
+                intersections.push(intersection);
+            }
+        }
+        return intersections;
+    }
+
     /*
     public static IsPointInShape(point: BABYLON.Vector2, shape: IShape): boolean {
         for (let i = 0; i < shape.regions.length; i++) {

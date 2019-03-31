@@ -1,5 +1,6 @@
 class Obstacle {
 
+    public name: string = (Math.random() * 100).toFixed(0);
     public shape: Shape;
     private _path: Map<number, BABYLON.Vector2[]> = new Map<number, BABYLON.Vector2[]>();
 

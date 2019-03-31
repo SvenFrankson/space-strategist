@@ -51,8 +51,39 @@ class NavGraph {
                 let p1 = ngPoints[j];
                 let p2 = ngPoints[(j + 1) % ngPoints.length];
                 if (!p1.unreachable && !p2.unreachable) {
-                    NavGraphPoint.Connect(p1, p2);
+                    let crossesAnotherShape: boolean = false;
+                    for (let k = 0; k < this.obstacles.length; k++) {
+                        let otherObstacle = this.obstacles[k];
+                        if (o !== otherObstacle) {
+                            let intersections = Math2D.SegmentShapeIntersection(p1.position, p2.position, otherObstacle.getPath(this.offset));
+                            if (intersections.length > 0) {
+                                console.log("Oh ! " + intersections.length);
+                                console.log(o.name + " " + otherObstacle.name);
+                                crossesAnotherShape = true;
+                                BABYLON.MeshBuilder.CreateLines(
+                                    "line",
+                                    { 
+                                        points: [
+                                            new BABYLON.Vector3(p1.position.x, - 0.1, p1.position.y),
+                                            new BABYLON.Vector3(p2.position.x, - 0.1, p2.position.y)
+                                        ],
+                                        colors: [
+                                            new BABYLON.Color4(0.1, 0.9, 0.5, 1),
+                                            new BABYLON.Color4(0.1, 0.9, 0.5, 1)
+                                        ]
+                                    },
+                                    Main.Scene
+                                );
+                                break;
+                            }
+                        }
+                    }
+                    if (!crossesAnotherShape) {
+                        NavGraphPoint.Connect(p1, p2);
+                    }
                 }
+                // Deal with case where [P1P2] crosses another shape
+                
                 if (!p1.unreachable) {
                     this.points.push(p1);
                 }
@@ -213,7 +244,8 @@ class NavGraph {
                                 new BABYLON.Color4(0.5, 0.5, 0.5, 1)
                             ]
                         },
-                        scene);
+                        scene
+                    );
                 }
             }
         }

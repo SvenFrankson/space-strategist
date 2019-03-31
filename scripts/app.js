@@ -10,18 +10,22 @@ class Main {
         var camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 1, BABYLON.Vector3.Zero(), Main.Scene);
         camera.setPosition(new BABYLON.Vector3(0, 5, -10));
         camera.attachControl(Main.Canvas, true);
-        let start = new BABYLON.Vector2(-10, -10);
-        BABYLON.MeshBuilder.CreateSphere("start", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(-5, 0, -5);
-        let end = new BABYLON.Vector2(10, 10);
-        BABYLON.MeshBuilder.CreateSphere("end", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(5, 0, 5);
+        let start = new BABYLON.Vector2(0, -10);
+        BABYLON.MeshBuilder.CreateSphere("start", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(start.x, 0, start.y);
+        let end = new BABYLON.Vector2(0, 10);
+        BABYLON.MeshBuilder.CreateSphere("end", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(end.x, 0, end.y);
         let worker = new DroneWorker();
         worker.position2D = start;
         worker.instantiate();
         new NavGraphManager();
-        for (let i = 0; i < 5; i++) {
-            let container = new Container(new BABYLON.Vector2(Math.random() * 16 - 8, Math.random() * 16 - 8), Math.random() * Math.PI * 2);
-            container.instantiate();
-        }
+        let container1 = new Container("c1", new BABYLON.Vector2(1, -5), Math.PI * 0.5);
+        container1.instantiate();
+        let container2 = new Container("c2", new BABYLON.Vector2(3, 0), Math.PI * 0.5);
+        container2.instantiate();
+        let container3 = new Container("c3", new BABYLON.Vector2(-2, 0), Math.PI * 0.4);
+        container3.instantiate();
+        let container4 = new Container("c4", new BABYLON.Vector2(-2, 5), Math.PI * 0.5);
+        container4.instantiate();
         let navGraph = NavGraphManager.GetForRadius(0);
         navGraph.update();
         navGraph.computePathFromTo(start, end);
@@ -198,6 +202,18 @@ class Math2D {
             }
         }
         return count % 2 === 1;
+    }
+    static SegmentShapeIntersection(segA, segB, shape) {
+        let intersections = [];
+        for (let i = 0; i < shape.length; i++) {
+            let shapeA = shape[i];
+            let shapeB = shape[(i + 1) % shape.length];
+            let intersection = Math2D.SegmentSegmentIntersection(segA, segB, shapeA, shapeB);
+            if (intersection) {
+                intersections.push(intersection);
+            }
+        }
+        return intersections;
     }
     /*
     public static IsPointInShape(point: BABYLON.Vector2, shape: IShape): boolean {
@@ -435,8 +451,34 @@ class NavGraph {
                 let p1 = ngPoints[j];
                 let p2 = ngPoints[(j + 1) % ngPoints.length];
                 if (!p1.unreachable && !p2.unreachable) {
-                    NavGraphPoint.Connect(p1, p2);
+                    let crossesAnotherShape = false;
+                    for (let k = 0; k < this.obstacles.length; k++) {
+                        let otherObstacle = this.obstacles[k];
+                        if (o !== otherObstacle) {
+                            let intersections = Math2D.SegmentShapeIntersection(p1.position, p2.position, otherObstacle.getPath(this.offset));
+                            if (intersections.length > 0) {
+                                console.log("Oh ! " + intersections.length);
+                                console.log(o.name + " " + otherObstacle.name);
+                                crossesAnotherShape = true;
+                                BABYLON.MeshBuilder.CreateLines("line", {
+                                    points: [
+                                        new BABYLON.Vector3(p1.position.x, -0.1, p1.position.y),
+                                        new BABYLON.Vector3(p2.position.x, -0.1, p2.position.y)
+                                    ],
+                                    colors: [
+                                        new BABYLON.Color4(0.1, 0.9, 0.5, 1),
+                                        new BABYLON.Color4(0.1, 0.9, 0.5, 1)
+                                    ]
+                                }, Main.Scene);
+                                break;
+                            }
+                        }
+                    }
+                    if (!crossesAnotherShape) {
+                        NavGraphPoint.Connect(p1, p2);
+                    }
                 }
+                // Deal with case where [P1P2] crosses another shape
                 if (!p1.unreachable) {
                     this.points.push(p1);
                 }
@@ -733,6 +775,7 @@ class NavGraphPoint {
 }
 class Obstacle {
     constructor() {
+        this.name = (Math.random() * 100).toFixed(0);
         this._path = new Map();
     }
     static CreateRect(x, y, w = 1, h = 1, rotation = 0) {
@@ -816,14 +859,15 @@ class Hexagon extends Shape {
     }
 }
 class Container extends BABYLON.Mesh {
-    constructor(position2D, rotation2D) {
-        super("container");
+    constructor(name, position2D, rotation2D) {
+        super(name);
         this.position2D = position2D;
         this.rotation2D = rotation2D;
         this.position.x = this.position2D.x;
         this.position.z = this.position2D.y;
         this.rotation.y = -rotation2D;
         this.obstacle = Obstacle.CreateRect(this.position2D.x, this.position2D.y, 2, 4, this.rotation2D);
+        this.obstacle.name = name + "-obstacle";
         NavGraphManager.AddObstacle(this.obstacle);
     }
     instantiate() {

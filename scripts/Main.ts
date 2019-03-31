@@ -21,26 +21,31 @@ class Main {
         camera.setPosition(new BABYLON.Vector3(0, 5, -10));
         camera.attachControl(Main.Canvas, true);
 
-        let start = new BABYLON.Vector2(-10, -10);
-        BABYLON.MeshBuilder.CreateSphere("start", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(-5, 0, -5);
-        let end = new BABYLON.Vector2(10, 10);
-        BABYLON.MeshBuilder.CreateSphere("end", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(5, 0, 5);
+        let start = new BABYLON.Vector2(0, -10);
+        BABYLON.MeshBuilder.CreateSphere("start", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(start.x, 0, start.y);
+        let end = new BABYLON.Vector2(0, 10);
+        BABYLON.MeshBuilder.CreateSphere("end", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(end.x, 0, end.y);
 
         let worker = new DroneWorker();
         worker.position2D = start;
         worker.instantiate();
 
         new NavGraphManager();
-        for (let i = 0; i < 5; i++) {
-            let container = new Container(new BABYLON.Vector2(Math.random() * 16 - 8, Math.random() * 16 - 8), Math.random() * Math.PI * 2);
-            container.instantiate();
-        }
+        let container1 = new Container("c1", new BABYLON.Vector2(1, -5), Math.PI * 0.5);
+        container1.instantiate();
+        let container2 = new Container("c2", new BABYLON.Vector2(3, 0), Math.PI * 0.5);
+        container2.instantiate();
+        let container3 = new Container("c3", new BABYLON.Vector2(-2, 0), Math.PI * 0.4);
+        container3.instantiate();
+        let container4 = new Container("c4", new BABYLON.Vector2(-2, 5), Math.PI * 0.5);
+        container4.instantiate();
+
         let navGraph = NavGraphManager.GetForRadius(0);
         navGraph.update();
         navGraph.computePathFromTo(start, end);
         navGraph.display(Main.Scene);
 
-        worker.currentPath = navGraph.path;
+        worker.currentPath = navGraph.path; 
     }
 
     public animate(): void {

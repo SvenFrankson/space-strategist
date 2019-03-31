@@ -5,14 +5,15 @@ class Container extends BABYLON.Mesh {
 
     public obstacle: Obstacle;
 
-    constructor(position2D: BABYLON.Vector2, rotation2D: number) {
-        super("container");
+    constructor(name: string, position2D: BABYLON.Vector2, rotation2D: number) {
+        super(name);
         this.position2D = position2D;
         this.rotation2D = rotation2D;
         this.position.x = this.position2D.x;
         this.position.z = this.position2D.y;
         this.rotation.y = - rotation2D;
         this.obstacle = Obstacle.CreateRect(this.position2D.x, this.position2D.y, 2, 4, this.rotation2D);
+        this.obstacle.name = name + "-obstacle";
         NavGraphManager.AddObstacle(this.obstacle);
     }
 
