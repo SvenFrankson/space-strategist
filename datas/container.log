@@ -7,17 +7,23 @@ Exporter version: 5.4.2, Blender version: 2.78 (sub 0)
 		texture directory:  C:\Users\Sven\Documents\SvenFrankson\space-strategist\datas\
 	Python World class constructor completed
 	WARNING: No active camera has been assigned, or is not in a currently selected Blender layer
-	processing begun of mesh:  Container
+	processing begun of mesh:  Cube.001
 		processing begun of Standard material:  Frame
-		processing begun of Standard material:  Box
-		processing begun of multimaterial:  container.Multimaterial#0
-		num positions      :  216
-		num normals        :  216
+		num positions      :  140
+		num normals        :  140
 		num uvs            :  0
 		num uvs2           :  0
 		num colors         :  0
-		num indices        :  852
+		num indices        :  648
+	processing begun of mesh:  Cube
+		processing begun of Standard material:  Box
+		num positions      :  42
+		num normals        :  42
+		num uvs            :  0
+		num uvs2           :  0
+		num colors         :  0
+		num indices        :  240
 ========= Writing of scene file started =========
 ========= Writing of scene file completed =========
 ========= end of processing =========
-elapsed time:  0 min, 0.051 secs
+elapsed time:  0 min, 0.0602 secs
