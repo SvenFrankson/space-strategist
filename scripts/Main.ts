@@ -31,8 +31,6 @@ class Main {
         worker.instantiate();
 
         let navGraph = new NavGraph();
-        navGraph.setStart(start);
-        navGraph.setEnd(end);
         navGraph.obstacles = [];
         for (let i = 0; i < 10; i++) {
             let o = Obstacle.CreateHexagon(Math.random() * 8 - 4, Math.random() * 8 - 4, Math.random() * 2.5 + 0.5);
@@ -40,6 +38,7 @@ class Main {
             navGraph.obstacles.push(o);
         }
         navGraph.update();
+        navGraph.computePathFromTo(start, end);
         navGraph.display(Main.Scene);
     }
 

@@ -18,8 +18,6 @@ class Main {
         worker.position2D = start;
         worker.instantiate();
         let navGraph = new NavGraph();
-        navGraph.setStart(start);
-        navGraph.setEnd(end);
         navGraph.obstacles = [];
         for (let i = 0; i < 10; i++) {
             let o = Obstacle.CreateHexagon(Math.random() * 8 - 4, Math.random() * 8 - 4, Math.random() * 2.5 + 0.5);
@@ -27,6 +25,7 @@ class Main {
             navGraph.obstacles.push(o);
         }
         navGraph.update();
+        navGraph.computePathFromTo(start, end);
         navGraph.display(Main.Scene);
     }
     animate() {
@@ -347,28 +346,28 @@ class NavGraph {
     }
     setStart(s) {
         if (!this.start) {
-            this.start = new NavGraphPoint(0, undefined);
+            this.start = new NavGraphPoint(0, undefined, undefined);
         }
         this.start.position = s;
     }
     setEnd(e) {
         if (!this.end) {
-            this.end = new NavGraphPoint(1, undefined);
+            this.end = new NavGraphPoint(1, undefined, undefined);
         }
         this.end.position = e;
     }
     update() {
-        this.points = [this.start, this.end];
+        this.points = [];
         let counter = 2;
         for (let i = 0; i < this.obstacles.length; i++) {
             let o = this.obstacles[i];
             let ngPoints = [];
-            for (let j = 0; j < o.shape.length; j++) {
-                let ngPoint = new NavGraphPoint(counter++, o.shape);
-                ngPoint.position = o.shape[j];
+            for (let j = 0; j < o.path.length; j++) {
+                let ngPoint = new NavGraphPoint(counter++, o, o.path);
+                ngPoint.position = o.path[j];
                 this.obstacles.forEach((otherObstacle) => {
                     if (otherObstacle !== o) {
-                        if (Math2D.IsPointInPath(ngPoint.position, otherObstacle.shape)) {
+                        if (Math2D.IsPointInPath(ngPoint.position, otherObstacle.path)) {
                             ngPoint.unreachable = true;
                         }
                     }
@@ -390,14 +389,14 @@ class NavGraph {
             for (let j = i + 1; j < this.points.length; j++) {
                 let p1 = this.points[i];
                 let p2 = this.points[j];
-                if (p1.shape !== p2.shape || (!p1.shape && !p2.shape)) {
+                if (p1.path !== p2.path || (!p1.path && !p2.path)) {
                     let d = p2.position.subtract(p1.position);
                     // Check if segment intersects p1.shape
                     let p1ShapeSelfIntersect = true;
-                    if (p1.shape) {
-                        let index = p1.shape.indexOf(p1.position);
-                        let sNext = p1.shape[(index + 1) % p1.shape.length].subtract(p1.position);
-                        let sPrev = p1.shape[(index - 1 + p1.shape.length) % p1.shape.length].subtract(p1.position);
+                    if (p1.path) {
+                        let index = p1.path.indexOf(p1.position);
+                        let sNext = p1.path[(index + 1) % p1.path.length].subtract(p1.position);
+                        let sPrev = p1.path[(index - 1 + p1.path.length) % p1.path.length].subtract(p1.position);
                         if (Math2D.AngleFromTo(sPrev, d, true) <= Math2D.AngleFromTo(sPrev, sNext, true)) {
                             p1ShapeSelfIntersect = false;
                         }
@@ -409,10 +408,10 @@ class NavGraph {
                         // Check if segment intersects p2.shape
                         d.scaleInPlace(-1);
                         let p2ShapeSelfIntersect = true;
-                        if (p2.shape) {
-                            let index = p2.shape.indexOf(p2.position);
-                            let sNext = p2.shape[(index + 1) % p2.shape.length].subtract(p2.position);
-                            let sPrev = p2.shape[(index - 1 + p2.shape.length) % p2.shape.length].subtract(p2.position);
+                        if (p2.path) {
+                            let index = p2.path.indexOf(p2.position);
+                            let sNext = p2.path[(index + 1) % p2.path.length].subtract(p2.position);
+                            let sPrev = p2.path[(index - 1 + p2.path.length) % p2.path.length].subtract(p2.position);
                             if (Math2D.AngleFromTo(sPrev, d, true) <= Math2D.AngleFromTo(sPrev, sNext, true)) {
                                 p2ShapeSelfIntersect = false;
                             }
@@ -424,10 +423,72 @@ class NavGraph {
                             let crossOtherShape = false;
                             for (let i = 0; i < this.obstacles.length; i++) {
                                 let o = this.obstacles[i];
-                                if (o.shape !== p1.shape && o.shape !== p2.shape) {
-                                    for (let j = 0; j < o.shape.length; j++) {
-                                        let s1 = o.shape[j];
-                                        let s2 = o.shape[(j + 1) % o.shape.length];
+                                if (o !== p1.obstacle && o !== p2.obstacle) {
+                                    for (let j = 0; j < o.path.length; j++) {
+                                        let s1 = o.path[j];
+                                        let s2 = o.path[(j + 1) % o.path.length];
+                                        if (Math2D.SegmentSegmentIntersection(p1.position, p2.position, s1, s2)) {
+                                            crossOtherShape = true;
+                                        }
+                                    }
+                                }
+                            }
+                            if (!crossOtherShape) {
+                                NavGraphPoint.Connect(p1, p2);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    computePathFromTo(from, to) {
+        this.setStart(from);
+        this.setEnd(to);
+        this.points.push(this.start, this.end);
+        let newPoints = [this.start, this.end];
+        for (let i = 0; i < newPoints.length; i++) {
+            let p1 = newPoints[i];
+            for (let j = 0; j < this.points.length; j++) {
+                let p2 = this.points[j];
+                if (p1 !== p2 && (p1.path !== p2.path || (!p1.path && !p2.path))) {
+                    let d = p2.position.subtract(p1.position);
+                    // Check if segment intersects p1.shape
+                    let p1ShapeSelfIntersect = true;
+                    if (p1.path) {
+                        let index = p1.path.indexOf(p1.position);
+                        let sNext = p1.path[(index + 1) % p1.path.length].subtract(p1.position);
+                        let sPrev = p1.path[(index - 1 + p1.path.length) % p1.path.length].subtract(p1.position);
+                        if (Math2D.AngleFromTo(sPrev, d, true) <= Math2D.AngleFromTo(sPrev, sNext, true)) {
+                            p1ShapeSelfIntersect = false;
+                        }
+                    }
+                    else {
+                        p1ShapeSelfIntersect = false;
+                    }
+                    if (!p1ShapeSelfIntersect) {
+                        // Check if segment intersects p2.shape
+                        d.scaleInPlace(-1);
+                        let p2ShapeSelfIntersect = true;
+                        if (p2.path) {
+                            let index = p2.path.indexOf(p2.position);
+                            let sNext = p2.path[(index + 1) % p2.path.length].subtract(p2.position);
+                            let sPrev = p2.path[(index - 1 + p2.path.length) % p2.path.length].subtract(p2.position);
+                            if (Math2D.AngleFromTo(sPrev, d, true) <= Math2D.AngleFromTo(sPrev, sNext, true)) {
+                                p2ShapeSelfIntersect = false;
+                            }
+                        }
+                        else {
+                            p2ShapeSelfIntersect = false;
+                        }
+                        if (!p2ShapeSelfIntersect) {
+                            let crossOtherShape = false;
+                            for (let i = 0; i < this.obstacles.length; i++) {
+                                let o = this.obstacles[i];
+                                if (o !== p1.obstacle && o !== p2.obstacle) {
+                                    for (let j = 0; j < o.path.length; j++) {
+                                        let s1 = o.path[j];
+                                        let s2 = o.path[(j + 1) % o.path.length];
                                         if (Math2D.SegmentSegmentIntersection(p1.position, p2.position, s1, s2)) {
                                             crossOtherShape = true;
                                         }
@@ -446,13 +507,18 @@ class NavGraph {
         this.end.propagateDistanceToEnd();
         this.path = [this.start];
         this.start.appendNextPathPoint(this.path);
+        this.start.remove();
+        this.end.remove();
+        this.points.pop();
+        this.points.pop();
+        return this.path;
     }
     display(scene) {
         for (let i = 0; i < this.points.length; i++) {
             let p = this.points[i];
             BABYLON.MeshBuilder.CreateSphere("p-" + i, { diameter: 0.1 }, scene).position.copyFromFloats(p.position.x, -0.2, p.position.y);
-            for (let j = 0; j < p.neighbourgs.length; j++) {
-                let p2 = p.neighbourgs[j];
+            for (let j = 0; j < p.links.length; j++) {
+                let p2 = p.links[j].other(p);
                 if (p.index < p2.index) {
                     BABYLON.MeshBuilder.CreateLines("line", {
                         points: [
@@ -494,20 +560,47 @@ class NavGraphManager {
         this._navGraphs = new Map();
     }
 }
+class NavGraphLink {
+    other(current) {
+        if (this.p1 === current) {
+            return this.p2;
+        }
+        if (this.p2 === current) {
+            return this.p1;
+        }
+        console.warn("Undefined request for other NavGraphPoint.");
+        return undefined;
+    }
+}
 class NavGraphPoint {
-    constructor(index, shape) {
+    constructor(index, obstacle, shape) {
         this.index = 0;
-        this.shape = [];
-        this.neighbourgs = [];
+        this.path = [];
+        this.links = [];
         this.distanceToEnd = Infinity;
         this.unreachable = false;
         this.index = index;
-        this.shape = shape;
+        this.obstacle = obstacle;
+        this.path = shape;
+    }
+    remove() {
+        while (this.links.length > 0) {
+            let other = this.links[0].other(this);
+            NavGraphPoint.Disconnect(this, other);
+        }
+    }
+    hasNeighbour(n) {
+        for (let i = 0; i < this.links.length; i++) {
+            if (this.links[i].other(this) === n) {
+                return this.links[i];
+            }
+        }
+        return undefined;
     }
     propagateDistanceToEnd() {
-        for (let i = 0; i < this.neighbourgs.length; i++) {
-            let n = this.neighbourgs[i];
-            let distanceToEnd = Math2D.Distance(this.position, n.position) + this.distanceToEnd;
+        for (let i = 0; i < this.links.length; i++) {
+            let n = this.links[i].other(this);
+            let distanceToEnd = this.links[i].length + this.distanceToEnd;
             if (distanceToEnd < n.distanceToEnd) {
                 n.distanceToEnd = distanceToEnd;
                 n.propagateDistanceToEnd();
@@ -515,54 +608,129 @@ class NavGraphPoint {
         }
     }
     appendNextPathPoint(path) {
-        this.neighbourgs.sort((a, b) => { return (Math2D.Distance(this.position, a.position) + a.distanceToEnd) - (Math2D.Distance(this.position, b.position) + b.distanceToEnd); });
-        if (this.neighbourgs[0]) {
-            if (this.neighbourgs[0].distanceToEnd < Infinity) {
-                path.push(this.neighbourgs[0]);
-                if (this.neighbourgs[0].distanceToEnd > 0) {
-                    this.neighbourgs[0].appendNextPathPoint(path);
+        this.links.sort((l1, l2) => { return (l1.length + l1.other(this).distanceToEnd) - (l2.length + l2.other(this).distanceToEnd); });
+        if (this.links[0]) {
+            let other = this.links[0].other(this);
+            if (other.distanceToEnd < Infinity) {
+                path.push(other);
+                if (other.distanceToEnd > 0) {
+                    other.appendNextPathPoint(path);
                 }
             }
         }
     }
     static Connect(p1, p2) {
-        if (p1.neighbourgs.indexOf(p2) === -1) {
-            p1.neighbourgs.push(p2);
+        let link = new NavGraphLink();
+        link.p1 = p1;
+        link.p2 = p2;
+        link.length = Math2D.Distance(p1.position, p2.position);
+        let checkFineConnection = 0;
+        if (!p1.hasNeighbour(p2)) {
+            p1.links.push(link);
+            checkFineConnection++;
         }
-        if (p2.neighbourgs.indexOf(p1) === -1) {
-            p2.neighbourgs.push(p1);
+        if (!p2.hasNeighbour(p1)) {
+            p2.links.push(link);
+            checkFineConnection++;
+        }
+        if (checkFineConnection % 2 !== 0) {
+            console.warn("Connect between 2 NavGraphPoint went wrong : Only one was already connected to the other.");
+        }
+    }
+    static Disconnect(p1, p2) {
+        let l = p1.hasNeighbour(p2);
+        if (l === p2.hasNeighbour(p1)) {
+            let p1LIndex = p1.links.indexOf(l);
+            let p2LIndex = p2.links.indexOf(l);
+            p1.links.splice(p1LIndex, 1);
+            p2.links.splice(p2LIndex, 1);
+        }
+        else {
+            if (!p1.hasNeighbour(p2) && !p2.hasNeighbour(p1)) {
+                console.warn("Disconnection between 2 NavGraphPoint went wrong : Points were already disconnected.");
+            }
+            else {
+                console.warn("Disconnection between 2 NavGraphPoint went wrong : Only one was connected to the other.");
+            }
         }
     }
 }
 class Obstacle {
-    constructor() {
-        this.shape = [];
-    }
-    static CreateSquare(x, y, size = 1) {
-        let square = new Obstacle();
-        square.shape = [
-            new BABYLON.Vector2(x - size * 0.5, y - size * 0.5),
-            new BABYLON.Vector2(x + size * 0.5, y - size * 0.5),
-            new BABYLON.Vector2(x + size * 0.5, y + size * 0.5),
-            new BABYLON.Vector2(x - size * 0.5, y + size * 0.5)
-        ];
-        return square;
-    }
-    static CreateHexagon(x, y, size = 1) {
-        let square = new Obstacle();
-        for (let i = 0; i < 6; i++) {
-            square.shape.push(new BABYLON.Vector2(x + Math.cos(i * Math.PI / 3) * size * 0.5, y + Math.sin(i * Math.PI / 3) * size * 0.5));
+    get path() {
+        if (!this._path) {
+            this.updatePath();
         }
-        return square;
+        return this._path;
+    }
+    static CreateRect(x, y, w = 1, h = 1, rotation = 0) {
+        let rect = new Obstacle();
+        rect.shape = new Rect(w, h);
+        rect.shape.position = new BABYLON.Vector2(x, y);
+        rect.shape.rotation = rotation;
+        return rect;
+    }
+    static CreateHexagon(x, y, radius = 1) {
+        let hexagon = new Obstacle();
+        hexagon.shape = new Hexagon(radius);
+        hexagon.shape.position = new BABYLON.Vector2(x, y);
+        return hexagon;
+    }
+    updatePath() {
+        this._path = this.shape.getPath();
     }
     display(scene) {
+        let path = this.shape.getPath();
         let points = [];
-        for (let i = 0; i < this.shape.length; i++) {
-            let p = this.shape[i];
+        for (let i = 0; i < path.length; i++) {
+            let p = path[i];
             points.push(new BABYLON.Vector3(p.x, 0, p.y));
         }
         points.push(points[0]);
         return BABYLON.MeshBuilder.CreateLines("shape", { points: points }, scene);
+    }
+}
+class Shape {
+    constructor() {
+        this.position = BABYLON.Vector2.Zero();
+        this.rotation = 0;
+    }
+    ;
+}
+class Rect extends Shape {
+    constructor(width = 1, height = 1) {
+        super();
+        this.width = width;
+        this.height = height;
+    }
+    getPath(offset = 0) {
+        this._path = [
+            new BABYLON.Vector2(-(this.width + offset) * 0.5, -(this.height + offset) * 0.5),
+            new BABYLON.Vector2((this.width + offset) * 0.5, -(this.height + offset) * 0.5),
+            new BABYLON.Vector2((this.width + offset) * 0.5, (this.height + offset) * 0.5),
+            new BABYLON.Vector2(-(this.width + offset) * 0.5, (this.height + offset) * 0.5)
+        ];
+        for (let i = 0; i < this._path.length; i++) {
+            Math2D.RotateInPlace(this._path[i], this.rotation);
+            this._path[i].addInPlace(this.position);
+        }
+        return this._path;
+    }
+}
+class Hexagon extends Shape {
+    constructor(radius = 1) {
+        super();
+        this.radius = radius;
+    }
+    getPath(offset = 0) {
+        this._path = [];
+        for (let i = 0; i < 6; i++) {
+            this._path.push(new BABYLON.Vector2(Math.cos(i * Math.PI / 3) * (this.radius + offset), Math.sin(i * Math.PI / 3) * (this.radius + offset)));
+        }
+        for (let i = 0; i < this._path.length; i++) {
+            Math2D.RotateInPlace(this._path[i], this.rotation);
+            this._path[i].addInPlace(this.position);
+        }
+        return this._path;
     }
 }
 class Container extends BABYLON.Mesh {

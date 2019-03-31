@@ -1,33 +1,38 @@
 class Obstacle {
 
-    public shape: BABYLON.Vector2[] = [];
-
-    public static CreateSquare(x: number, y: number, size: number = 1): Obstacle {
-        let square = new Obstacle();
-        square.shape = [
-            new BABYLON.Vector2(x - size * 0.5, y - size * 0.5),
-            new BABYLON.Vector2(x + size * 0.5, y - size * 0.5),
-            new BABYLON.Vector2(x + size * 0.5, y + size * 0.5),
-            new BABYLON.Vector2(x - size * 0.5, y + size * 0.5)
-        ];
-        return square;
+    public shape: Shape;
+    private _path: BABYLON.Vector2[];
+    public get path(): BABYLON.Vector2[] {
+        if (!this._path) {
+            this.updatePath();
+        }
+        return this._path;
     }
 
-    public static CreateHexagon(x: number, y: number, size: number = 1): Obstacle {
-        let square = new Obstacle();
-        for (let i = 0; i < 6; i++) {
-            square.shape.push(new BABYLON.Vector2(
-                x + Math.cos(i * Math.PI / 3) * size * 0.5,
-                y + Math.sin(i * Math.PI / 3) * size * 0.5
-            ));
-        }
-        return square;
+    public static CreateRect(x: number, y: number, w: number = 1, h: number = 1, rotation: number = 0): Obstacle {
+        let rect = new Obstacle();
+        rect.shape = new Rect(w, h);
+        rect.shape.position = new BABYLON.Vector2(x, y);
+        rect.shape.rotation = rotation;
+        return rect;
+    }
+
+    public static CreateHexagon(x: number, y: number, radius: number = 1): Obstacle {
+        let hexagon = new Obstacle();
+        hexagon.shape = new Hexagon(radius);
+        hexagon.shape.position = new BABYLON.Vector2(x, y);
+        return hexagon;
+    }
+
+    public updatePath(): void {
+        this._path = this.shape.getPath();
     }
 
     public display(scene: BABYLON.Scene): BABYLON.LinesMesh {
+        let path = this.shape.getPath();
         let points: BABYLON.Vector3[] = [];
-        for (let i = 0; i < this.shape.length; i++) {
-            let p = this.shape[i];
+        for (let i = 0; i < path.length; i++) {
+            let p = path[i];
             points.push(new BABYLON.Vector3(p.x, 0, p.y));
         }
         points.push(points[0]);
