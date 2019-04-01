@@ -17,17 +17,9 @@ class Container extends BABYLON.Mesh {
         NavGraphManager.AddObstacle(this.obstacle);
     }
 
-    public instantiate(): void {
-        BABYLON.SceneLoader.ImportMesh(
-            "",
-            "./datas/container.babylon",
-            "",
-            Main.Scene,
-            (meshes) => {
-                for (let i = 0; i < meshes.length; i++) {
-                    meshes[i].parent = this;
-                }
-            }
-        )
+    public async instantiate(): Promise<void> {
+        let data = await VertexDataLoader.instance.getColorized("container", "#ce7633", "#383838", "#6d6d6d");
+        data.applyToMesh(this);
+        this.material = Main.cellShadingMaterial;
     }
 }

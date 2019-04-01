@@ -1,5 +1,12 @@
 /// <reference path="../lib/babylon.d.ts"/>
 class Main {
+    static get cellShadingMaterial() {
+        if (!Main._cellShadingMaterial) {
+            Main._cellShadingMaterial = new BABYLON.CellMaterial("CellMaterial", Main.Scene);
+            Main._cellShadingMaterial.computeHighLevel = true;
+        }
+        return Main._cellShadingMaterial;
+    }
     constructor(canvasElement) {
         Main.Canvas = document.getElementById(canvasElement);
         Main.Engine = new BABYLON.Engine(Main.Canvas, true);
@@ -17,6 +24,7 @@ class Main {
         let worker = new DroneWorker();
         worker.position2D = start;
         worker.instantiate();
+        new VertexDataLoader(Main.Scene);
         new NavGraphManager();
         /*
         let container1 = new Container("c1", new BABYLON.Vector2(1, -5), Math.PI * 0.5);
@@ -413,6 +421,143 @@ class AIControler extends SpaceshipControler {
         this.spaceship.pitch = pitchAngle / Math.PI * 0.25 + this.spaceship.pitch * 0.75;
         let rollAngle = SpaceMath.AngleFromToAround(this.localZ, this.dirToTarget, this.localY);
         this.spaceship.roll = rollAngle / Math.PI * 0.25 + this.spaceship.roll * 0.75;
+    }
+}
+class VertexDataLoader {
+    constructor(scene) {
+        this.scene = scene;
+        this._vertexDatas = new Map();
+        VertexDataLoader.instance = this;
+    }
+    static clone(data) {
+        let clonedData = new BABYLON.VertexData();
+        clonedData.positions = [...data.positions];
+        clonedData.indices = [...data.indices];
+        clonedData.normals = [...data.normals];
+        if (data.uvs) {
+            clonedData.uvs = [...data.uvs];
+        }
+        if (data.colors) {
+            clonedData.colors = [...data.colors];
+        }
+        return clonedData;
+    }
+    async get(name) {
+        if (this._vertexDatas.get(name)) {
+            return this._vertexDatas.get(name);
+        }
+        let request = new XMLHttpRequest();
+        return new Promise((resolve) => {
+            request.onload = () => {
+                console.log("?");
+                if (request.status >= 200 && request.status < 400) {
+                    console.log("!");
+                    let rawData = JSON.parse(request.responseText);
+                    let data = new BABYLON.VertexData();
+                    data.positions = rawData.meshes[0].positions;
+                    data.indices = rawData.meshes[0].indices;
+                    if (rawData.meshes[0].normals) {
+                        data.normals = rawData.meshes[0].normals;
+                    }
+                    if (rawData.meshes[0].uvs) {
+                        data.uvs = rawData.meshes[0].uvs;
+                    }
+                    if (rawData.meshes[0].colors) {
+                        data.colors = rawData.meshes[0].colors;
+                    }
+                    this._vertexDatas.set(name, data);
+                    resolve(this._vertexDatas.get(name));
+                }
+            };
+            console.log(".");
+            request.open("GET", "./datas/" + name + ".babylon");
+            request.send();
+            console.log(";");
+        });
+    }
+    async getColorized(name, baseColorHex = "#FFFFFF", frameColorHex = "", color1Hex = "", // Replace red
+        color2Hex = "", // Replace green
+        color3Hex = "" // Replace blue
+    ) {
+        let baseColor;
+        if (baseColorHex !== "") {
+            baseColor = BABYLON.Color3.FromHexString(baseColorHex);
+        }
+        let frameColor;
+        if (frameColorHex !== "") {
+            frameColor = BABYLON.Color3.FromHexString(frameColorHex);
+        }
+        let color1;
+        if (color1Hex !== "") {
+            color1 = BABYLON.Color3.FromHexString(color1Hex);
+        }
+        let color2;
+        if (color2Hex !== "") {
+            color2 = BABYLON.Color3.FromHexString(color2Hex);
+        }
+        let color3;
+        if (color3Hex !== "") {
+            color3 = BABYLON.Color3.FromHexString(color3Hex);
+        }
+        let data = VertexDataLoader.clone(await VertexDataLoader.instance.get(name));
+        if (data.colors) {
+            for (let i = 0; i < data.colors.length / 4; i++) {
+                let r = data.colors[4 * i];
+                let g = data.colors[4 * i + 1];
+                let b = data.colors[4 * i + 2];
+                if (baseColor) {
+                    if (r === 1 && g === 1 && b === 1) {
+                        data.colors[4 * i] = baseColor.r;
+                        data.colors[4 * i + 1] = baseColor.g;
+                        data.colors[4 * i + 2] = baseColor.b;
+                        continue;
+                    }
+                }
+                if (frameColor) {
+                    if (r === 0.502 && g === 0.502 && b === 0.502) {
+                        data.colors[4 * i] = frameColor.r;
+                        data.colors[4 * i + 1] = frameColor.g;
+                        data.colors[4 * i + 2] = frameColor.b;
+                        continue;
+                    }
+                }
+                if (color1) {
+                    if (r === 1 && g === 0 && b === 0) {
+                        data.colors[4 * i] = color1.r;
+                        data.colors[4 * i + 1] = color1.g;
+                        data.colors[4 * i + 2] = color1.b;
+                        continue;
+                    }
+                }
+                if (color2) {
+                    if (r === 0 && g === 1 && b === 0) {
+                        data.colors[4 * i] = color2.r;
+                        data.colors[4 * i + 1] = color2.g;
+                        data.colors[4 * i + 2] = color2.b;
+                        continue;
+                    }
+                }
+                if (color3) {
+                    if (r === 0 && g === 0 && b === 1) {
+                        data.colors[4 * i] = color3.r;
+                        data.colors[4 * i + 1] = color3.g;
+                        data.colors[4 * i + 2] = color3.b;
+                        continue;
+                    }
+                }
+            }
+        }
+        else {
+            let colors = [];
+            for (let i = 0; i < data.positions.length / 3; i++) {
+                colors[4 * i] = baseColor.r;
+                colors[4 * i + 1] = baseColor.g;
+                colors[4 * i + 2] = baseColor.b;
+                colors[4 * i + 3] = 1;
+            }
+            data.colors = colors;
+        }
+        return data;
     }
 }
 class SpaceshipMaterial {
@@ -874,12 +1019,10 @@ class Container extends BABYLON.Mesh {
         this.obstacle.name = name + "-obstacle";
         NavGraphManager.AddObstacle(this.obstacle);
     }
-    instantiate() {
-        BABYLON.SceneLoader.ImportMesh("", "./datas/container.babylon", "", Main.Scene, (meshes) => {
-            for (let i = 0; i < meshes.length; i++) {
-                meshes[i].parent = this;
-            }
-        });
+    async instantiate() {
+        let data = await VertexDataLoader.instance.getColorized("container", "#ce7633", "#383838", "#6d6d6d");
+        data.applyToMesh(this);
+        this.material = Main.cellShadingMaterial;
     }
 }
 class Spaceship extends BABYLON.TransformNode {

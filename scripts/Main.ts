@@ -7,6 +7,15 @@ class Main {
     public static Scene: BABYLON.Scene;
     public static Light: BABYLON.Light;
 
+    public static _cellShadingMaterial: BABYLON.CellMaterial;
+	public static get cellShadingMaterial(): BABYLON.CellMaterial {
+		if (!Main._cellShadingMaterial) {
+			Main._cellShadingMaterial = new BABYLON.CellMaterial("CellMaterial", Main.Scene);
+			Main._cellShadingMaterial.computeHighLevel = true;
+		}
+		return Main._cellShadingMaterial;
+	}
+
     constructor(canvasElement: string) {
         Main.Canvas = document.getElementById(canvasElement) as HTMLCanvasElement;
         Main.Engine = new BABYLON.Engine(Main.Canvas, true);
@@ -30,6 +39,7 @@ class Main {
         worker.position2D = start;
         worker.instantiate();
 
+        new VertexDataLoader(Main.Scene);
         new NavGraphManager();
         /*
         let container1 = new Container("c1", new BABYLON.Vector2(1, -5), Math.PI * 0.5);
