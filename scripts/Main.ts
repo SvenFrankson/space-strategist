@@ -30,6 +30,9 @@ class Main {
         camera.setPosition(new BABYLON.Vector3(0, 5, -10));
         camera.attachControl(Main.Canvas, true);
 
+        new VertexDataLoader(Main.Scene);
+        new NavGraphManager();
+
         let start = new BABYLON.Vector2(0, -10);
         BABYLON.MeshBuilder.CreateSphere("start", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(start.x, 0, start.y);
         let end = new BABYLON.Vector2(0, 10);
@@ -38,9 +41,7 @@ class Main {
         let worker = new DroneWorker();
         worker.position2D = start;
         worker.instantiate();
-
-        new VertexDataLoader(Main.Scene);
-        new NavGraphManager();
+        
         /*
         let container1 = new Container("c1", new BABYLON.Vector2(1, -5), Math.PI * 0.5);
         container1.instantiate();

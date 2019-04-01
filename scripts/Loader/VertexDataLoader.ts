@@ -129,6 +129,7 @@ class VertexDataLoader {
                 }
                 if (color3) {
                     if (r === 0 && g === 0 && b === 1) {
+                        console.log("!");
                         data.colors[4 * i] = color3.r;
                         data.colors[4 * i + 1] = color3.g;
                         data.colors[4 * i + 2] = color3.b;

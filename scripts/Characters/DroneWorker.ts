@@ -10,18 +10,10 @@ class DroneWorker extends BABYLON.Mesh {
         this.getScene().onBeforeRenderObservable.add(this._update);
     }
 
-    public instantiate(): void {
-        BABYLON.SceneLoader.ImportMesh(
-            "",
-            "./datas/worker.babylon",
-            "",
-            Main.Scene,
-            (meshes) => {
-                for (let i = 0; i < meshes.length; i++) {
-                    meshes[i].parent = this;
-                }
-            }
-        )
+    public async instantiate(): Promise<void> {
+        let data = await VertexDataLoader.instance.getColorized("worker", "#ce7633", "#383838", "#6d6d6d", "#c94022", "#1c1c1c");
+        data.applyToMesh(this);
+        this.material = Main.cellShadingMaterial;
     }
 
     private _update = () => {

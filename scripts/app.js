@@ -17,6 +17,8 @@ class Main {
         var camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 1, BABYLON.Vector3.Zero(), Main.Scene);
         camera.setPosition(new BABYLON.Vector3(0, 5, -10));
         camera.attachControl(Main.Canvas, true);
+        new VertexDataLoader(Main.Scene);
+        new NavGraphManager();
         let start = new BABYLON.Vector2(0, -10);
         BABYLON.MeshBuilder.CreateSphere("start", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(start.x, 0, start.y);
         let end = new BABYLON.Vector2(0, 10);
@@ -24,8 +26,6 @@ class Main {
         let worker = new DroneWorker();
         worker.position2D = start;
         worker.instantiate();
-        new VertexDataLoader(Main.Scene);
-        new NavGraphManager();
         /*
         let container1 = new Container("c1", new BABYLON.Vector2(1, -5), Math.PI * 0.5);
         container1.instantiate();
@@ -382,12 +382,10 @@ class DroneWorker extends BABYLON.Mesh {
         };
         this.getScene().onBeforeRenderObservable.add(this._update);
     }
-    instantiate() {
-        BABYLON.SceneLoader.ImportMesh("", "./datas/worker.babylon", "", Main.Scene, (meshes) => {
-            for (let i = 0; i < meshes.length; i++) {
-                meshes[i].parent = this;
-            }
-        });
+    async instantiate() {
+        let data = await VertexDataLoader.instance.getColorized("worker", "#ce7633", "#383838", "#6d6d6d", "#c94022", "#1c1c1c");
+        data.applyToMesh(this);
+        this.material = Main.cellShadingMaterial;
     }
 }
 class SpaceshipControler {
@@ -539,6 +537,7 @@ class VertexDataLoader {
                 }
                 if (color3) {
                     if (r === 0 && g === 0 && b === 1) {
+                        console.log("!");
                         data.colors[4 * i] = color3.r;
                         data.colors[4 * i + 1] = color3.g;
                         data.colors[4 * i + 2] = color3.b;
