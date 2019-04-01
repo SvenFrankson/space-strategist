@@ -41,7 +41,7 @@ class Main {
         let worker = new DroneWorker();
         worker.position2D = start;
         worker.instantiate();
-        
+
         /*
         let container1 = new Container("c1", new BABYLON.Vector2(1, -5), Math.PI * 0.5);
         container1.instantiate();
@@ -58,7 +58,7 @@ class Main {
         let container2 = new Container("c1", new BABYLON.Vector2(-1.5, 1.75), Math.PI * 0.5);
         container2.instantiate();
 
-        let container21 = new Container("c1", new BABYLON.Vector2(-6, 1.75), Math.PI * 0.5);
+        let container21 = new Tank("c1", new BABYLON.Vector2(-6.5, 1.75), Math.PI * 0.8);
         container21.instantiate();
         
         let container3 = new Container("c1", new BABYLON.Vector2(1.5, - 1.75), Math.PI * 0.5);
@@ -67,7 +67,7 @@ class Main {
         let container4 = new Container("c1", new BABYLON.Vector2(3, 2), 0);
         container4.instantiate();
         
-        let container41 = new Container("c1", new BABYLON.Vector2(5.5, 2), 0);
+        let container41 = new Tank("c1", new BABYLON.Vector2(6.5, 2), 0);
         container41.instantiate();
         
         let container5 = new Container("c1", new BABYLON.Vector2(1.5, 5.25), Math.PI * 0.5);

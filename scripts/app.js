@@ -40,13 +40,13 @@ class Main {
         container1.instantiate();
         let container2 = new Container("c1", new BABYLON.Vector2(-1.5, 1.75), Math.PI * 0.5);
         container2.instantiate();
-        let container21 = new Container("c1", new BABYLON.Vector2(-6, 1.75), Math.PI * 0.5);
+        let container21 = new Tank("c1", new BABYLON.Vector2(-6.5, 1.75), Math.PI * 0.8);
         container21.instantiate();
         let container3 = new Container("c1", new BABYLON.Vector2(1.5, -1.75), Math.PI * 0.5);
         container3.instantiate();
         let container4 = new Container("c1", new BABYLON.Vector2(3, 2), 0);
         container4.instantiate();
-        let container41 = new Container("c1", new BABYLON.Vector2(5.5, 2), 0);
+        let container41 = new Tank("c1", new BABYLON.Vector2(6.5, 2), 0);
         container41.instantiate();
         let container5 = new Container("c1", new BABYLON.Vector2(1.5, 5.25), Math.PI * 0.5);
         container5.instantiate();
@@ -1020,6 +1020,24 @@ class Container extends BABYLON.Mesh {
     }
     async instantiate() {
         let data = await VertexDataLoader.instance.getColorized("container", "#ce7633", "#383838", "#6d6d6d");
+        data.applyToMesh(this);
+        this.material = Main.cellShadingMaterial;
+    }
+}
+class Tank extends BABYLON.Mesh {
+    constructor(name, position2D, rotation2D) {
+        super(name);
+        this.position2D = position2D;
+        this.rotation2D = rotation2D;
+        this.position.x = this.position2D.x;
+        this.position.z = this.position2D.y;
+        this.rotation.y = -rotation2D;
+        this.obstacle = Obstacle.CreateHexagon(this.position2D.x, this.position2D.y, 1.5);
+        this.obstacle.name = name + "-obstacle";
+        NavGraphManager.AddObstacle(this.obstacle);
+    }
+    async instantiate() {
+        let data = await VertexDataLoader.instance.getColorized("tank", "#ce7633", "#383838", "#6d6d6d");
         data.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
     }
