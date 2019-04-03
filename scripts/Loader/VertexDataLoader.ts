@@ -33,9 +33,7 @@ class VertexDataLoader {
         return new Promise<BABYLON.VertexData> (
             (resolve) => {
                 request.onload = () => {
-                    console.log("?");
                     if (request.status >= 200 && request.status < 400) {
-                        console.log("!");
                         let rawData = JSON.parse(request.responseText);
                         let data = new BABYLON.VertexData();
                         data.positions = rawData.meshes[0].positions;
@@ -53,10 +51,8 @@ class VertexDataLoader {
                         resolve(this._vertexDatas.get(name));
                     }
                 }
-                console.log(".");
                 request.open("GET", "./datas/" + name + ".babylon");
                 request.send();
-                console.log(";");
             }
         )
     }
@@ -129,7 +125,6 @@ class VertexDataLoader {
                 }
                 if (color3) {
                     if (r === 0 && g === 0 && b === 1) {
-                        console.log("!");
                         data.colors[4 * i] = color3.r;
                         data.colors[4 * i + 1] = color3.g;
                         data.colors[4 * i + 2] = color3.b;

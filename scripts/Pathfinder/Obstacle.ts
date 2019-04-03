@@ -24,7 +24,6 @@ class Obstacle {
         if (!path || forceCompute) {
             path = this.computePath(offset);
             this._path.set(offset, path)
-            console.log(path);
         }
         return path;
     }

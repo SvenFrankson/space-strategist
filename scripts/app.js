@@ -84,18 +84,25 @@ class Main {
         container4.instantiate();
         */
         let container1 = new Container("c1", new BABYLON.Vector2(-3, -2), 0);
+        container1.addToScene();
         container1.instantiate();
         let container2 = new Container("c1", new BABYLON.Vector2(-1.5, 1.75), Math.PI * 0.5);
+        container2.addToScene();
         container2.instantiate();
-        let container21 = new Tank("c1", new BABYLON.Vector2(-6.5, 1.75), Math.PI * 0.8);
+        let container21 = new Tank("c1", new BABYLON.Vector2(-6, 1.75), Math.PI * 0.8);
+        container21.addToScene();
         container21.instantiate();
         let container3 = new Container("c1", new BABYLON.Vector2(1.5, -1.75), Math.PI * 0.5);
+        container3.addToScene();
         container3.instantiate();
         let container4 = new Container("c1", new BABYLON.Vector2(3, 2), 0);
+        container4.addToScene();
         container4.instantiate();
-        let container41 = new Tank("c1", new BABYLON.Vector2(6.5, 2), 0);
+        let container41 = new Tank("c1", new BABYLON.Vector2(6, 2), 0);
+        container41.addToScene();
         container41.instantiate();
         let container5 = new Container("c1", new BABYLON.Vector2(1.5, 5.25), Math.PI * 0.5);
+        container5.addToScene();
         container5.instantiate();
         let navGraph = NavGraphManager.GetForRadius(0);
         navGraph.update();
@@ -468,6 +475,44 @@ class AIControler extends SpaceshipControler {
         this.spaceship.roll = rollAngle / Math.PI * 0.25 + this.spaceship.roll * 0.75;
     }
 }
+class PropsEditor {
+    constructor(scene) {
+        this.scene = scene;
+        this.createTank = () => {
+            this.currentProp = new Tank("tank", BABYLON.Vector2.Zero(), 0);
+            this.currentProp.instantiate();
+        };
+        this.pointerMove = () => {
+            let pick = this.scene.pick(this.scene.pointerX, this.scene.pointerY, (m) => {
+                return m === this.ground;
+            });
+            if (pick.hit) {
+                this.currentProp.position2D.x = pick.pickedPoint.x;
+                this.currentProp.position2D.y = pick.pickedPoint.z;
+                this.currentProp.position.x = this.currentProp.position2D.x;
+                this.currentProp.position.z = this.currentProp.position2D.y;
+            }
+        };
+        this.pointerUp = () => {
+            this.currentProp.addToScene();
+            this.disable();
+        };
+        this.ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 20, height: 20 }, scene);
+        this.enable();
+        this.createTank();
+    }
+    enable() {
+        this.ground.isVisible = true;
+        Main.Canvas.addEventListener("pointermove", this.pointerMove);
+        Main.Canvas.addEventListener("pointerup", this.pointerUp);
+    }
+    disable() {
+        this.ground.isVisible = false;
+        this.currentProp = undefined;
+        Main.Canvas.removeEventListener("pointermove", this.pointerMove);
+        Main.Canvas.removeEventListener("pointerup", this.pointerUp);
+    }
+}
 class VertexDataLoader {
     constructor(scene) {
         this.scene = scene;
@@ -494,9 +539,7 @@ class VertexDataLoader {
         let request = new XMLHttpRequest();
         return new Promise((resolve) => {
             request.onload = () => {
-                console.log("?");
                 if (request.status >= 200 && request.status < 400) {
-                    console.log("!");
                     let rawData = JSON.parse(request.responseText);
                     let data = new BABYLON.VertexData();
                     data.positions = rawData.meshes[0].positions;
@@ -514,10 +557,8 @@ class VertexDataLoader {
                     resolve(this._vertexDatas.get(name));
                 }
             };
-            console.log(".");
             request.open("GET", "./datas/" + name + ".babylon");
             request.send();
-            console.log(";");
         });
     }
     async getColorized(name, baseColorHex = "#FFFFFF", frameColorHex = "", color1Hex = "", // Replace red
@@ -584,7 +625,6 @@ class VertexDataLoader {
                 }
                 if (color3) {
                     if (r === 0 && g === 0 && b === 1) {
-                        console.log("!");
                         data.colors[4 * i] = color3.r;
                         data.colors[4 * i + 1] = color3.g;
                         data.colors[4 * i + 2] = color3.b;
@@ -991,7 +1031,6 @@ class Obstacle {
         if (!path || forceCompute) {
             path = this.computePath(offset);
             this._path.set(offset, path);
-            console.log(path);
         }
         return path;
     }
@@ -1053,7 +1092,7 @@ class Hexagon extends Shape {
         return this._path;
     }
 }
-class Container extends BABYLON.Mesh {
+class Prop extends BABYLON.Mesh {
     constructor(name, position2D, rotation2D) {
         super(name);
         this.position2D = position2D;
@@ -1061,9 +1100,17 @@ class Container extends BABYLON.Mesh {
         this.position.x = this.position2D.x;
         this.position.z = this.position2D.y;
         this.rotation.y = -rotation2D;
+    }
+    addToScene() {
+        NavGraphManager.AddObstacle(this.obstacle);
+    }
+}
+/// <reference path="./Prop.ts"/>
+class Container extends Prop {
+    constructor(name, position2D, rotation2D) {
+        super(name, position2D, rotation2D);
         this.obstacle = Obstacle.CreateRect(this.position2D.x, this.position2D.y, 2, 4, this.rotation2D);
         this.obstacle.name = name + "-obstacle";
-        NavGraphManager.AddObstacle(this.obstacle);
     }
     async instantiate() {
         let data = await VertexDataLoader.instance.getColorized("container", "#ce7633", "#383838", "#6d6d6d");
@@ -1071,17 +1118,11 @@ class Container extends BABYLON.Mesh {
         this.material = Main.cellShadingMaterial;
     }
 }
-class Tank extends BABYLON.Mesh {
+class Tank extends Prop {
     constructor(name, position2D, rotation2D) {
-        super(name);
-        this.position2D = position2D;
-        this.rotation2D = rotation2D;
-        this.position.x = this.position2D.x;
-        this.position.z = this.position2D.y;
-        this.rotation.y = -rotation2D;
+        super(name, position2D, rotation2D);
         this.obstacle = Obstacle.CreateHexagon(this.position2D.x, this.position2D.y, 1.5);
         this.obstacle.name = name + "-obstacle";
-        NavGraphManager.AddObstacle(this.obstacle);
     }
     async instantiate() {
         let data = await VertexDataLoader.instance.getColorized("tank", "#ce7633", "#383838", "#6d6d6d");

@@ -77,7 +77,7 @@ class Main {
 			effect.setTexture("depthSampler", depthMap);
 			effect.setFloat("width", Main.Engine.getRenderWidth());
 			effect.setFloat("height", Main.Engine.getRenderHeight());
-		};
+        };
 
         new VertexDataLoader(Main.Scene);
         new NavGraphManager();
@@ -102,24 +102,31 @@ class Main {
         container4.instantiate();
         */
         let container1 = new Container("c1", new BABYLON.Vector2(-3, -2), 0);
+        container1.addToScene();
         container1.instantiate();
 
         let container2 = new Container("c1", new BABYLON.Vector2(-1.5, 1.75), Math.PI * 0.5);
+        container2.addToScene();
         container2.instantiate();
 
-        let container21 = new Tank("c1", new BABYLON.Vector2(-6.5, 1.75), Math.PI * 0.8);
+        let container21 = new Tank("c1", new BABYLON.Vector2(-6, 1.75), Math.PI * 0.8);
+        container21.addToScene();
         container21.instantiate();
         
         let container3 = new Container("c1", new BABYLON.Vector2(1.5, - 1.75), Math.PI * 0.5);
+        container3.addToScene();
         container3.instantiate();
         
         let container4 = new Container("c1", new BABYLON.Vector2(3, 2), 0);
+        container4.addToScene();
         container4.instantiate();
         
-        let container41 = new Tank("c1", new BABYLON.Vector2(6.5, 2), 0);
+        let container41 = new Tank("c1", new BABYLON.Vector2(6, 2), 0);
+        container41.addToScene();
         container41.instantiate();
         
         let container5 = new Container("c1", new BABYLON.Vector2(1.5, 5.25), Math.PI * 0.5);
+        container5.addToScene();
         container5.instantiate();
 
         let navGraph = NavGraphManager.GetForRadius(0);
