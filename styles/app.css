@@ -12,3 +12,9 @@ html, body {
     margin: 0px;
     touch-action: none;
 }
+
+#prop-editor-panel {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+}

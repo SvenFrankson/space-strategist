@@ -135,6 +135,9 @@ class Main {
         navGraph.display(Main.Scene);
 
         worker.currentPath = navGraph.path; 
+
+        let propEditor = new PropsEditor(Main.Scene);
+        propEditor.enable();
     }
 
     public animate(): void {
