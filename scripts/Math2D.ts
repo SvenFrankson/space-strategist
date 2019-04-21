@@ -198,6 +198,31 @@ class Math2D {
     }
     */
 
+    public static RayRayIntersection(ray1Origin: BABYLON.Vector2, ray1Direction: BABYLON.Vector2, ray2Origin: BABYLON.Vector2, ray2Direction: BABYLON.Vector2): BABYLON.Vector2 {
+        let x1: number = ray1Origin.x;
+        let y1: number = ray1Origin.y;
+        let x2: number = x1 + ray1Direction.x;
+        let y2: number = y1 + ray1Direction.y;
+        let x3: number = ray2Origin.x;
+        let y3: number = ray2Origin.y;
+        let x4: number = x3 + ray2Direction.x;
+        let y4: number = y3 + ray2Direction.y;
+
+        let det: number = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+
+        if (det !== 0) {
+            let x: number = (x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4);
+            let y: number = (x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4);
+            let intersection = new BABYLON.Vector2(x / det, y / det);
+            if (Math2D.IsPointInRay(intersection, ray1Origin, ray1Direction)) {
+                if (Math2D.IsPointInRay(intersection, ray2Origin, ray2Direction)) {
+                    return intersection;
+                }
+            }
+        }
+        return undefined;
+    }
+
     public static RaySegmentIntersection(rayOrigin: BABYLON.Vector2, rayDirection: BABYLON.Vector2, segA: BABYLON.Vector2, segB: BABYLON.Vector2): BABYLON.Vector2 {
         let x1: number = rayOrigin.x;
         let y1: number = rayOrigin.y;

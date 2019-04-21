@@ -14,8 +14,8 @@ class Main {
     createScene() {
         Main.Scene = new BABYLON.Scene(Main.Engine);
         Main.Light = new BABYLON.HemisphericLight("AmbientLight", new BABYLON.Vector3(1, 3, 2), Main.Scene);
-        var camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 1, BABYLON.Vector3.Zero(), Main.Scene);
-        camera.setPosition(new BABYLON.Vector3(0, 5, -10));
+        var camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 1, new BABYLON.Vector3(0, 10, 0), Main.Scene);
+        camera.setPosition(new BABYLON.Vector3(10, 15, 10));
         camera.attachControl(Main.Canvas, true);
         BABYLON.Effect.ShadersStore["EdgeFragmentShader"] = `
 			#ifdef GL_ES
@@ -73,6 +73,9 @@ class Main {
         let worker = new DroneWorker();
         worker.position2D = start;
         worker.instantiate();
+        let wall = new BABYLON.Mesh("wallnode", Main.Scene);
+        WallNode.BuildVertexData(1, 0, Math.PI / 2, Math.PI + Math.PI / 4).applyToMesh(wall);
+        wall.position.y = 10;
         /*
         let container1 = new Container("c1", new BABYLON.Vector2(1, -5), Math.PI * 0.5);
         container1.instantiate();
@@ -306,6 +309,28 @@ class Math2D {
         return false;
     }
     */
+    static RayRayIntersection(ray1Origin, ray1Direction, ray2Origin, ray2Direction) {
+        let x1 = ray1Origin.x;
+        let y1 = ray1Origin.y;
+        let x2 = x1 + ray1Direction.x;
+        let y2 = y1 + ray1Direction.y;
+        let x3 = ray2Origin.x;
+        let y3 = ray2Origin.y;
+        let x4 = x3 + ray2Direction.x;
+        let y4 = y3 + ray2Direction.y;
+        let det = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+        if (det !== 0) {
+            let x = (x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4);
+            let y = (x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4);
+            let intersection = new BABYLON.Vector2(x / det, y / det);
+            if (Math2D.IsPointInRay(intersection, ray1Origin, ray1Direction)) {
+                if (Math2D.IsPointInRay(intersection, ray2Origin, ray2Direction)) {
+                    return intersection;
+                }
+            }
+        }
+        return undefined;
+    }
     static RaySegmentIntersection(rayOrigin, rayDirection, segA, segB) {
         let x1 = rayOrigin.x;
         let y1 = rayOrigin.y;
@@ -1134,6 +1159,73 @@ class Tank extends Prop {
         let data = await VertexDataLoader.instance.getColorized("tank", "#ce7633", "#383838", "#6d6d6d");
         data.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
+    }
+}
+class WallNode {
+    static BuildVertexData(radius = 2, ...directions) {
+        let data = new BABYLON.VertexData();
+        let positions = [];
+        let indices = [];
+        let baseShape = [
+            new BABYLON.Vector3(radius, 0, 0.6),
+            new BABYLON.Vector3(radius, 0.2, 0.6),
+            new BABYLON.Vector3(radius, 1, 0.35),
+            new BABYLON.Vector3(radius, 1.1, 0.35),
+            new BABYLON.Vector3(radius, 2, 0.2),
+            new BABYLON.Vector3(radius, 2.4, 0.2),
+            new BABYLON.Vector3(radius, 0, -0.6),
+            new BABYLON.Vector3(radius, 0.2, -0.6),
+            new BABYLON.Vector3(radius, 1, -0.35),
+            new BABYLON.Vector3(radius, 1.1, -0.35),
+            new BABYLON.Vector3(radius, 2, -0.2),
+            new BABYLON.Vector3(radius, 2.4, -0.2)
+        ];
+        for (let i = 0; i < directions.length; i++) {
+            let l = positions.length / 3;
+            let dir = directions[i];
+            let cosDir = Math.cos(dir);
+            let sinDir = Math.sin(dir);
+            for (let j = 0; j < baseShape.length; j++) {
+                let baseP = baseShape[j];
+                positions.push(cosDir * baseP.x - sinDir * baseP.z);
+                positions.push(baseP.y);
+                positions.push(sinDir * baseP.x + cosDir * baseP.z);
+            }
+            for (let j = 0; j < 6 - 1; j++) {
+                indices.push(l + j, l + j + 1, l + j + 6);
+                indices.push(l + j + 1, l + j + 1 + 6, l + j + 6);
+            }
+            let n = new BABYLON.Vector2(-cosDir, -sinDir);
+            let dirNext = directions[(i + 1) % directions.length];
+            let cosDirNext = Math.cos(dirNext);
+            let sinDirNext = Math.sin(dirNext);
+            let nNext = new BABYLON.Vector2(-cosDirNext, -sinDirNext);
+            l = positions.length / 3;
+            for (let j = 0; j < 6; j++) {
+                let baseP = baseShape[j];
+                let basePNext = baseShape[j + 6];
+                let p = new BABYLON.Vector2(cosDir * baseP.x - sinDir * baseP.z, sinDir * baseP.x + cosDir * baseP.z);
+                let pNext = new BABYLON.Vector2(cosDirNext * basePNext.x - sinDirNext * basePNext.z, sinDirNext * basePNext.x + cosDirNext * basePNext.z);
+                let intersection = Math2D.RayRayIntersection(p, n, pNext, nNext);
+                positions.push(p.x, baseP.y, p.y);
+                if (intersection) {
+                    positions.push(intersection.x, baseP.y, intersection.y);
+                }
+                else {
+                    positions.push(p.x, baseP.y, p.y);
+                }
+                positions.push(pNext.x, baseP.y, pNext.y);
+            }
+            for (let j = 0; j < 6 - 1; j++) {
+                indices.push(l + 3 * j, l + 3 * j + 1, l + 3 * (j + 1) + 1);
+                indices.push(l + 3 * (j + 1) + 1, l + 3 * (j + 1), l + 3 * j);
+                indices.push(l + 3 * j + 1, l + 3 * j + 2, l + 3 * (j + 1) + 2);
+                indices.push(l + 3 * (j + 1) + 2, l + 3 * (j + 1) + 1, l + 3 * j + 1);
+            }
+        }
+        data.positions = positions;
+        data.indices = indices;
+        return data;
     }
 }
 class Spaceship extends BABYLON.TransformNode {

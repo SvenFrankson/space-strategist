@@ -26,8 +26,8 @@ class Main {
 
         Main.Light = new BABYLON.HemisphericLight("AmbientLight", new BABYLON.Vector3(1, 3, 2), Main.Scene);
 
-        var camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 1, BABYLON.Vector3.Zero(), Main.Scene);
-        camera.setPosition(new BABYLON.Vector3(0, 5, -10));
+        var camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 1, new BABYLON.Vector3(0, 10, 0), Main.Scene);
+        camera.setPosition(new BABYLON.Vector3(10, 15, 10));
         camera.attachControl(Main.Canvas, true);
 
         BABYLON.Effect.ShadersStore["EdgeFragmentShader"] = `
@@ -90,6 +90,10 @@ class Main {
         let worker = new DroneWorker();
         worker.position2D = start;
         worker.instantiate();
+
+        let wall = new BABYLON.Mesh("wallnode", Main.Scene);
+        WallNode.BuildVertexData(1, 0, Math.PI / 2, Math.PI + Math.PI / 4).applyToMesh(wall);
+        wall.position.y = 10;
 
         /*
         let container1 = new Container("c1", new BABYLON.Vector2(1, -5), Math.PI * 0.5);
