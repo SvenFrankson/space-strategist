@@ -92,8 +92,9 @@ class Main {
         worker.instantiate();
 
         let wall = new BABYLON.Mesh("wallnode", Main.Scene);
-        WallNode.BuildVertexData(1, 0, Math.PI / 2, Math.PI + Math.PI / 4).applyToMesh(wall);
+        WallNode.BuildVertexData(1, 0, Math.PI / 2).applyToMesh(wall);
         wall.position.y = 10;
+        wall.material = Main.cellShadingMaterial;
 
         /*
         let container1 = new Container("c1", new BABYLON.Vector2(1, -5), Math.PI * 0.5);

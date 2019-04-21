@@ -8,7 +8,6 @@ class PropsEditor {
     ) {
         this.ground = BABYLON.MeshBuilder.CreateGround("ground", {width: 20, height: 20}, scene);
         this.enable();
-        this.createTank();
         document.getElementById("add-tank").addEventListener("click", this.createTank);
     }
 
