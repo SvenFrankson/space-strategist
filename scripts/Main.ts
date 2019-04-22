@@ -26,8 +26,8 @@ class Main {
 
         Main.Light = new BABYLON.HemisphericLight("AmbientLight", new BABYLON.Vector3(1, 3, 2), Main.Scene);
 
-        var camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 1, new BABYLON.Vector3(0, 10, 0), Main.Scene);
-        camera.setPosition(new BABYLON.Vector3(10, 15, 10));
+        var camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 1, new BABYLON.Vector3(0, 0, 0), Main.Scene);
+        camera.setPosition(new BABYLON.Vector3(0, 5, - 10));
         camera.attachControl(Main.Canvas, true);
 
         BABYLON.Effect.ShadersStore["EdgeFragmentShader"] = `
@@ -91,10 +91,28 @@ class Main {
         worker.position2D = start;
         worker.instantiate();
 
-        let wall = new BABYLON.Mesh("wallnode", Main.Scene);
-        WallNode.BuildVertexData(1, 0, Math.PI / 2).applyToMesh(wall);
-        wall.position.y = 10;
-        wall.material = Main.cellShadingMaterial;
+        let wallSystem = new WallSystem();
+        wallSystem.nodes.push(
+            new WallNode(new BABYLON.Vector2(- 6, - 6)),
+            new WallNode(new BABYLON.Vector2(6, - 6)),
+            new WallNode(new BABYLON.Vector2(6, 6)),
+            new WallNode(new BABYLON.Vector2(- 6, 6)),
+        )
+        wallSystem.walls.push(
+            new Wall(
+                wallSystem.nodes[0],
+                wallSystem.nodes[1]
+            ),
+            new Wall(
+                wallSystem.nodes[1],
+                wallSystem.nodes[2]
+            ),
+            new Wall(
+                wallSystem.nodes[3],
+                wallSystem.nodes[2]
+            )
+        )
+        wallSystem.instantiate();
 
         /*
         let container1 = new Container("c1", new BABYLON.Vector2(1, -5), Math.PI * 0.5);

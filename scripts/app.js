@@ -14,8 +14,8 @@ class Main {
     createScene() {
         Main.Scene = new BABYLON.Scene(Main.Engine);
         Main.Light = new BABYLON.HemisphericLight("AmbientLight", new BABYLON.Vector3(1, 3, 2), Main.Scene);
-        var camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 1, new BABYLON.Vector3(0, 10, 0), Main.Scene);
-        camera.setPosition(new BABYLON.Vector3(10, 15, 10));
+        var camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 1, new BABYLON.Vector3(0, 0, 0), Main.Scene);
+        camera.setPosition(new BABYLON.Vector3(0, 5, -10));
         camera.attachControl(Main.Canvas, true);
         BABYLON.Effect.ShadersStore["EdgeFragmentShader"] = `
 			#ifdef GL_ES
@@ -73,10 +73,10 @@ class Main {
         let worker = new DroneWorker();
         worker.position2D = start;
         worker.instantiate();
-        let wall = new BABYLON.Mesh("wallnode", Main.Scene);
-        WallNode.BuildVertexData(1, 0, Math.PI / 2).applyToMesh(wall);
-        wall.position.y = 10;
-        wall.material = Main.cellShadingMaterial;
+        let wallSystem = new WallSystem();
+        wallSystem.nodes.push(new WallNode(new BABYLON.Vector2(-6, -6)), new WallNode(new BABYLON.Vector2(6, -6)), new WallNode(new BABYLON.Vector2(6, 6)), new WallNode(new BABYLON.Vector2(-6, 6)));
+        wallSystem.walls.push(new Wall(wallSystem.nodes[0], wallSystem.nodes[1]), new Wall(wallSystem.nodes[1], wallSystem.nodes[2]), new Wall(wallSystem.nodes[3], wallSystem.nodes[2]));
+        wallSystem.instantiate();
         /*
         let container1 = new Container("c1", new BABYLON.Vector2(1, -5), Math.PI * 0.5);
         container1.instantiate();
@@ -176,6 +176,9 @@ class Math2D {
         let dot = Math2D.Dot(from, to) / from.length() / to.length();
         let angle = Math.acos(dot);
         let cross = from.x * to.y - from.y * to.x;
+        if (cross === 0) {
+            cross = 1;
+        }
         angle *= Math.sign(cross);
         if (keepPositive && angle < 0) {
             angle += Math.PI * 2;
@@ -1161,7 +1164,35 @@ class Tank extends Prop {
         this.material = Main.cellShadingMaterial;
     }
 }
-class WallNode {
+class WallNode extends BABYLON.Mesh {
+    constructor(position2D) {
+        super("wallnode");
+        this.walls = [];
+        this.position2D = position2D;
+        this.position.x = this.position2D.x;
+        this.position.z = this.position2D.y;
+    }
+    async instantiate() {
+        let dirs = [];
+        console.log("!");
+        for (let i = 0; i < this.walls.length; i++) {
+            let other = this.walls[i].otherNode(this);
+            if (other) {
+                let d = other.position2D.subtract(this.position2D).normalize();
+                console.log(d);
+                let dir = Math2D.AngleFromTo(new BABYLON.Vector2(1, 0), d, true);
+                dirs.push(dir);
+            }
+            else {
+                console.warn("Oups...");
+            }
+        }
+        dirs = dirs.sort((a, b) => { return a - b; });
+        console.log(dirs);
+        if (dirs.length >= 1) {
+            WallNode.BuildVertexData(1, ...dirs).applyToMesh(this);
+        }
+    }
     static BuildVertexData(radius = 2, ...directions) {
         let data = new BABYLON.VertexData();
         let positions = [];
@@ -1172,10 +1203,13 @@ class WallNode {
             new BABYLON.Vector3(radius, 1, 0.35),
             new BABYLON.Vector3(radius, 1.1, 0.35),
             new BABYLON.Vector3(radius, 2, 0.2),
-            new BABYLON.Vector3(radius, 2.4, 0.2)
+            new BABYLON.Vector3(radius, 2.35, 0.2),
+            new BABYLON.Vector3(radius, 2.4, 0.15)
         ];
         let bspc = baseShape.length;
-        let d = 1;
+        if (directions.length === 1) {
+            directions.push(directions[0] + Math.PI);
+        }
         for (let i = 0; i < directions.length; i++) {
             let dir = directions[i];
             let cosDir = Math.cos(dir);
@@ -1210,7 +1244,6 @@ class WallNode {
                 positions.push(sinDirNext * baseP.x - cosDirNext * baseP.z);
             }
         }
-        console.log(positions.length / 3);
         let cCount = 3 * directions.length;
         for (let j = 0; j < cCount; j++) {
             for (let i = 0; i < bspc - 1; i++) {
@@ -1219,15 +1252,52 @@ class WallNode {
             }
         }
         for (let i = 0; i < directions.length; i++) {
-            indices.push(bspc - 1 + i * 3 * bspc, bspc - 1 + (i * 3 + 1) * bspc, bspc - 1 + (((i + 1) * 3 + 1) % cCount) * bspc);
-            indices.push(bspc - 1 + (((i + 1) * 3 + 1) % cCount) * bspc, bspc - 1 + (((i + 1) * 3 + 2) % cCount) * bspc, bspc - 1 + i * 3 * bspc);
+            indices.push(bspc - 1 + ((3 * i + 1) % cCount) * bspc, bspc - 1 + ((3 * i + 2) % cCount) * bspc, bspc - 1 + ((3 * i + 3) % cCount) * bspc);
+            indices.push(bspc - 1 + ((3 * i + 1) % cCount) * bspc, bspc - 1 + ((3 * i + 3) % cCount) * bspc, bspc - 1 + ((3 * i + 4) % cCount) * bspc);
+        }
+        if (directions.length === 3) {
+            indices.push(bspc - 1 + 1 * bspc, bspc - 1 + 4 * bspc, bspc - 1 + 7 * bspc);
         }
         data.positions = positions;
         data.indices = indices;
         let normals = [];
         BABYLON.VertexData.ComputeNormals(data.positions, data.indices, normals);
         data.normals = normals;
+        let color = BABYLON.Color3.FromHexString("#6d6d6d");
+        let colors = [];
+        for (let i = 0; i < positions.length / 3; i++) {
+            colors.push(color.r, color.g, color.b, 1);
+        }
+        data.colors = colors;
         return data;
+    }
+}
+class Wall {
+    constructor(node1, node2) {
+        this.node1 = node1;
+        this.node2 = node2;
+        node1.walls.push(this);
+        node2.walls.push(this);
+    }
+    otherNode(refNode) {
+        if (this.node1 === refNode) {
+            return this.node2;
+        }
+        if (this.node2 === refNode) {
+            return this.node1;
+        }
+        return undefined;
+    }
+}
+class WallSystem {
+    constructor() {
+        this.nodes = [];
+        this.walls = [];
+    }
+    async instantiate() {
+        for (let i = 0; i < this.nodes.length; i++) {
+            await this.nodes[i].instantiate();
+        }
     }
 }
 class Spaceship extends BABYLON.TransformNode {

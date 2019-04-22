@@ -49,6 +49,9 @@ class Math2D {
         let dot = Math2D.Dot(from, to) / from.length() / to.length();
         let angle = Math.acos(dot);
         let cross = from.x * to.y - from.y * to.x;
+        if (cross === 0) {
+            cross = 1;
+        }
         angle *= Math.sign(cross);
         if (keepPositive && angle < 0) {
             angle += Math.PI * 2;

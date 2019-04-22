@@ -18,5 +18,5 @@ abstract class Prop extends BABYLON.Mesh {
         NavGraphManager.AddObstacle(this.obstacle);
     }
 
-    public abstract instantiate(): void;
+    public abstract async instantiate(): Promise<void>;
 }
