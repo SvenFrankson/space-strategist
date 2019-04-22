@@ -50,9 +50,14 @@ class WallNode extends BABYLON.Mesh {
         let bspc = baseShape.length;
 
         if (directions.length === 1) {
-            directions.push(directions[0] + Math.PI);
+            let oppositeDir = directions[0] + Math.PI;
+            if (oppositeDir > 2 * Math.PI) {
+                oppositeDir -= 2 * Math.PI;
+            }
+            directions.push(oppositeDir);
         }
 
+        console.log(directions);
         for (let i = 0; i < directions.length; i++) {
             
             let dir = directions[i];
@@ -79,7 +84,14 @@ class WallNode extends BABYLON.Mesh {
                 let p = new BABYLON.Vector2(cosDir * baseP.x - sinDir * baseP.z, sinDir * baseP.x + cosDir * baseP.z);
                 let pNext = new BABYLON.Vector2(cosDirNext * baseP.x + sinDirNext * baseP.z, sinDirNext * baseP.x - cosDirNext * baseP.z);
 
-                let intersection = Math2D.RayRayIntersection(p, n, pNext, nNext);
+                let intersection: BABYLON.Vector2;
+                if (Math.abs(Math.abs(dir - dirNext) - Math.PI) < Math.PI / 128) {
+                    intersection = p.add(pNext).scaleInPlace(0.5);
+                    console.log("smooth");
+                }
+                else {
+                    intersection = Math2D.RayRayIntersection(p, n, pNext, nNext);
+                }
                 if (intersection) {
                     positions.push(intersection.x, baseP.y, intersection.y);
                 }
@@ -153,6 +165,8 @@ class WallNode extends BABYLON.Mesh {
 
 class Wall extends BABYLON.Mesh {
 
+    public obstacle: Obstacle;
+
     constructor(
         public node1: WallNode,
         public node2: WallNode
@@ -160,6 +174,19 @@ class Wall extends BABYLON.Mesh {
         super("wall");
         node1.walls.push(this);
         node2.walls.push(this);
+
+        let d = this.node1.position2D.subtract(this.node2.position2D);
+        let l = d.length() - 2;
+        d.scaleInPlace(1 / l);
+        let dir = Math2D.AngleFromTo(new BABYLON.Vector2(1, 0), d, true);
+
+        this.obstacle = Obstacle.CreateRect(
+            (this.node1.position2D.x + this.node2.position2D.x) * 0.5,
+            (this.node1.position2D.y + this.node2.position2D.y) * 0.5,
+            l,
+            1,
+            dir
+        );
     }
 
     public otherNode(refNode: WallNode): WallNode {
@@ -210,6 +237,12 @@ class WallSystem {
         }
         for (let i = 0; i < this.walls.length; i++) {
             await this.walls[i].instantiate();
+        }
+    }
+
+    public addToScene(): void {
+        for (let i = 0; i < this.walls.length; i++) {
+            NavGraphManager.AddObstacle(this.walls[i].obstacle);
         }
     }
 }

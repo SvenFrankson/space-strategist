@@ -96,8 +96,8 @@ class Main {
             wallSystem.nodes.push(
                 new WallNode(
                     new BABYLON.Vector2(
-                        Math.cos(i * Math.PI * 2 / 8) * 10 + Math.random() * 3 - 1.5,
-                        - Math.sin(i * Math.PI * 2 / 8) * 10 + Math.random() * 3 - 1.5
+                        Math.cos(i * Math.PI * 2 / 8) * 16 + Math.random() * 3 - 1.5,
+                        - Math.sin(i * Math.PI * 2 / 8) * 16 + Math.random() * 3 - 1.5
                     )
                 )
             );
@@ -110,21 +110,8 @@ class Main {
                 )
             );
         }
-        wallSystem.walls.push(
-            new Wall(
-                wallSystem.nodes[0],
-                wallSystem.nodes[1]
-            ),
-            new Wall(
-                wallSystem.nodes[1],
-                wallSystem.nodes[2]
-            ),
-            new Wall(
-                wallSystem.nodes[3],
-                wallSystem.nodes[2]
-            )
-        )
         wallSystem.instantiate();
+        wallSystem.addToScene();
 
         /*
         let container1 = new Container("c1", new BABYLON.Vector2(1, -5), Math.PI * 0.5);
