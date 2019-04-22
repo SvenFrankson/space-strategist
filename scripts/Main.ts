@@ -92,12 +92,24 @@ class Main {
         worker.instantiate();
 
         let wallSystem = new WallSystem();
-        wallSystem.nodes.push(
-            new WallNode(new BABYLON.Vector2(- 6, - 6)),
-            new WallNode(new BABYLON.Vector2(6, - 6)),
-            new WallNode(new BABYLON.Vector2(6, 6)),
-            new WallNode(new BABYLON.Vector2(- 6, 6)),
-        )
+        for (let i = 0; i < 8; i++) {
+            wallSystem.nodes.push(
+                new WallNode(
+                    new BABYLON.Vector2(
+                        Math.cos(i * Math.PI * 2 / 8) * 10 + Math.random() * 3 - 1.5,
+                        - Math.sin(i * Math.PI * 2 / 8) * 10 + Math.random() * 3 - 1.5
+                    )
+                )
+            );
+        }
+        for (let i = 0; i < 7; i++) {
+            wallSystem.walls.push(
+                new Wall(
+                    wallSystem.nodes[i],
+                    wallSystem.nodes[i + 1]
+                )
+            );
+        }
         wallSystem.walls.push(
             new Wall(
                 wallSystem.nodes[0],

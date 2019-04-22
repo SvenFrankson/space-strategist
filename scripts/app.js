@@ -74,7 +74,12 @@ class Main {
         worker.position2D = start;
         worker.instantiate();
         let wallSystem = new WallSystem();
-        wallSystem.nodes.push(new WallNode(new BABYLON.Vector2(-6, -6)), new WallNode(new BABYLON.Vector2(6, -6)), new WallNode(new BABYLON.Vector2(6, 6)), new WallNode(new BABYLON.Vector2(-6, 6)));
+        for (let i = 0; i < 8; i++) {
+            wallSystem.nodes.push(new WallNode(new BABYLON.Vector2(Math.cos(i * Math.PI * 2 / 8) * 10 + Math.random() * 3 - 1.5, -Math.sin(i * Math.PI * 2 / 8) * 10 + Math.random() * 3 - 1.5)));
+        }
+        for (let i = 0; i < 7; i++) {
+            wallSystem.walls.push(new Wall(wallSystem.nodes[i], wallSystem.nodes[i + 1]));
+        }
         wallSystem.walls.push(new Wall(wallSystem.nodes[0], wallSystem.nodes[1]), new Wall(wallSystem.nodes[1], wallSystem.nodes[2]), new Wall(wallSystem.nodes[3], wallSystem.nodes[2]));
         wallSystem.instantiate();
         /*
@@ -1179,7 +1184,6 @@ class WallNode extends BABYLON.Mesh {
             let other = this.walls[i].otherNode(this);
             if (other) {
                 let d = other.position2D.subtract(this.position2D).normalize();
-                console.log(d);
                 let dir = Math2D.AngleFromTo(new BABYLON.Vector2(1, 0), d, true);
                 dirs.push(dir);
             }
@@ -1188,9 +1192,9 @@ class WallNode extends BABYLON.Mesh {
             }
         }
         dirs = dirs.sort((a, b) => { return a - b; });
-        console.log(dirs);
         if (dirs.length >= 1) {
             WallNode.BuildVertexData(1, ...dirs).applyToMesh(this);
+            this.material = Main.cellShadingMaterial;
         }
     }
     static BuildVertexData(radius = 2, ...directions) {
@@ -1263,7 +1267,7 @@ class WallNode extends BABYLON.Mesh {
         let normals = [];
         BABYLON.VertexData.ComputeNormals(data.positions, data.indices, normals);
         data.normals = normals;
-        let color = BABYLON.Color3.FromHexString("#6d6d6d");
+        let color = BABYLON.Color3.FromHexString("#383838");
         let colors = [];
         for (let i = 0; i < positions.length / 3; i++) {
             colors.push(color.r, color.g, color.b, 1);
@@ -1272,8 +1276,9 @@ class WallNode extends BABYLON.Mesh {
         return data;
     }
 }
-class Wall {
+class Wall extends BABYLON.Mesh {
     constructor(node1, node2) {
+        super("wall");
         this.node1 = node1;
         this.node2 = node2;
         node1.walls.push(this);
@@ -1288,6 +1293,26 @@ class Wall {
         }
         return undefined;
     }
+    async instantiate() {
+        let data = await VertexDataLoader.instance.getColorized("wall", "#6d6d6d", "#383838", "#ce7633");
+        data = VertexDataLoader.clone(data);
+        let d = this.node1.position2D.subtract(this.node2.position2D);
+        let l = d.length() - 2;
+        d.scaleInPlace(1 / l);
+        let dir = Math2D.AngleFromTo(new BABYLON.Vector2(1, 0), d, true);
+        let cosDir = Math.cos(dir);
+        let sinDir = Math.sin(dir);
+        for (let i = 0; i < data.positions.length / 3; i++) {
+            let x = data.positions[3 * i] * l;
+            let z = data.positions[3 * i + 2];
+            data.positions[3 * i] = cosDir * x - sinDir * z;
+            data.positions[3 * i + 2] = sinDir * x + cosDir * z;
+        }
+        data.applyToMesh(this);
+        this.material = Main.cellShadingMaterial;
+        this.position.x = (this.node1.position2D.x + this.node2.position2D.x) * 0.5;
+        this.position.z = (this.node1.position2D.y + this.node2.position2D.y) * 0.5;
+    }
 }
 class WallSystem {
     constructor() {
@@ -1297,6 +1322,9 @@ class WallSystem {
     async instantiate() {
         for (let i = 0; i < this.nodes.length; i++) {
             await this.nodes[i].instantiate();
+        }
+        for (let i = 0; i < this.walls.length; i++) {
+            await this.walls[i].instantiate();
         }
     }
 }

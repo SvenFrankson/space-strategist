@@ -18,7 +18,6 @@ class WallNode extends BABYLON.Mesh {
             let other = this.walls[i].otherNode(this);
             if (other) {
                 let d = other.position2D.subtract(this.position2D).normalize();
-                console.log(d);
                 let dir = Math2D.AngleFromTo(new BABYLON.Vector2(1, 0), d, true);
                 dirs.push(dir);
             }
@@ -27,9 +26,9 @@ class WallNode extends BABYLON.Mesh {
             }
         }
         dirs = dirs.sort((a, b) => { return a - b; });
-        console.log(dirs);
         if (dirs.length >= 1) {
             WallNode.BuildVertexData(1, ...dirs).applyToMesh(this);
+            this.material = Main.cellShadingMaterial;
         }
     }
 
@@ -141,7 +140,7 @@ class WallNode extends BABYLON.Mesh {
         BABYLON.VertexData.ComputeNormals(data.positions, data.indices, normals);
         data.normals = normals;
 
-        let color = BABYLON.Color3.FromHexString("#6d6d6d");
+        let color = BABYLON.Color3.FromHexString("#383838");
         let colors = [];
         for (let i = 0; i < positions.length / 3; i++) {
             colors.push(color.r, color.g, color.b, 1);
@@ -152,12 +151,13 @@ class WallNode extends BABYLON.Mesh {
     }
 }
 
-class Wall {
+class Wall extends BABYLON.Mesh {
 
     constructor(
         public node1: WallNode,
         public node2: WallNode
     ) {
+        super("wall");
         node1.walls.push(this);
         node2.walls.push(this);
     }
@@ -171,6 +171,32 @@ class Wall {
         }
         return undefined;
     }
+
+    public async instantiate(): Promise<void> {
+        let data = await VertexDataLoader.instance.getColorized("wall", "#6d6d6d", "#383838", "#ce7633");
+        data = VertexDataLoader.clone(data);
+
+        let d = this.node1.position2D.subtract(this.node2.position2D);
+        let l = d.length() - 2;
+        d.scaleInPlace(1 / l);
+        let dir = Math2D.AngleFromTo(new BABYLON.Vector2(1, 0), d, true);
+        let cosDir = Math.cos(dir);
+        let sinDir = Math.sin(dir);
+
+        for (let i = 0; i < data.positions.length / 3; i++) {
+            let x = data.positions[3 * i] * l;
+            let z = data.positions[3 * i + 2];
+
+            data.positions[3 * i] = cosDir * x - sinDir * z;
+            data.positions[3 * i + 2] = sinDir *x + cosDir * z; 
+        }
+
+        data.applyToMesh(this);
+        this.material = Main.cellShadingMaterial;
+
+        this.position.x = (this.node1.position2D.x + this.node2.position2D.x) * 0.5;
+        this.position.z = (this.node1.position2D.y + this.node2.position2D.y) * 0.5;
+    }
 }
 
 class WallSystem {
@@ -181,6 +207,9 @@ class WallSystem {
     public async instantiate(): Promise<void> {
         for (let i = 0; i < this.nodes.length; i++) {
             await this.nodes[i].instantiate();
+        }
+        for (let i = 0; i < this.walls.length; i++) {
+            await this.walls[i].instantiate();
         }
     }
 }
