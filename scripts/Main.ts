@@ -160,6 +160,9 @@ class Main {
 
         let propEditor = new PropsEditor(Main.Scene);
         propEditor.enable();
+
+        let wallEditor = new WallsEditor(wallSystem, Main.Scene);
+        wallEditor.enable();
     }
 
     public animate(): void {
