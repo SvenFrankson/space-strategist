@@ -9,14 +9,12 @@ class WallNode extends BABYLON.Mesh {
     constructor(position2D: BABYLON.Vector2) {
         super("wallnode");
         this.position2D = position2D;
-        this.position.x = this.position2D.x;
-        this.position.z = this.position2D.y;
     }
 
     public async instantiate(): Promise<void> {
-        if (!this.dirs || this.dirs.length !== this.walls.length) {
-            this.updateDirs();
-        }
+        this.position.x = this.position2D.x;
+        this.position.z = this.position2D.y;
+        this.updateDirs();
         if (this.dirs.length >= 1) {
             let dirs = [];
             for (let i = 0; i < this.dirs.length; i++) {
@@ -124,7 +122,6 @@ class WallNode extends BABYLON.Mesh {
             directions.push(oppositeDir);
         }
 
-        console.log(directions);
         for (let i = 0; i < directions.length; i++) {
             
             let dir = directions[i];
@@ -154,7 +151,6 @@ class WallNode extends BABYLON.Mesh {
                 let intersection: BABYLON.Vector2;
                 if (Math.abs(Math.abs(dir - dirNext) - Math.PI) < Math.PI / 128) {
                     intersection = p.add(pNext).scaleInPlace(0.5);
-                    console.log("smooth");
                 }
                 else {
                     intersection = Math2D.RayRayIntersection(p, n, pNext, nNext);

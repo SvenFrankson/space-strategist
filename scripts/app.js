@@ -607,6 +607,10 @@ class AIControler extends SpaceshipControler {
 class PropsEditor {
     constructor(scene) {
         this.scene = scene;
+        this.createContainer = () => {
+            this.currentProp = new Container("container", BABYLON.Vector2.Zero(), 0);
+            this.currentProp.instantiate();
+        };
         this.createTank = () => {
             this.currentProp = new Tank("tank", BABYLON.Vector2.Zero(), 0);
             this.currentProp.instantiate();
@@ -617,10 +621,14 @@ class PropsEditor {
                     return m === this.ground;
                 });
                 if (pick.hit) {
+                    this.currentProp.isVisible = true;
                     this.currentProp.position2D.x = pick.pickedPoint.x;
                     this.currentProp.position2D.y = pick.pickedPoint.z;
                     this.currentProp.position.x = this.currentProp.position2D.x;
                     this.currentProp.position.z = this.currentProp.position2D.y;
+                }
+                else {
+                    this.currentProp.isVisible = false;
                 }
             }
         };
@@ -630,8 +638,9 @@ class PropsEditor {
                 this.currentProp = undefined;
             }
         };
-        this.ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 20, height: 20 }, scene);
+        this.ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 40, height: 40 }, scene);
         this.enable();
+        document.getElementById("add-container").addEventListener("click", this.createContainer);
         document.getElementById("add-tank").addEventListener("click", this.createTank);
     }
     enable() {
@@ -650,9 +659,35 @@ class WallsEditor {
         this.wallSystem = wallSystem;
         this.scene = scene;
         this.createNode = () => {
+            this.removeEventListenerDrag();
             Main.Canvas.addEventListener("pointerup", this.pointerUpFirst);
         };
-        this.pointerMove = () => {
+        this.pointerDownStartDrag = () => {
+            if (!this._currentWallNode) {
+                let pick = this.scene.pick(this.scene.pointerX, this.scene.pointerY, (m) => {
+                    return m instanceof WallNode;
+                });
+                if (pick.hit && pick.pickedMesh instanceof WallNode) {
+                    this._currentWallNode = pick.pickedMesh;
+                    this.scene.activeCamera.detachControl(Main.Canvas);
+                }
+            }
+        };
+        this.pointerMoveOnDrag = () => {
+            if (this._currentWallNode) {
+                let pick = this.scene.pick(this.scene.pointerX, this.scene.pointerY, (m) => {
+                    return m === this.ground;
+                });
+                if (pick.hit) {
+                    this._currentWallNode.position2D.x = pick.pickedPoint.x;
+                    this._currentWallNode.position2D.y = pick.pickedPoint.z;
+                    this.wallSystem.instantiate();
+                }
+            }
+        };
+        this.pointerUpEndDrag = () => {
+            this._currentWallNode = undefined;
+            this.scene.activeCamera.attachControl(Main.Canvas);
         };
         this.pointerUpFirst = () => {
             let pick = this.scene.pick(this.scene.pointerX, this.scene.pointerY, (m) => {
@@ -692,21 +727,32 @@ class WallsEditor {
                     this.wallSystem.walls.push(new Wall(this._currentWallNode, otherNode));
                 }
                 Main.Canvas.removeEventListener("pointerup", this.pointerUpSecond);
+                this.addEventListenerDrag();
                 this.wallSystem.instantiate();
             }
         };
-        this.ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 20, height: 20 }, scene);
+        this.ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 40, height: 40 }, scene);
         this.enable();
     }
     enable() {
         this.ground.isVisible = true;
         document.getElementById("add-wall").addEventListener("click", this.createNode);
-        Main.Canvas.addEventListener("pointermove", this.pointerMove);
+        this.addEventListenerDrag();
     }
     disable() {
         this.ground.isVisible = false;
         document.getElementById("add-wall").removeEventListener("click", this.createNode);
-        Main.Canvas.removeEventListener("pointermove", this.pointerMove);
+    }
+    addEventListenerDrag() {
+        this._currentWallNode = undefined;
+        Main.Canvas.addEventListener("pointerdown", this.pointerDownStartDrag);
+        Main.Canvas.addEventListener("pointermove", this.pointerMoveOnDrag);
+        Main.Canvas.addEventListener("pointerup", this.pointerUpEndDrag);
+    }
+    removeEventListenerDrag() {
+        Main.Canvas.removeEventListener("pointerdown", this.pointerDownStartDrag);
+        Main.Canvas.removeEventListener("pointermove", this.pointerMoveOnDrag);
+        Main.Canvas.removeEventListener("pointerup", this.pointerUpEndDrag);
     }
 }
 class VertexDataLoader {
@@ -1351,13 +1397,11 @@ class WallNode extends BABYLON.Mesh {
         this.dirs = [];
         this.walls = [];
         this.position2D = position2D;
-        this.position.x = this.position2D.x;
-        this.position.z = this.position2D.y;
     }
     async instantiate() {
-        if (!this.dirs || this.dirs.length !== this.walls.length) {
-            this.updateDirs();
-        }
+        this.position.x = this.position2D.x;
+        this.position.z = this.position2D.y;
+        this.updateDirs();
         if (this.dirs.length >= 1) {
             let dirs = [];
             for (let i = 0; i < this.dirs.length; i++) {
@@ -1456,7 +1500,6 @@ class WallNode extends BABYLON.Mesh {
             }
             directions.push(oppositeDir);
         }
-        console.log(directions);
         for (let i = 0; i < directions.length; i++) {
             let dir = directions[i];
             let cosDir = Math.cos(dir);
@@ -1479,7 +1522,6 @@ class WallNode extends BABYLON.Mesh {
                 let intersection;
                 if (Math.abs(Math.abs(dir - dirNext) - Math.PI) < Math.PI / 128) {
                     intersection = p.add(pNext).scaleInPlace(0.5);
-                    console.log("smooth");
                 }
                 else {
                     intersection = Math2D.RayRayIntersection(p, n, pNext, nNext);
