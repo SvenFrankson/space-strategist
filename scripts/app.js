@@ -168,8 +168,26 @@ class Math2D {
             return from + step;
         }
     }
+    static LerpFromToCircular(from, to, amount = 0.5) {
+        while (to < from) {
+            to += 2 * Math.PI;
+        }
+        while (to - 2 * Math.PI > from) {
+            to -= 2 * Math.PI;
+        }
+        return from + (to - from) * amount;
+    }
+    static BissectFromTo(from, to, amount = 0.5) {
+        let aFrom = Math2D.AngleFromTo(new BABYLON.Vector2(1, 0), from, true);
+        let aTo = Math2D.AngleFromTo(new BABYLON.Vector2(1, 0), to, true);
+        let angle = Math2D.LerpFromToCircular(aFrom, aTo, amount);
+        return new BABYLON.Vector2(Math.cos(angle), Math.sin(angle));
+    }
     static Dot(vector1, vector2) {
         return vector1.x * vector2.x + vector1.y * vector2.y;
+    }
+    static Cross(vector1, vector2) {
+        return vector1.x * vector2.y - vector1.y * vector2.x;
     }
     static DistanceSquared(from, to) {
         return (from.x - to.x) * (from.x - to.x) + (from.y - to.y) * (from.y - to.y);
@@ -189,6 +207,11 @@ class Math2D {
             angle += Math.PI * 2;
         }
         return angle;
+    }
+    static Rotate(vector, alpha) {
+        let v = vector.clone();
+        Math2D.RotateInPlace(v, alpha);
+        return v;
     }
     static RotateInPlace(vector, alpha) {
         let x = Math.cos(alpha) * vector.x - Math.sin(alpha) * vector.y;
@@ -307,6 +330,57 @@ class Math2D {
         }
         return intersections;
     }
+    static FattenShrinkPointShape(shape, distance) {
+        let newShape = [];
+        let edgesDirs = [];
+        for (let i = 0; i < shape.length; i++) {
+            let p = shape[i];
+            let pNext = shape[(i + 1) % shape.length];
+            edgesDirs[i] = pNext.subtract(p).normalize();
+        }
+        for (let i = 0; i < shape.length; i++) {
+            let p = shape[i];
+            let edgeDir = edgesDirs[i];
+            let edgeDirPrev = edgesDirs[(i - 1 + shape.length) % shape.length];
+            let bissection = Math2D.BissectFromTo(edgeDirPrev.scale(-1), edgeDir, 0.5);
+            newShape[i] = p.add(bissection.scaleInPlace(distance));
+        }
+        return newShape;
+    }
+    static FattenShrinkEdgeShape(shape, distance) {
+        let newShape = [];
+        let edgesNormals = [];
+        let edgesDirs = [];
+        for (let i = 0; i < shape.length; i++) {
+            let p = shape[i];
+            let pNext = shape[(i + 1) % shape.length];
+            edgesDirs[i] = pNext.subtract(p).normalize();
+            edgesNormals[i] = Math2D.Rotate(edgesDirs[i], -Math.PI / 2).scaleInPlace(distance);
+        }
+        for (let i = 0; i < shape.length; i++) {
+            let p = shape[i];
+            let pNext = shape[(i + 1) % shape.length];
+            let edgeDir = edgesDirs[i];
+            let edgeDirNext = edgesDirs[(i + 1) % shape.length];
+            p = p.add(edgesNormals[i]);
+            pNext = pNext.add(edgesNormals[(i + 1) % shape.length]);
+            if (Math2D.Cross(edgeDir, edgeDirNext) === 0) {
+                newShape[i] = p.add(pNext).scaleInPlace(0.5);
+                console.warn("Oups 1");
+            }
+            else {
+                let newP = Math2D.LineLineIntersection(p, edgeDir, pNext, edgeDirNext);
+                if (newP) {
+                    newShape[i] = newP;
+                }
+                else {
+                    newShape[i] = p;
+                    console.warn("Oups 2");
+                }
+            }
+        }
+        return newShape;
+    }
     /*
     public static IsPointInShape(point: BABYLON.Vector2, shape: IShape): boolean {
         for (let i = 0; i < shape.regions.length; i++) {
@@ -337,6 +411,23 @@ class Math2D {
                     return intersection;
                 }
             }
+        }
+        return undefined;
+    }
+    static LineLineIntersection(line1Origin, line1Direction, line2Origin, line2Direction) {
+        let x1 = line1Origin.x;
+        let y1 = line1Origin.y;
+        let x2 = x1 + line1Direction.x;
+        let y2 = y1 + line1Direction.y;
+        let x3 = line2Origin.x;
+        let y3 = line2Origin.y;
+        let x4 = x3 + line2Direction.x;
+        let y4 = y3 + line2Direction.y;
+        let det = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+        if (det !== 0) {
+            let x = (x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4);
+            let y = (x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4);
+            return new BABYLON.Vector2(x / det, y / det);
         }
         return undefined;
     }
@@ -1065,6 +1156,12 @@ class Obstacle {
         hexagon.shape.position = new BABYLON.Vector2(x, y);
         return hexagon;
     }
+    static CreatePolygon(x, y, points) {
+        let polygon = new Obstacle();
+        polygon.shape = new Polygon(points);
+        polygon.shape.position = new BABYLON.Vector2(x, y);
+        return polygon;
+    }
     getPath(offset = 1, forceCompute = false) {
         let path = this._path.get(offset);
         if (!path || forceCompute) {
@@ -1131,6 +1228,19 @@ class Hexagon extends Shape {
         return this._path;
     }
 }
+class Polygon extends Shape {
+    constructor(points) {
+        super();
+        this.points = points;
+    }
+    getPath(offset = 0) {
+        this._path = Math2D.FattenShrinkPointShape(this.points, offset);
+        for (let i = 0; i < this._path.length; i++) {
+            this._path[i].addInPlace(this.position);
+        }
+        return this._path;
+    }
+}
 class Prop extends BABYLON.Mesh {
     constructor(name, position2D, rotation2D) {
         super(name);
@@ -1172,32 +1282,94 @@ class Tank extends Prop {
 class WallNode extends BABYLON.Mesh {
     constructor(position2D) {
         super("wallnode");
+        this.dirs = [];
         this.walls = [];
         this.position2D = position2D;
         this.position.x = this.position2D.x;
         this.position.z = this.position2D.y;
     }
     async instantiate() {
-        let dirs = [];
-        console.log("!");
+        if (!this.dirs || this.dirs.length !== this.walls.length) {
+            this.updateDirs();
+        }
+        if (this.dirs.length >= 1) {
+            let dirs = [];
+            for (let i = 0; i < this.dirs.length; i++) {
+                dirs.push(this.dirs[i].dir);
+            }
+            WallNode.BuildVertexData(1, ...dirs).applyToMesh(this);
+            this.material = Main.cellShadingMaterial;
+        }
+    }
+    updateDirs() {
+        this.dirs = [];
         for (let i = 0; i < this.walls.length; i++) {
             let other = this.walls[i].otherNode(this);
             if (other) {
-                let d = other.position2D.subtract(this.position2D).normalize();
+                let d = other.position2D.subtract(this.position2D);
                 let dir = Math2D.AngleFromTo(new BABYLON.Vector2(1, 0), d, true);
-                dirs.push(dir);
+                this.dirs.push({ dir: dir, length: d.length() });
             }
             else {
                 console.warn("Oups...");
             }
         }
-        dirs = dirs.sort((a, b) => { return a - b; });
-        if (dirs.length >= 1) {
-            WallNode.BuildVertexData(1, ...dirs).applyToMesh(this);
-            this.material = Main.cellShadingMaterial;
-        }
+        this.dirs = this.dirs.sort((a, b) => { return a.dir - b.dir; });
     }
-    static BuildVertexData(radius = 2, ...directions) {
+    updateObstacle() {
+        let points = [];
+        if (!this.dirs || this.dirs.length !== this.walls.length) {
+            this.updateDirs();
+        }
+        if (this.walls.length === 1) {
+            let d = this.dirs[0].dir;
+            points = [
+                new BABYLON.Vector2(Math.cos(d - Math.PI / 2), Math.sin(d - Math.PI / 2)),
+                this.walls[0].otherNode(this).position2D.subtract(this.position2D),
+                new BABYLON.Vector2(Math.cos(d + Math.PI / 2), Math.sin(d + Math.PI / 2))
+            ];
+        }
+        else if (this.walls.length >= 2) {
+            for (let i = 0; i < this.walls.length; i++) {
+                let d = this.dirs[i].dir;
+                let l = this.dirs[i].length;
+                let dNext = this.dirs[(i + 1) % this.dirs.length].dir;
+                points.push(new BABYLON.Vector2(Math.cos(d) * (l - 1), Math.sin(d) * (l - 1)));
+                points.push(new BABYLON.Vector2(Math.cos(Math2D.LerpFromToCircular(d, dNext, 0.5)), Math.sin(Math2D.LerpFromToCircular(d, dNext, 0.5))));
+            }
+        }
+        /*
+        for (let i = 0; i < points.length; i++) {
+            BABYLON.MeshBuilder.CreateSphere(
+                "p",
+                { diameter: 0.2 },
+                Main.Scene)
+                .position.copyFromFloats(
+                    points[i].x + this.position2D.x,
+                    - 0.2,
+                    points[i].y + this.position2D.y
+                );
+        }
+        */
+        /*
+        let shape = points;
+        let points3D: BABYLON.Vector3[] = [];
+        let colors: BABYLON.Color4[] = [];
+        let r = Math.random();
+        let g = Math.random();
+        let b = Math.random();
+        for (let i = 0; i < shape.length; i++) {
+            let p = shape[i];
+            points3D.push(new BABYLON.Vector3(p.x + this.position2D.x, 0.1, p.y + this.position2D.y));
+            colors.push(new BABYLON.Color4(1, 0, 0, 1));
+        }
+        points3D.push(new BABYLON.Vector3(shape[0].x + this.position2D.x, 0.1, shape[0].y + this.position2D.y));
+        colors.push(new BABYLON.Color4(1, 0, 0, 1));
+        BABYLON.MeshBuilder.CreateLines("shape", { points: points3D, colors: colors }, Main.Scene);
+        */
+        this.obstacle = Obstacle.CreatePolygon(this.position2D.x, this.position2D.y, points);
+    }
+    static BuildVertexData(radius = 1, ...directions) {
         let data = new BABYLON.VertexData();
         let positions = [];
         let indices = [];
@@ -1299,7 +1471,6 @@ class Wall extends BABYLON.Mesh {
         let l = d.length() - 2;
         d.scaleInPlace(1 / l);
         let dir = Math2D.AngleFromTo(new BABYLON.Vector2(1, 0), d, true);
-        this.obstacle = Obstacle.CreateRect((this.node1.position2D.x + this.node2.position2D.x) * 0.5, (this.node1.position2D.y + this.node2.position2D.y) * 0.5, l, 1, dir);
     }
     otherNode(refNode) {
         if (this.node1 === refNode) {
@@ -1345,8 +1516,25 @@ class WallSystem {
         }
     }
     addToScene() {
-        for (let i = 0; i < this.walls.length; i++) {
-            NavGraphManager.AddObstacle(this.walls[i].obstacle);
+        for (let i = 0; i < this.nodes.length; i++) {
+            this.nodes[i].updateObstacle();
+            /*
+            let shape = this.nodes[i].obstacle.getPath(0.5, true);
+            let r = Math.random();
+            let g = Math.random();
+            let b = Math.random();
+            let points: BABYLON.Vector3[] = [];
+            let colors: BABYLON.Color4[] = [];
+            for (let i = 0; i < shape.length; i++) {
+                let p = shape[i];
+                points.push(new BABYLON.Vector3(p.x, - 0.5 * i, p.y));
+                colors.push(new BABYLON.Color4(r, g, b, 1));
+            }
+            points.push(new BABYLON.Vector3(shape[0].x, - 0.5 * shape.length, shape[0].y));
+            colors.push(new BABYLON.Color4(r, g, b, 1));
+            BABYLON.MeshBuilder.CreateLines("shape", { points: points, colors: colors }, Main.Scene);
+            */
+            NavGraphManager.AddObstacle(this.nodes[i].obstacle);
         }
     }
 }

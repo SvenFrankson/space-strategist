@@ -19,6 +19,13 @@ class Obstacle {
         return hexagon;
     }
 
+    public static CreatePolygon(x: number, y: number, points: BABYLON.Vector2[]): Obstacle {
+        let polygon = new Obstacle();
+        polygon.shape = new Polygon(points);
+        polygon.shape.position = new BABYLON.Vector2(x, y);
+        return polygon;
+    }
+
     public getPath(offset: number = 1, forceCompute: boolean = false): BABYLON.Vector2[] {
         let path = this._path.get(offset);
         if (!path || forceCompute) {

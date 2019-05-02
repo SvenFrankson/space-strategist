@@ -1,7 +1,9 @@
 class WallNode extends BABYLON.Mesh {
 
     public position2D: BABYLON.Vector2;
+    public obstacle: Obstacle;
 
+    public dirs: {dir: number, length: number}[] = [];
     public walls: Wall[] = [];
 
     constructor(position2D: BABYLON.Vector2) {
@@ -12,27 +14,92 @@ class WallNode extends BABYLON.Mesh {
     }
 
     public async instantiate(): Promise<void> {
-        let dirs: number[] = [];
-        console.log("!");
-        for (let i = 0; i < this.walls.length; i++) {
-            let other = this.walls[i].otherNode(this);
-            if (other) {
-                let d = other.position2D.subtract(this.position2D).normalize();
-                let dir = Math2D.AngleFromTo(new BABYLON.Vector2(1, 0), d, true);
-                dirs.push(dir);
-            }
-            else {
-                console.warn("Oups...");
-            }
+        if (!this.dirs || this.dirs.length !== this.walls.length) {
+            this.updateDirs();
         }
-        dirs = dirs.sort((a, b) => { return a - b; });
-        if (dirs.length >= 1) {
+        if (this.dirs.length >= 1) {
+            let dirs = [];
+            for (let i = 0; i < this.dirs.length; i++) {
+                dirs.push(this.dirs[i].dir);
+            }
             WallNode.BuildVertexData(1, ...dirs).applyToMesh(this);
             this.material = Main.cellShadingMaterial;
         }
     }
 
-    public static BuildVertexData(radius: number = 2, ...directions: number[]): BABYLON.VertexData {
+    public updateDirs(): void {
+        this.dirs = [];
+        for (let i = 0; i < this.walls.length; i++) {
+            let other = this.walls[i].otherNode(this);
+            if (other) {
+                let d = other.position2D.subtract(this.position2D);
+                let dir = Math2D.AngleFromTo(new BABYLON.Vector2(1, 0), d, true);
+                this.dirs.push({dir: dir, length: d.length()});
+            }
+            else {
+                console.warn("Oups...");
+            }
+        }
+        this.dirs = this.dirs.sort((a, b) => { return a.dir - b.dir; });
+    }
+
+    public updateObstacle(): void {
+        let points = [];
+        if (!this.dirs || this.dirs.length !== this.walls.length) {
+            this.updateDirs();
+        }
+        if (this.walls.length === 1) {
+            let d = this.dirs[0].dir;
+            points = [
+                new BABYLON.Vector2(Math.cos(d - Math.PI / 2), Math.sin(d - Math.PI / 2)),
+                this.walls[0].otherNode(this).position2D.subtract(this.position2D),
+                new BABYLON.Vector2(Math.cos(d + Math.PI / 2), Math.sin(d + Math.PI / 2))
+            ];
+        }
+        else if (this.walls.length >= 2) {
+            for (let i = 0; i < this.walls.length; i++) {
+                let d = this.dirs[i].dir;
+                let l = this.dirs[i].length;
+                let dNext = this.dirs[(i + 1) % this.dirs.length].dir;
+                points.push(new BABYLON.Vector2(Math.cos(d) * (l - 1), Math.sin(d) * (l - 1)));
+                points.push(new BABYLON.Vector2(Math.cos(Math2D.LerpFromToCircular(d, dNext, 0.5)), Math.sin(Math2D.LerpFromToCircular(d, dNext, 0.5))));
+            }
+        }
+        /*
+        for (let i = 0; i < points.length; i++) {
+            BABYLON.MeshBuilder.CreateSphere(
+                "p",
+                { diameter: 0.2 },
+                Main.Scene)
+                .position.copyFromFloats(
+                    points[i].x + this.position2D.x,
+                    - 0.2,
+                    points[i].y + this.position2D.y
+                );
+        }
+        */
+
+        /*
+        let shape = points;
+        let points3D: BABYLON.Vector3[] = [];
+        let colors: BABYLON.Color4[] = [];
+        let r = Math.random();
+        let g = Math.random();
+        let b = Math.random();
+        for (let i = 0; i < shape.length; i++) {
+            let p = shape[i];
+            points3D.push(new BABYLON.Vector3(p.x + this.position2D.x, 0.1, p.y + this.position2D.y));
+            colors.push(new BABYLON.Color4(1, 0, 0, 1));
+        }
+        points3D.push(new BABYLON.Vector3(shape[0].x + this.position2D.x, 0.1, shape[0].y + this.position2D.y));
+        colors.push(new BABYLON.Color4(1, 0, 0, 1));
+        BABYLON.MeshBuilder.CreateLines("shape", { points: points3D, colors: colors }, Main.Scene);
+        */
+
+        this.obstacle = Obstacle.CreatePolygon(this.position2D.x, this.position2D.y, points);
+    }
+
+    public static BuildVertexData(radius: number = 1, ...directions: number[]): BABYLON.VertexData {
         let data = new BABYLON.VertexData();
 
         let positions: number[] = [];
@@ -165,8 +232,6 @@ class WallNode extends BABYLON.Mesh {
 
 class Wall extends BABYLON.Mesh {
 
-    public obstacle: Obstacle;
-
     constructor(
         public node1: WallNode,
         public node2: WallNode
@@ -179,14 +244,6 @@ class Wall extends BABYLON.Mesh {
         let l = d.length() - 2;
         d.scaleInPlace(1 / l);
         let dir = Math2D.AngleFromTo(new BABYLON.Vector2(1, 0), d, true);
-
-        this.obstacle = Obstacle.CreateRect(
-            (this.node1.position2D.x + this.node2.position2D.x) * 0.5,
-            (this.node1.position2D.y + this.node2.position2D.y) * 0.5,
-            l,
-            1,
-            dir
-        );
     }
 
     public otherNode(refNode: WallNode): WallNode {
@@ -241,8 +298,27 @@ class WallSystem {
     }
 
     public addToScene(): void {
-        for (let i = 0; i < this.walls.length; i++) {
-            NavGraphManager.AddObstacle(this.walls[i].obstacle);
+        for (let i = 0; i < this.nodes.length; i++) {
+            this.nodes[i].updateObstacle();
+
+            /*
+            let shape = this.nodes[i].obstacle.getPath(0.5, true);
+            let r = Math.random();
+            let g = Math.random();
+            let b = Math.random();
+            let points: BABYLON.Vector3[] = [];
+            let colors: BABYLON.Color4[] = [];
+            for (let i = 0; i < shape.length; i++) {
+                let p = shape[i];
+                points.push(new BABYLON.Vector3(p.x, - 0.5 * i, p.y));
+                colors.push(new BABYLON.Color4(r, g, b, 1));
+            }
+            points.push(new BABYLON.Vector3(shape[0].x, - 0.5 * shape.length, shape[0].y));
+            colors.push(new BABYLON.Color4(r, g, b, 1));
+            BABYLON.MeshBuilder.CreateLines("shape", { points: points, colors: colors }, Main.Scene);
+            */
+
+            NavGraphManager.AddObstacle(this.nodes[i].obstacle);
         }
     }
 }

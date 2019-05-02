@@ -58,3 +58,20 @@ class Hexagon extends Shape {
         return this._path;
     }
 }
+
+class Polygon extends Shape {
+
+    constructor(
+        public points: BABYLON.Vector2[]
+    ) {
+        super();
+    }
+
+    public getPath(offset: number = 0): BABYLON.Vector2[] {
+        this._path = Math2D.FattenShrinkPointShape(this.points, offset);
+        for (let i = 0; i < this._path.length; i++) {
+            this._path[i].addInPlace(this.position);
+        }
+        return this._path;
+    }
+}

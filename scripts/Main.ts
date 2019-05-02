@@ -156,7 +156,7 @@ class Main {
         navGraph.computePathFromTo(start, end);
         navGraph.display(Main.Scene);
 
-        worker.currentPath = navGraph.path; 
+        worker.currentPath = navGraph.path;
 
         let propEditor = new PropsEditor(Main.Scene);
         propEditor.enable();

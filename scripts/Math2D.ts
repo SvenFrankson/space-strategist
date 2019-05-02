@@ -33,8 +33,40 @@ class Math2D {
         }
     }
 
+    public static LerpFromToCircular(from: number, to: number, amount: number = 0.5): number {
+        while (to < from) {
+            to += 2 * Math.PI;
+        }
+        while (to - 2 * Math.PI > from) {
+            to -= 2 * Math.PI;
+        }
+        return from + (to - from) * amount;
+    }
+
+    public static BissectFromTo(from: BABYLON.Vector2, to: BABYLON.Vector2, amount: number = 0.5): BABYLON.Vector2 {
+        let aFrom = Math2D.AngleFromTo(
+            new BABYLON.Vector2(1, 0),
+            from,
+            true
+        );
+        let aTo = Math2D.AngleFromTo(
+            new BABYLON.Vector2(1, 0),
+            to,
+            true
+        );
+        let angle = Math2D.LerpFromToCircular(aFrom, aTo, amount);
+        return new BABYLON.Vector2(
+            Math.cos(angle),
+            Math.sin(angle)
+        );
+    }
+
     public static Dot(vector1: BABYLON.Vector2, vector2: BABYLON.Vector2): number {
         return vector1.x * vector2.x + vector1.y * vector2.y;
+    }
+
+    public static Cross(vector1: BABYLON.Vector2, vector2: BABYLON.Vector2): number {
+        return vector1.x * vector2.y - vector1.y * vector2.x;
     }
 
     public static DistanceSquared(from: BABYLON.Vector2, to: BABYLON.Vector2): number {
@@ -57,6 +89,12 @@ class Math2D {
             angle += Math.PI * 2;
         }
         return angle;
+    }
+
+    public static Rotate(vector: BABYLON.Vector2, alpha: number): BABYLON.Vector2 {
+        let v = vector.clone();
+        Math2D.RotateInPlace(v, alpha);
+        return v;
     }
 
     public static RotateInPlace(vector: BABYLON.Vector2, alpha: number): void {
@@ -189,6 +227,59 @@ class Math2D {
         return intersections;
     }
 
+    public static FattenShrinkPointShape(shape: BABYLON.Vector2[], distance: number): BABYLON.Vector2[] {
+        let newShape = [];
+        let edgesDirs = [];
+        for (let i = 0; i < shape.length; i++) {
+            let p = shape[i];
+            let pNext = shape[(i + 1) % shape.length];
+            edgesDirs[i] = pNext.subtract(p).normalize();
+        }
+        for (let i = 0; i < shape.length; i++) {
+            let p = shape[i];
+            let edgeDir = edgesDirs[i];
+            let edgeDirPrev = edgesDirs[(i - 1 + shape.length) % shape.length];
+            let bissection = Math2D.BissectFromTo(edgeDirPrev.scale(-1), edgeDir, 0.5);
+            newShape[i] = p.add(bissection.scaleInPlace(distance));
+        }
+        return newShape;
+    }
+
+    public static FattenShrinkEdgeShape(shape: BABYLON.Vector2[], distance: number): BABYLON.Vector2[] {
+        let newShape = [];
+        let edgesNormals = [];
+        let edgesDirs = [];
+        for (let i = 0; i < shape.length; i++) {
+            let p = shape[i];
+            let pNext = shape[(i + 1) % shape.length];
+            edgesDirs[i] = pNext.subtract(p).normalize();
+            edgesNormals[i] = Math2D.Rotate(edgesDirs[i], - Math.PI / 2).scaleInPlace(distance);
+        }
+        for (let i = 0; i < shape.length; i++) {
+            let p = shape[i];
+            let pNext = shape[(i + 1) % shape.length];
+            let edgeDir = edgesDirs[i];
+            let edgeDirNext = edgesDirs[(i + 1) % shape.length];
+            p = p.add(edgesNormals[i]);
+            pNext = pNext.add(edgesNormals[(i + 1) % shape.length]);
+            if (Math2D.Cross(edgeDir, edgeDirNext) === 0) {
+                newShape[i] = p.add(pNext).scaleInPlace(0.5);
+                console.warn("Oups 1");
+            }
+            else {
+                let newP = Math2D.LineLineIntersection(p, edgeDir, pNext, edgeDirNext);
+                if (newP) {
+                    newShape[i] = newP;
+                }
+                else {
+                    newShape[i] = p;
+                    console.warn("Oups 2");
+                }
+            }
+        }
+        return newShape;
+    }
+
     /*
     public static IsPointInShape(point: BABYLON.Vector2, shape: IShape): boolean {
         for (let i = 0; i < shape.regions.length; i++) {
@@ -222,6 +313,26 @@ class Math2D {
                     return intersection;
                 }
             }
+        }
+        return undefined;
+    }
+
+    public static LineLineIntersection(line1Origin: BABYLON.Vector2, line1Direction: BABYLON.Vector2, line2Origin: BABYLON.Vector2, line2Direction: BABYLON.Vector2): BABYLON.Vector2 {
+        let x1: number = line1Origin.x;
+        let y1: number = line1Origin.y;
+        let x2: number = x1 + line1Direction.x;
+        let y2: number = y1 + line1Direction.y;
+        let x3: number = line2Origin.x;
+        let y3: number = line2Origin.y;
+        let x4: number = x3 + line2Direction.x;
+        let y4: number = y3 + line2Direction.y;
+
+        let det: number = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+
+        if (det !== 0) {
+            let x: number = (x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4);
+            let y: number = (x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4);
+            return new BABYLON.Vector2(x / det, y / det);
         }
         return undefined;
     }
