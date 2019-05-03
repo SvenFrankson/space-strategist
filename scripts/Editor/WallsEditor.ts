@@ -94,8 +94,7 @@ class WallsEditor {
                 }
             }
             if (!this._currentWallNode) {
-                this._currentWallNode = new WallNode(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z));
-                this.wallSystem.nodes.push(this._currentWallNode);
+                this._currentWallNode = new WallNode(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z), this.wallSystem);
             }
             Main.Canvas.removeEventListener("pointerup", this.pointerUpFirst);
             Main.Canvas.addEventListener("pointerup", this.pointerUpSecond);
@@ -118,8 +117,7 @@ class WallsEditor {
                 }
             }
             if (!otherNode) {
-                otherNode = new WallNode(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z));
-                this.wallSystem.nodes.push(otherNode);
+                otherNode = new WallNode(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z), this.wallSystem);
             }
             if (this._currentWallNode && otherNode && (this._currentWallNode !== otherNode)) {
                 this.wallSystem.walls.push(new Wall(this._currentWallNode, otherNode));

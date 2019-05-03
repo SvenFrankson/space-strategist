@@ -93,14 +93,13 @@ class Main {
 
         let wallSystem = new WallSystem();
         for (let i = 0; i < 8; i++) {
-            wallSystem.nodes.push(
-                new WallNode(
-                    new BABYLON.Vector2(
-                        Math.cos(i * Math.PI * 2 / 8) * 16 + Math.random() * 3 - 1.5,
-                        - Math.sin(i * Math.PI * 2 / 8) * 16 + Math.random() * 3 - 1.5
-                    )
-                )
-            );
+            new WallNode(
+                new BABYLON.Vector2(
+                    Math.cos(i * Math.PI * 2 / 8) * 16 + Math.random() * 3 - 1.5,
+                    - Math.sin(i * Math.PI * 2 / 8) * 16 + Math.random() * 3 - 1.5
+                ),
+                wallSystem
+            )
         }
         for (let i = 0; i < 7; i++) {
             wallSystem.walls.push(
@@ -163,6 +162,17 @@ class Main {
 
         let wallEditor = new WallsEditor(wallSystem, Main.Scene);
         wallEditor.enable();
+
+        document.getElementById("save-scene").addEventListener("click", () => {
+            let data = Serializer.Serialize(Main.Scene);
+            window.localStorage.setItem("scene-data", JSON.stringify(data));
+        })
+
+        document.getElementById("load-scene").addEventListener("click", () => {
+            let data = JSON.parse(window.localStorage.getItem("scene-data"));
+            Serializer.Deserialize(Main.Scene, data);
+            wallSystem.instantiate();
+        })
     }
 
     public animate(): void {

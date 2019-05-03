@@ -1,14 +1,17 @@
 class WallNode extends BABYLON.Mesh {
 
-    public position2D: BABYLON.Vector2;
     public obstacle: Obstacle;
 
     public dirs: {dir: number, length: number}[] = [];
     public walls: Wall[] = [];
 
-    constructor(position2D: BABYLON.Vector2) {
+    constructor(
+        public position2D: BABYLON.Vector2,
+        public wallSystem: WallSystem
+    ) {
         super("wallnode");
         this.position2D = position2D;
+        this.wallSystem.nodes.push(this);
     }
 
     public async instantiate(): Promise<void> {
@@ -228,6 +231,8 @@ class WallNode extends BABYLON.Mesh {
 
 class Wall extends BABYLON.Mesh {
 
+    public wallSystem: WallSystem;
+
     constructor(
         public node1: WallNode,
         public node2: WallNode
@@ -235,11 +240,8 @@ class Wall extends BABYLON.Mesh {
         super("wall");
         node1.walls.push(this);
         node2.walls.push(this);
-
-        let d = this.node1.position2D.subtract(this.node2.position2D);
-        let l = d.length() - 2;
-        d.scaleInPlace(1 / l);
-        let dir = Math2D.AngleFromTo(new BABYLON.Vector2(1, 0), d, true);
+        this.wallSystem = node1.wallSystem;
+        this.wallSystem.walls.push(this);
     }
 
     public otherNode(refNode: WallNode): WallNode {
@@ -279,10 +281,75 @@ class Wall extends BABYLON.Mesh {
     }
 }
 
+class WallData {
+
+    constructor(
+        public node1Index: number,
+        public node2Index: number
+    ) {}
+}
+
+class WallNodeData {
+
+    constructor(
+        public position2D: BABYLON.Vector2
+    ) {}
+}
+
+class WallSystemData {
+
+    public nodesDatas: WallNodeData[] = [];
+    public wallsData: WallData[] = [];
+}
+
 class WallSystem {
 
     public nodes: WallNode[] = [];
     public walls: Wall[] = [];
+
+    public serialize(): WallSystemData {
+        let data = new WallSystemData();
+        for (let i = 0; i < this.nodes.length; i++) {
+            data.nodesDatas.push(new WallNodeData(this.nodes[i].position2D));
+        }
+        for (let i = 0; i < this.walls.length; i++) {
+            let wall = this.walls[i];
+            data.wallsData.push(
+                new WallData(
+                    this.nodes.indexOf(wall.node1),
+                    this.nodes.indexOf(wall.node2)
+                )
+            );
+        }
+        return data;
+    }
+
+    public deserialize(data: WallSystemData): void {
+        while (this.nodes.length > 0) {
+            this.nodes.pop().dispose();
+        }
+        while (this.walls.length > 0) {
+            this.walls.pop().dispose();
+        }
+        for (let i = 0; i < data.nodesDatas.length; i++) {
+            new WallNode(
+                new BABYLON.Vector2(
+                    data.nodesDatas[i].position2D.x,
+                    data.nodesDatas[i].position2D.y
+                ),
+                this
+            );
+        }
+        for (let i = 0; i < data.wallsData.length; i++) {
+            let wallData = data.wallsData[i];
+            new Wall(
+                this.nodes[wallData.node1Index],
+                this.nodes[wallData.node2Index]
+            );
+        }
+        console.log("Walls " + this.walls.length);
+        console.log("Nodes " + this.nodes.length);
+    }
 
     public async instantiate(): Promise<void> {
         for (let i = 0; i < this.nodes.length; i++) {
