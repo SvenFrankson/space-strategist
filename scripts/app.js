@@ -131,6 +131,11 @@ class Main {
             Serializer.Deserialize(Main.Scene, data);
             wallSystem.instantiate();
         });
+        let panel = document.getElementById("test-panel");
+        if (panel instanceof SpacePanel) {
+            panel.style.left = "200px";
+            panel.style.top = "200px";
+        }
     }
     animate() {
         Main.Engine.runRenderLoop(() => {
@@ -1788,3 +1793,15 @@ class Spaceship extends BABYLON.TransformNode {
         });
     }
 }
+class SpacePanel extends HTMLElement {
+    constructor() {
+        super();
+    }
+}
+window.customElements.define("space-panel", SpacePanel);
+class SpacePanelLabel extends HTMLElement {
+    constructor() {
+        super();
+    }
+}
+window.customElements.define("space-panel-label", SpacePanelLabel);

@@ -173,6 +173,12 @@ class Main {
             Serializer.Deserialize(Main.Scene, data);
             wallSystem.instantiate();
         })
+
+        let panel = document.getElementById("test-panel");
+        if (panel instanceof SpacePanel) {
+            panel.style.left = "200px";
+            panel.style.top = "200px";
+        }
     }
 
     public animate(): void {

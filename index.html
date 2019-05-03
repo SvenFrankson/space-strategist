@@ -9,6 +9,7 @@
   <script src="./lib/babylon.cellMaterial.js"></script>
   <script src="./scripts/app.js"></script>
   <link rel="stylesheet" type="text/css" href="./styles/app.css">
+  <link rel="stylesheet" type="text/css" href="./styles/panel.css">
   <link rel="stylesheet" type="text/css" href="./styles/bootstrap.css">
 </head>
 <body>
@@ -19,6 +20,24 @@
     <button id="save-scene" class="btn btn-primary">SAVE</button>
     <button id="load-scene" class="btn btn-primary">LOAD</button>
   </div>
+  <space-panel id="test-panel">
+    <div class="space-panel-inner-border">
+        <h1 class="space-title-1">PANEL TITLE</h1>
+        <h2 class="space-title-2">PROPERTIES</h2>
+        <div class="space-panel-line">
+          <space-panel-label>NAME</space-panel-label><input class="space-input space-input-text" type="text">
+        </div>
+        <div class="space-panel-line">
+          <space-panel-label>X</space-panel-label><input class="space-input space-input-number" type="number">
+        </div>
+        <div class="space-panel-line">
+          <space-panel-label>Y</space-panel-label><input class="space-input space-input-number" type="number">
+        </div>
+        <div class="space-panel-line">
+          <space-panel-label>ROTATION</space-panel-label><input class="space-input space-input-number" type="number">
+        </div>
+    </div>
+  </space-panel>
   <canvas id="render-canvas"></canvas>
 </body>
 </html>
