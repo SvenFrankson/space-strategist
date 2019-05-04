@@ -19,6 +19,12 @@
             url("/fonts/Orbitron\ Medium.ttf") format("truetype");
 }
 
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+    -webkit-appearance: none; 
+    margin: 0; 
+}
+
 space-panel {
     display: block;
     position: fixed;
@@ -60,6 +66,7 @@ space-panel-label {
 }
 
 .space-panel-line {
+    padding: 0;
     margin-bottom: 5px;
 }
 
@@ -72,4 +79,17 @@ space-panel-label {
     background-color: #0c3d2d;
     border-radius: 4px;
     text-align: center;
+}
+
+.space-button {
+    display: inline-block;
+    width: 40%;
+    padding: 5px;
+    margin-left: 4%;
+    margin-right: 4%;
+    margin-top: 5px;
+    margin-top: 5px;
+    border: solid 1px white;
+    background-color: #284239;
+    border-radius: 2px;
 }

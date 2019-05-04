@@ -178,6 +178,12 @@ class Main {
         if (panel instanceof SpacePanel) {
             panel.style.left = "200px";
             panel.style.top = "200px";
+            panel.addTitle1("Main Title");
+            panel.addTitle2("My Panel Is Cool");
+            panel.addTextInput("NAME", "IGOR", () => { });
+            panel.addNumberInput("POS X", 30, () => { });
+            panel.addNumberInput("POS Y", 60, () => { });
+            panel.addMediumButtons("DELETE", () => { alert("DELETE"); }, "CLONE", () => { alert("CLONE"); });
         }
     }
 
