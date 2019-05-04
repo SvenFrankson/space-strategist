@@ -2,6 +2,12 @@ class SpacePanel extends HTMLElement {
 
     private _innerBorder: HTMLDivElement;
 
+    public static CreateSpacePanel(): SpacePanel {
+        let panel = document.createElement("space-panel") as SpacePanel;
+        document.body.appendChild(panel);
+        return panel;
+    }
+
     constructor() {
         super();
     }
@@ -10,6 +16,10 @@ class SpacePanel extends HTMLElement {
        this._innerBorder = document.createElement("div");
        this._innerBorder.classList.add("space-panel-inner-border");
        this.appendChild(this._innerBorder);
+    }
+
+    public dispose(): void {
+        document.body.removeChild(this);
     }
 
     public addTitle1(title: string): void {
@@ -26,7 +36,7 @@ class SpacePanel extends HTMLElement {
         this._innerBorder.appendChild(e);
     }
 
-    public addNumberInput(label: string, value: number, onInputCallback: (v: number) => void): HTMLInputElement {
+    public addNumberInput(label: string, value: number, onInputCallback: (v: number) => void, precision: number = 2): HTMLInputElement {
         let lineElement = document.createElement("div");
         lineElement.classList.add("space-panel-line");
         let labelElement = document.createElement("space-panel-label");
@@ -35,14 +45,16 @@ class SpacePanel extends HTMLElement {
         let inputElement = document.createElement("input");
         inputElement.classList.add("space-input", "space-input-number");
         inputElement.setAttribute("type", "number");
-        inputElement.value = value.toString();
+        inputElement.value = value.toFixed(precision);
         inputElement.addEventListener(
             "input",
             (ev) => {
                 if (ev.srcElement instanceof HTMLInputElement) {
                     let v = parseFloat(ev.srcElement.value);
                     if (isFinite(v)) {
-                        onInputCallback(v);
+                        if (onInputCallback) {
+                            onInputCallback(v);
+                        }
                     }
                 }
             }
