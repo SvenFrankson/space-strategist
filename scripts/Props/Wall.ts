@@ -2,6 +2,7 @@ class WallNode extends BABYLON.Mesh {
 
     public obstacle: Obstacle;
     public groundWidth: number;
+    public height: number;
 
     public dirs: {dir: number, length: number}[] = [];
     public walls: Wall[] = [];
@@ -13,6 +14,17 @@ class WallNode extends BABYLON.Mesh {
         super("wallnode");
         this.position2D = position2D;
         this.wallSystem.nodes.push(this);
+    }
+
+    public dispose(doNotRecurse?: boolean, disposeMaterialAndTextures?: boolean): void {
+        while (this.walls.length > 0) {
+            this.walls[0].dispose(doNotRecurse, disposeMaterialAndTextures);
+        }
+        let index = this.wallSystem.nodes.indexOf(this);
+        if (index > -1) {
+            this.wallSystem.nodes.splice(index, 1);
+        }
+        super.dispose(doNotRecurse, disposeMaterialAndTextures);
     }
 
     public async instantiate(): Promise<void> {
@@ -27,11 +39,14 @@ class WallNode extends BABYLON.Mesh {
             let vertexData = WallNode.BuildVertexData(1, ...dirs);
             let min = Infinity;
             let max = - Infinity;
+            this.height = - Infinity;
             for (let i = 0; i < vertexData.positions.length / 3; i++) {
                 let x = vertexData.positions[3 * i];
+                let y = vertexData.positions[3 * i + 1];
                 let z = vertexData.positions[3 * i + 2];
                 min = Math.min(min, x, z);
                 max = Math.max(max, x, z);
+                this.height = Math.max(this.height, y);
             }
             this.groundWidth = max - min;
             vertexData.applyToMesh(this);
@@ -253,6 +268,22 @@ class Wall extends BABYLON.Mesh {
         node2.walls.push(this);
         this.wallSystem = node1.wallSystem;
         this.wallSystem.walls.push(this);
+    }
+
+    public dispose(doNotRecurse?: boolean, disposeMaterialAndTextures?: boolean): void {
+        let indexWallSystem = this.wallSystem.walls.indexOf(this);
+        if (indexWallSystem > -1) {
+            this.wallSystem.walls.splice(indexWallSystem, 1);
+        }
+        let indexNode1 = this.node1.walls.indexOf(this);
+        if (indexNode1 > -1) {
+            this.node1.walls.splice(indexNode1, 1);
+        }
+        let indexNode2 = this.node2.walls.indexOf(this);
+        if (indexNode2 > -1) {
+            this.node2.walls.splice(indexNode2, 1);
+        }
+        super.dispose(doNotRecurse, disposeMaterialAndTextures);
     }
 
     public otherNode(refNode: WallNode): WallNode {

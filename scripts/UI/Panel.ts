@@ -1,5 +1,6 @@
 interface IMeshWithGroundWidth {
     groundWidth: number;
+    height: number;
 }
 
 class SpacePanel extends HTMLElement {
@@ -26,12 +27,32 @@ class SpacePanel extends HTMLElement {
         if (this._target) {
             this._target.getScene().onBeforeRenderObservable.removeCallback(this._update);
         }
+        if (this._line) {
+            this._line.dispose();
+        }
         document.body.removeChild(this);
     }
 
+    private _line: BABYLON.LinesMesh;
     private _target: BABYLON.Mesh & IMeshWithGroundWidth;
     public setTarget(mesh: BABYLON.Mesh & IMeshWithGroundWidth): void {
         this._target = mesh;
+        this._line = BABYLON.MeshBuilder.CreateLines(
+            "line",
+            {
+                points: [
+                    BABYLON.Vector3.Zero(),
+                    BABYLON.Vector3.Zero()
+                ],
+                updatable: true,
+                colors: [
+                    new BABYLON.Color4(0, 1, 0, 1),
+                    new BABYLON.Color4(0, 1, 0, 1)
+                ]
+            },
+            this._target.getScene(),
+        );
+        this._line.renderingGroupId = 1;
         this._target.getScene().onBeforeRenderObservable.add(this._update);
     }
 
@@ -40,14 +61,22 @@ class SpacePanel extends HTMLElement {
         let n = BABYLON.Vector3.Cross(dView, new BABYLON.Vector3(0, 1, 0));
         n.normalize();
         n.scaleInPlace(- this._target.groundWidth * 0.5);
+        let p0 = this._target.position;
+        let p1 = this._target.position.add(n);
+        let p2 = p1.clone();
+        p2.y += this._target.groundWidth * 0.5 + this._target.height;
         let screenPos = BABYLON.Vector3.Project(
-            this._target.position.add(n),
+            p2,
             BABYLON.Matrix.Identity(),
             this._target.getScene().getTransformMatrix(),
             this._target.getScene().activeCamera.viewport.toGlobal(1, 1)
         )
-        this.style.left = (screenPos.x * Main.Canvas.width) + "px";
-        this.style.top = (screenPos.y * Main.Canvas.height) + "px";
+        this.style.left = (screenPos.x * Main.Canvas.width - this.clientWidth * 0.5) + "px";
+        this.style.bottom = ((1 - screenPos.y) * Main.Canvas.height) + "px";
+        this._line.setVerticesData(
+            BABYLON.VertexBuffer.PositionKind,
+            [...p0.asArray(), ...p2.asArray()]
+        );
     }
 
     public addTitle1(title: string): void {
@@ -115,7 +144,7 @@ class SpacePanel extends HTMLElement {
         return inputElement;
     }
 
-    public addMediumButtons(value1: string, onClickCallback1: () => void, value2: string, onClickCallback2: () => void): HTMLInputElement[] {
+    public addMediumButtons(value1: string, onClickCallback1: () => void, value2?: string, onClickCallback2?: () => void): HTMLInputElement[] {
         let lineElement = document.createElement("div");
         lineElement.classList.add("space-panel-line");
         let inputElement1 = document.createElement("input");
@@ -129,19 +158,23 @@ class SpacePanel extends HTMLElement {
             }
         );
         lineElement.appendChild(inputElement1);
-        let inputElement2 = document.createElement("input");
-        inputElement2.classList.add("space-button");
-        inputElement2.setAttribute("type", "button");
-        inputElement2.value = value2;
-        inputElement2.addEventListener(
-            "click",
-            () => {
-                onClickCallback2();
-            }
-        );
-        lineElement.appendChild(inputElement2);
+        let inputs = [inputElement1];
+        if (value2 && onClickCallback2) {
+            let inputElement2 = document.createElement("input");
+            inputElement2.classList.add("space-button");
+            inputElement2.setAttribute("type", "button");
+            inputElement2.value = value2;
+            inputElement2.addEventListener(
+                "click",
+                () => {
+                    onClickCallback2();
+                }
+            );
+            lineElement.appendChild(inputElement2);
+            inputs.push(inputElement2);
+        }
         this._innerBorder.appendChild(lineElement);
-        return [inputElement1, inputElement2];
+        return inputs;
     }
 }
 

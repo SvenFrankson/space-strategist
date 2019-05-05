@@ -35,6 +35,14 @@ class WallsEditor {
                     this.wallSystem.instantiate();
                 }
             );
+            this._selectedWallNodePanel.addMediumButtons(
+                "DELETE",
+                () => {
+                    this.selectedWallNode.dispose();
+                    this.wallSystem.instantiate();
+                    this.selectedWallNode = undefined;
+                }
+            )
         }
     }
     private ground: BABYLON.Mesh;

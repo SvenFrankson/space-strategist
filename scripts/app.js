@@ -825,6 +825,11 @@ class WallsEditor {
                 this.selectedWallNode.position2D.y = v;
                 this.wallSystem.instantiate();
             });
+            this._selectedWallNodePanel.addMediumButtons("DELETE", () => {
+                this.selectedWallNode.dispose();
+                this.wallSystem.instantiate();
+                this.selectedWallNode = undefined;
+            });
         }
     }
     enable() {
@@ -1494,6 +1499,16 @@ class WallNode extends BABYLON.Mesh {
         this.position2D = position2D;
         this.wallSystem.nodes.push(this);
     }
+    dispose(doNotRecurse, disposeMaterialAndTextures) {
+        while (this.walls.length > 0) {
+            this.walls[0].dispose(doNotRecurse, disposeMaterialAndTextures);
+        }
+        let index = this.wallSystem.nodes.indexOf(this);
+        if (index > -1) {
+            this.wallSystem.nodes.splice(index, 1);
+        }
+        super.dispose(doNotRecurse, disposeMaterialAndTextures);
+    }
     async instantiate() {
         this.position.x = this.position2D.x;
         this.position.z = this.position2D.y;
@@ -1506,11 +1521,14 @@ class WallNode extends BABYLON.Mesh {
             let vertexData = WallNode.BuildVertexData(1, ...dirs);
             let min = Infinity;
             let max = -Infinity;
+            this.height = -Infinity;
             for (let i = 0; i < vertexData.positions.length / 3; i++) {
                 let x = vertexData.positions[3 * i];
+                let y = vertexData.positions[3 * i + 1];
                 let z = vertexData.positions[3 * i + 2];
                 min = Math.min(min, x, z);
                 max = Math.max(max, x, z);
+                this.height = Math.max(this.height, y);
             }
             this.groundWidth = max - min;
             vertexData.applyToMesh(this);
@@ -1684,6 +1702,21 @@ class Wall extends BABYLON.Mesh {
         this.wallSystem = node1.wallSystem;
         this.wallSystem.walls.push(this);
     }
+    dispose(doNotRecurse, disposeMaterialAndTextures) {
+        let indexWallSystem = this.wallSystem.walls.indexOf(this);
+        if (indexWallSystem > -1) {
+            this.wallSystem.walls.splice(indexWallSystem, 1);
+        }
+        let indexNode1 = this.node1.walls.indexOf(this);
+        if (indexNode1 > -1) {
+            this.node1.walls.splice(indexNode1, 1);
+        }
+        let indexNode2 = this.node2.walls.indexOf(this);
+        if (indexNode2 > -1) {
+            this.node2.walls.splice(indexNode2, 1);
+        }
+        super.dispose(doNotRecurse, disposeMaterialAndTextures);
+    }
     otherNode(refNode) {
         if (this.node1 === refNode) {
             return this.node2;
@@ -1847,9 +1880,14 @@ class SpacePanel extends HTMLElement {
             let n = BABYLON.Vector3.Cross(dView, new BABYLON.Vector3(0, 1, 0));
             n.normalize();
             n.scaleInPlace(-this._target.groundWidth * 0.5);
-            let screenPos = BABYLON.Vector3.Project(this._target.position.add(n), BABYLON.Matrix.Identity(), this._target.getScene().getTransformMatrix(), this._target.getScene().activeCamera.viewport.toGlobal(1, 1));
-            this.style.left = (screenPos.x * Main.Canvas.width) + "px";
-            this.style.top = (screenPos.y * Main.Canvas.height) + "px";
+            let p0 = this._target.position;
+            let p1 = this._target.position.add(n);
+            let p2 = p1.clone();
+            p2.y += this._target.groundWidth * 0.5 + this._target.height;
+            let screenPos = BABYLON.Vector3.Project(p2, BABYLON.Matrix.Identity(), this._target.getScene().getTransformMatrix(), this._target.getScene().activeCamera.viewport.toGlobal(1, 1));
+            this.style.left = (screenPos.x * Main.Canvas.width - this.clientWidth * 0.5) + "px";
+            this.style.bottom = ((1 - screenPos.y) * Main.Canvas.height) + "px";
+            this._line.setVerticesData(BABYLON.VertexBuffer.PositionKind, [...p0.asArray(), ...p2.asArray()]);
         };
     }
     static CreateSpacePanel() {
@@ -1866,10 +1904,25 @@ class SpacePanel extends HTMLElement {
         if (this._target) {
             this._target.getScene().onBeforeRenderObservable.removeCallback(this._update);
         }
+        if (this._line) {
+            this._line.dispose();
+        }
         document.body.removeChild(this);
     }
     setTarget(mesh) {
         this._target = mesh;
+        this._line = BABYLON.MeshBuilder.CreateLines("line", {
+            points: [
+                BABYLON.Vector3.Zero(),
+                BABYLON.Vector3.Zero()
+            ],
+            updatable: true,
+            colors: [
+                new BABYLON.Color4(0, 1, 0, 1),
+                new BABYLON.Color4(0, 1, 0, 1)
+            ]
+        }, this._target.getScene());
+        this._line.renderingGroupId = 1;
         this._target.getScene().onBeforeRenderObservable.add(this._update);
     }
     addTitle1(title) {
@@ -1938,16 +1991,20 @@ class SpacePanel extends HTMLElement {
             onClickCallback1();
         });
         lineElement.appendChild(inputElement1);
-        let inputElement2 = document.createElement("input");
-        inputElement2.classList.add("space-button");
-        inputElement2.setAttribute("type", "button");
-        inputElement2.value = value2;
-        inputElement2.addEventListener("click", () => {
-            onClickCallback2();
-        });
-        lineElement.appendChild(inputElement2);
+        let inputs = [inputElement1];
+        if (value2 && onClickCallback2) {
+            let inputElement2 = document.createElement("input");
+            inputElement2.classList.add("space-button");
+            inputElement2.setAttribute("type", "button");
+            inputElement2.value = value2;
+            inputElement2.addEventListener("click", () => {
+                onClickCallback2();
+            });
+            lineElement.appendChild(inputElement2);
+            inputs.push(inputElement2);
+        }
         this._innerBorder.appendChild(lineElement);
-        return [inputElement1, inputElement2];
+        return inputs;
     }
 }
 window.customElements.define("space-panel", SpacePanel);
