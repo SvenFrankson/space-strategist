@@ -65,12 +65,18 @@ class SpacePanel extends HTMLElement {
         let p1 = this._target.position.add(n);
         let p2 = p1.clone();
         p2.y += this._target.groundWidth * 0.5 + this._target.height;
+        let targetScreenPos = BABYLON.Vector3.Project(
+            p0,
+            BABYLON.Matrix.Identity(),
+            this._target.getScene().getTransformMatrix(),
+            this._target.getScene().activeCamera.viewport.toGlobal(1, 1)
+        );
         let screenPos = BABYLON.Vector3.Project(
             p2,
             BABYLON.Matrix.Identity(),
             this._target.getScene().getTransformMatrix(),
             this._target.getScene().activeCamera.viewport.toGlobal(1, 1)
-        )
+        );
         this.style.left = (screenPos.x * Main.Canvas.width - this.clientWidth * 0.5) + "px";
         this.style.bottom = ((1 - screenPos.y) * Main.Canvas.height) + "px";
         this._line.setVerticesData(

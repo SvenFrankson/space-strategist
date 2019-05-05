@@ -157,11 +157,8 @@ class Main {
 
         worker.currentPath = navGraph.path;
 
-        let propEditor = new PropsEditor(Main.Scene);
-        propEditor.enable();
-
-        let wallEditor = new WallsEditor(wallSystem, Main.Scene);
-        wallEditor.enable();
+        let sceneEditor = new SceneEditor(wallSystem, Main.Scene);
+        sceneEditor.enable();
 
         document.getElementById("save-scene").addEventListener("click", () => {
             let data = Serializer.Serialize(Main.Scene);

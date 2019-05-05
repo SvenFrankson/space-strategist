@@ -1,34 +1,43 @@
-class WallsEditor {
+class SceneEditor {
 
-    private _dragedWallNode: WallNode;
-    private _selectedWallNodePanel: SpacePanel;
-    private _selectedWallElement: Selectionable;
-    private get selectedWallElement(): Selectionable {
-        return this._selectedWallElement;
+    private _newProp: Prop;
+    private _draggedElement: Draggable;
+    private _selectedElementPanel: SpacePanel;
+    private _selectedElement: Selectionable;
+    private get selectedElement(): Selectionable {
+        return this._selectedElement;
     }
-    private set selectedWallElement(selectionable: Selectionable) {
-        if (selectionable === this.selectedWallElement) {
+    private set selectedElement(selectionable: Selectionable) {
+        if (selectionable === this.selectedElement) {
             return;
         }
-        if (this._selectedWallNodePanel) {
-            this._selectedWallNodePanel.dispose();
-            this._selectedWallNodePanel = undefined;
+        if (this._selectedElementPanel) {
+            this._selectedElementPanel.dispose();
+            this._selectedElementPanel = undefined;
         }
-        this._selectedWallElement = selectionable;
-        if (this.selectedWallElement) {
-            if (this.selectedWallElement instanceof WallNode) {
-                this._selectedWallNodePanel = WallNodeEditor.CreatePanel(
-                    this.selectedWallElement,
+        this._selectedElement = selectionable;
+        if (this.selectedElement) {
+            if (this.selectedElement instanceof WallNode) {
+                this._selectedElementPanel = WallNodeEditor.CreatePanel(
+                    this.selectedElement,
                     () => {
-                        this.selectedWallElement = undefined;
+                        this.selectedElement = undefined;
                     }
                 );
             }
-            if (this.selectedWallElement instanceof Wall) {
-                this._selectedWallNodePanel = WallEditor.CreatePanel(
-                    this.selectedWallElement,
+            if (this.selectedElement instanceof Wall) {
+                this._selectedElementPanel = WallEditor.CreatePanel(
+                    this.selectedElement,
                     () => {
-                        this.selectedWallElement = undefined;
+                        this.selectedElement = undefined;
+                    }
+                );
+            }
+            else if (this.selectedElement instanceof Prop) {
+                this._selectedElementPanel = PropEditor.CreatePanel(
+                    this.selectedElement,
+                    () => {
+                        this.selectedElement = undefined;
                     }
                 );
             }
@@ -46,30 +55,47 @@ class WallsEditor {
 
     public enable() {
         this.ground.isVisible = true;
+        document.getElementById("add-container").addEventListener("click", this.createContainer);
+        document.getElementById("add-tank").addEventListener("click", this.createTank);
         document.getElementById("add-wall").addEventListener("click", this.createNode);
         this.addEventListenerDrag();
     }
 
     public disable() {
         this.ground.isVisible = false;
+        document.getElementById("add-container").removeEventListener("click", this.createContainer);
+        document.getElementById("add-tank").removeEventListener("click", this.createTank);
         document.getElementById("add-wall").removeEventListener("click", this.createNode);
     }
 
+    private createContainer = () => {
+        this.selectedElement = undefined;
+        this._newProp = new Container("container", BABYLON.Vector2.Zero(), 0);
+        this._newProp.instantiate();
+    }
+
+    private createTank = () => {
+        this.selectedElement = undefined;
+        this._newProp = new Tank("tank", BABYLON.Vector2.Zero(), 0);
+        this._newProp.instantiate();
+    }
+
     private createNode = () => {
+        this.selectedElement = undefined;
         this.removeEventListenerDrag();
         Main.Canvas.addEventListener("pointerup", this.pointerUpFirst);
     }
 
     private addEventListenerDrag(): void {
-        this._selectedWallElement = undefined;
+        this._selectedElement = undefined;
         Main.Canvas.addEventListener("pointerdown", this.pointerDown);
-        Main.Canvas.addEventListener("pointermove", this.pointerMoveOnDrag);
+        Main.Canvas.addEventListener("pointermove", this.pointerMove);
         Main.Canvas.addEventListener("pointerup", this.pointerUp);
     }
 
     private removeEventListenerDrag(): void {
         Main.Canvas.removeEventListener("pointerdown", this.pointerDown);
-        Main.Canvas.removeEventListener("pointermove", this.pointerMoveOnDrag);
+        Main.Canvas.removeEventListener("pointermove", this.pointerMove);
         Main.Canvas.removeEventListener("pointerup", this.pointerUp);
     }
 
@@ -82,19 +108,19 @@ class WallsEditor {
             this.scene.pointerX,
             this.scene.pointerY,
             (m) => {
-                return m instanceof WallNode;
+                return m instanceof Draggable;
             }
         );
-        if (pick.hit && pick.pickedMesh instanceof WallNode) {
-            if (this.selectedWallElement === pick.pickedMesh) {
-                this._dragedWallNode = pick.pickedMesh as WallNode;
+        if (pick.hit && pick.pickedMesh instanceof Draggable) {
+            if (this.selectedElement === pick.pickedMesh) {
+                this._draggedElement = pick.pickedMesh as Draggable;
                 this.scene.activeCamera.detachControl(Main.Canvas);
             }
         }
     }
 
-    private pointerMoveOnDrag = () => {
-        if (this._dragedWallNode) {
+    private pointerMove = () => {
+        if (this._draggedElement || this._newProp) {
             let pick = this.scene.pick(
                 this.scene.pointerX,
                 this.scene.pointerY,
@@ -102,16 +128,34 @@ class WallsEditor {
                     return m === this.ground;
                 }
             );
-            if (pick.hit) {
-                this._dragedWallNode.position2D.x = pick.pickedPoint.x;
-                this._dragedWallNode.position2D.y = pick.pickedPoint.z;
-                this.wallSystem.instantiate();
+            if (this._draggedElement) {
+                if (pick.hit) {
+                    this._draggedElement.position2D.x = pick.pickedPoint.x;
+                    this._draggedElement.position2D.y = pick.pickedPoint.z;
+                    if (this._draggedElement instanceof WallNode) {
+                        this.wallSystem.instantiate();
+                    }
+                }
+            }
+            else if (this._newProp) {
+                if (pick.hit) {
+                    this._newProp.isVisible = true;
+                    this._newProp.position2D.x = pick.pickedPoint.x;
+                    this._newProp.position2D.y = pick.pickedPoint.z;
+                }
+                else {
+                    this._newProp.isVisible = false;
+                }
             }
         }
     }
 
     private pointerUp = () => {
-        this._dragedWallNode = undefined;
+        if (this._newProp) {
+            this._newProp.addToScene();
+            this._newProp = undefined;
+        }
+        this._draggedElement = undefined;
         if (Math.abs(this.scene.pointerX - this._pointerDownX) < 3 && Math.abs(this.scene.pointerY - this._pointerDownY) < 3) {
             let pick = this.scene.pick(
                 this.scene.pointerX,
@@ -121,10 +165,10 @@ class WallsEditor {
                 }
             );
             if (pick.hit && pick.pickedMesh instanceof Selectionable) {
-                this.selectedWallElement = pick.pickedMesh;
+                this.selectedElement = pick.pickedMesh;
             }
             else {
-                this.selectedWallElement = undefined;
+                this.selectedElement = undefined;
             }
         }
         this.scene.activeCamera.attachControl(Main.Canvas);
@@ -141,12 +185,12 @@ class WallsEditor {
         if (pick.hit) {
             for (let i = 0; i < this.wallSystem.nodes.length; i++) {
                 if (BABYLON.Vector3.DistanceSquared(this.wallSystem.nodes[i].position, pick.pickedPoint) < 1) {
-                    this._selectedWallElement = this.wallSystem.nodes[i];
+                    this._selectedElement = this.wallSystem.nodes[i];
                     break;
                 }
             }
-            if (!this._selectedWallElement) {
-                this._selectedWallElement = new WallNode(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z), this.wallSystem);
+            if (!this._selectedElement) {
+                this._selectedElement = new WallNode(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z), this.wallSystem);
             }
             Main.Canvas.removeEventListener("pointerup", this.pointerUpFirst);
             Main.Canvas.addEventListener("pointerup", this.pointerUpSecond);
@@ -171,8 +215,8 @@ class WallsEditor {
             if (!otherNode) {
                 otherNode = new WallNode(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z), this.wallSystem);
             }
-            if (this._selectedWallElement instanceof WallNode && otherNode && (this._selectedWallElement !== otherNode)) {
-                this.wallSystem.walls.push(new Wall(this._selectedWallElement, otherNode));
+            if (this._selectedElement instanceof WallNode && otherNode && (this._selectedElement !== otherNode)) {
+                this.wallSystem.walls.push(new Wall(this._selectedElement, otherNode));
             }
             Main.Canvas.removeEventListener("pointerup", this.pointerUpSecond);
             this.addEventListenerDrag();

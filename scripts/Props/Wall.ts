@@ -1,6 +1,4 @@
-/// <reference path="Selectionable.ts"/>
-
-class WallNode extends Selectionable {
+class WallNode extends Draggable {
 
     public obstacle: Obstacle;
 
@@ -314,18 +312,12 @@ class Wall extends Selectionable {
             vertexData.positions[3 * i] = cosDir * x - sinDir * z;
             vertexData.positions[3 * i + 2] = sinDir *x + cosDir * z; 
         }
-        let min = Infinity;
-        let max = - Infinity;
+        this.groundWidth = 2;
         this.height = - Infinity;
         for (let i = 0; i < vertexData.positions.length / 3; i++) {
-            let x = vertexData.positions[3 * i];
             let y = vertexData.positions[3 * i + 1];
-            let z = vertexData.positions[3 * i + 2];
-            min = Math.min(min, x, z);
-            max = Math.max(max, x, z);
             this.height = Math.max(this.height, y);
         }
-        this.groundWidth = max - min;
 
         vertexData.applyToMesh(this);
         this.material = Main.cellShadingMaterial;

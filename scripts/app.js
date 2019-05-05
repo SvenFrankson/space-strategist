@@ -118,10 +118,8 @@ class Main {
         navGraph.computePathFromTo(start, end);
         navGraph.display(Main.Scene);
         worker.currentPath = navGraph.path;
-        let propEditor = new PropsEditor(Main.Scene);
-        propEditor.enable();
-        let wallEditor = new WallsEditor(wallSystem, Main.Scene);
-        wallEditor.enable();
+        let sceneEditor = new SceneEditor(wallSystem, Main.Scene);
+        sceneEditor.enable();
         document.getElementById("save-scene").addEventListener("click", () => {
             let data = Serializer.Serialize(Main.Scene);
             window.localStorage.setItem("scene-data", JSON.stringify(data));
@@ -658,61 +656,22 @@ class AIControler extends SpaceshipControler {
         this.spaceship.roll = rollAngle / Math.PI * 0.25 + this.spaceship.roll * 0.75;
     }
 }
-class PropsEditor {
-    constructor(scene) {
-        this.scene = scene;
-        this.createContainer = () => {
-            this.currentProp = new Container("container", BABYLON.Vector2.Zero(), 0);
-            this.currentProp.instantiate();
-        };
-        this.createTank = () => {
-            this.currentProp = new Tank("tank", BABYLON.Vector2.Zero(), 0);
-            this.currentProp.instantiate();
-        };
-        this.pointerMove = () => {
-            if (this.currentProp) {
-                let pick = this.scene.pick(this.scene.pointerX, this.scene.pointerY, (m) => {
-                    return m === this.ground;
-                });
-                if (pick.hit) {
-                    this.currentProp.isVisible = true;
-                    this.currentProp.position2D.x = pick.pickedPoint.x;
-                    this.currentProp.position2D.y = pick.pickedPoint.z;
-                    this.currentProp.position.x = this.currentProp.position2D.x;
-                    this.currentProp.position.z = this.currentProp.position2D.y;
-                }
-                else {
-                    this.currentProp.isVisible = false;
-                }
-            }
-        };
-        this.pointerUp = () => {
-            if (this.currentProp) {
-                this.currentProp.addToScene();
-                this.currentProp = undefined;
-            }
-        };
-        this.ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 40, height: 40 }, scene);
-        this.enable();
-        document.getElementById("add-container").addEventListener("click", this.createContainer);
-        document.getElementById("add-tank").addEventListener("click", this.createTank);
-    }
-    enable() {
-        this.ground.isVisible = true;
-        Main.Canvas.addEventListener("pointermove", this.pointerMove);
-        Main.Canvas.addEventListener("pointerup", this.pointerUp);
-    }
-    disable() {
-        this.ground.isVisible = false;
-        Main.Canvas.removeEventListener("pointermove", this.pointerMove);
-        Main.Canvas.removeEventListener("pointerup", this.pointerUp);
-    }
-}
-class WallsEditor {
+class SceneEditor {
     constructor(wallSystem, scene) {
         this.wallSystem = wallSystem;
         this.scene = scene;
+        this.createContainer = () => {
+            this.selectedElement = undefined;
+            this._newProp = new Container("container", BABYLON.Vector2.Zero(), 0);
+            this._newProp.instantiate();
+        };
+        this.createTank = () => {
+            this.selectedElement = undefined;
+            this._newProp = new Tank("tank", BABYLON.Vector2.Zero(), 0);
+            this._newProp.instantiate();
+        };
         this.createNode = () => {
+            this.selectedElement = undefined;
             this.removeEventListenerDrag();
             Main.Canvas.addEventListener("pointerup", this.pointerUpFirst);
         };
@@ -722,38 +681,56 @@ class WallsEditor {
             this._pointerDownX = this.scene.pointerX;
             this._pointerDownY = this.scene.pointerY;
             let pick = this.scene.pick(this.scene.pointerX, this.scene.pointerY, (m) => {
-                return m instanceof WallNode;
+                return m instanceof Draggable;
             });
-            if (pick.hit && pick.pickedMesh instanceof WallNode) {
-                if (this.selectedWallElement === pick.pickedMesh) {
-                    this._dragedWallNode = pick.pickedMesh;
+            if (pick.hit && pick.pickedMesh instanceof Draggable) {
+                if (this.selectedElement === pick.pickedMesh) {
+                    this._draggedElement = pick.pickedMesh;
                     this.scene.activeCamera.detachControl(Main.Canvas);
                 }
             }
         };
-        this.pointerMoveOnDrag = () => {
-            if (this._dragedWallNode) {
+        this.pointerMove = () => {
+            if (this._draggedElement || this._newProp) {
                 let pick = this.scene.pick(this.scene.pointerX, this.scene.pointerY, (m) => {
                     return m === this.ground;
                 });
-                if (pick.hit) {
-                    this._dragedWallNode.position2D.x = pick.pickedPoint.x;
-                    this._dragedWallNode.position2D.y = pick.pickedPoint.z;
-                    this.wallSystem.instantiate();
+                if (this._draggedElement) {
+                    if (pick.hit) {
+                        this._draggedElement.position2D.x = pick.pickedPoint.x;
+                        this._draggedElement.position2D.y = pick.pickedPoint.z;
+                        if (this._draggedElement instanceof WallNode) {
+                            this.wallSystem.instantiate();
+                        }
+                    }
+                }
+                else if (this._newProp) {
+                    if (pick.hit) {
+                        this._newProp.isVisible = true;
+                        this._newProp.position2D.x = pick.pickedPoint.x;
+                        this._newProp.position2D.y = pick.pickedPoint.z;
+                    }
+                    else {
+                        this._newProp.isVisible = false;
+                    }
                 }
             }
         };
         this.pointerUp = () => {
-            this._dragedWallNode = undefined;
+            if (this._newProp) {
+                this._newProp.addToScene();
+                this._newProp = undefined;
+            }
+            this._draggedElement = undefined;
             if (Math.abs(this.scene.pointerX - this._pointerDownX) < 3 && Math.abs(this.scene.pointerY - this._pointerDownY) < 3) {
                 let pick = this.scene.pick(this.scene.pointerX, this.scene.pointerY, (m) => {
                     return m instanceof Selectionable;
                 });
                 if (pick.hit && pick.pickedMesh instanceof Selectionable) {
-                    this.selectedWallElement = pick.pickedMesh;
+                    this.selectedElement = pick.pickedMesh;
                 }
                 else {
-                    this.selectedWallElement = undefined;
+                    this.selectedElement = undefined;
                 }
             }
             this.scene.activeCamera.attachControl(Main.Canvas);
@@ -765,12 +742,12 @@ class WallsEditor {
             if (pick.hit) {
                 for (let i = 0; i < this.wallSystem.nodes.length; i++) {
                     if (BABYLON.Vector3.DistanceSquared(this.wallSystem.nodes[i].position, pick.pickedPoint) < 1) {
-                        this._selectedWallElement = this.wallSystem.nodes[i];
+                        this._selectedElement = this.wallSystem.nodes[i];
                         break;
                     }
                 }
-                if (!this._selectedWallElement) {
-                    this._selectedWallElement = new WallNode(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z), this.wallSystem);
+                if (!this._selectedElement) {
+                    this._selectedElement = new WallNode(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z), this.wallSystem);
                 }
                 Main.Canvas.removeEventListener("pointerup", this.pointerUpFirst);
                 Main.Canvas.addEventListener("pointerup", this.pointerUpSecond);
@@ -790,8 +767,8 @@ class WallsEditor {
                 if (!otherNode) {
                     otherNode = new WallNode(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z), this.wallSystem);
                 }
-                if (this._selectedWallElement instanceof WallNode && otherNode && (this._selectedWallElement !== otherNode)) {
-                    this.wallSystem.walls.push(new Wall(this._selectedWallElement, otherNode));
+                if (this._selectedElement instanceof WallNode && otherNode && (this._selectedElement !== otherNode)) {
+                    this.wallSystem.walls.push(new Wall(this._selectedElement, otherNode));
                 }
                 Main.Canvas.removeEventListener("pointerup", this.pointerUpSecond);
                 this.addEventListenerDrag();
@@ -801,49 +778,58 @@ class WallsEditor {
         this.ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 40, height: 40 }, scene);
         this.enable();
     }
-    get selectedWallElement() {
-        return this._selectedWallElement;
+    get selectedElement() {
+        return this._selectedElement;
     }
-    set selectedWallElement(selectionable) {
-        if (selectionable === this.selectedWallElement) {
+    set selectedElement(selectionable) {
+        if (selectionable === this.selectedElement) {
             return;
         }
-        if (this._selectedWallNodePanel) {
-            this._selectedWallNodePanel.dispose();
-            this._selectedWallNodePanel = undefined;
+        if (this._selectedElementPanel) {
+            this._selectedElementPanel.dispose();
+            this._selectedElementPanel = undefined;
         }
-        this._selectedWallElement = selectionable;
-        if (this.selectedWallElement) {
-            if (this.selectedWallElement instanceof WallNode) {
-                this._selectedWallNodePanel = WallNodeEditor.CreatePanel(this.selectedWallElement, () => {
-                    this.selectedWallElement = undefined;
+        this._selectedElement = selectionable;
+        if (this.selectedElement) {
+            if (this.selectedElement instanceof WallNode) {
+                this._selectedElementPanel = WallNodeEditor.CreatePanel(this.selectedElement, () => {
+                    this.selectedElement = undefined;
                 });
             }
-            if (this.selectedWallElement instanceof Wall) {
-                this._selectedWallNodePanel = WallEditor.CreatePanel(this.selectedWallElement, () => {
-                    this.selectedWallElement = undefined;
+            if (this.selectedElement instanceof Wall) {
+                this._selectedElementPanel = WallEditor.CreatePanel(this.selectedElement, () => {
+                    this.selectedElement = undefined;
+                });
+            }
+            else if (this.selectedElement instanceof Prop) {
+                this._selectedElementPanel = PropEditor.CreatePanel(this.selectedElement, () => {
+                    this.selectedElement = undefined;
                 });
             }
         }
     }
     enable() {
         this.ground.isVisible = true;
+        document.getElementById("add-container").addEventListener("click", this.createContainer);
+        document.getElementById("add-tank").addEventListener("click", this.createTank);
         document.getElementById("add-wall").addEventListener("click", this.createNode);
         this.addEventListenerDrag();
     }
     disable() {
         this.ground.isVisible = false;
+        document.getElementById("add-container").removeEventListener("click", this.createContainer);
+        document.getElementById("add-tank").removeEventListener("click", this.createTank);
         document.getElementById("add-wall").removeEventListener("click", this.createNode);
     }
     addEventListenerDrag() {
-        this._selectedWallElement = undefined;
+        this._selectedElement = undefined;
         Main.Canvas.addEventListener("pointerdown", this.pointerDown);
-        Main.Canvas.addEventListener("pointermove", this.pointerMoveOnDrag);
+        Main.Canvas.addEventListener("pointermove", this.pointerMove);
         Main.Canvas.addEventListener("pointerup", this.pointerUp);
     }
     removeEventListenerDrag() {
         Main.Canvas.removeEventListener("pointerdown", this.pointerDown);
-        Main.Canvas.removeEventListener("pointermove", this.pointerMoveOnDrag);
+        Main.Canvas.removeEventListener("pointermove", this.pointerMove);
         Main.Canvas.removeEventListener("pointerup", this.pointerUp);
     }
 }
@@ -1445,14 +1431,27 @@ class Polygon extends Shape {
         return this._path;
     }
 }
-class Prop extends BABYLON.Mesh {
+class Selectionable extends BABYLON.Mesh {
+}
+/// <reference path="Selectionable.ts"/>
+class Draggable extends Selectionable {
+}
+/// <reference path="Draggable.ts"/>
+class Prop extends Draggable {
     constructor(name, position2D, rotation2D) {
         super(name);
+        this._updatePosition = () => {
+            this.position.x = this.position2D.x;
+            this.position.z = this.position2D.y;
+            this.rotation.y = -this.rotation2D;
+        };
         this.position2D = position2D;
         this.rotation2D = rotation2D;
-        this.position.x = this.position2D.x;
-        this.position.z = this.position2D.y;
-        this.rotation.y = -rotation2D;
+        this.getScene().onBeforeRenderObservable.add(this._updatePosition);
+    }
+    dispose(doNotRecurse, disposeMaterialAndTextures) {
+        this.getScene().onBeforeRenderObservable.removeCallback(this._updatePosition);
+        super.dispose(doNotRecurse, disposeMaterialAndTextures);
     }
     addToScene() {
         NavGraphManager.AddObstacle(this.obstacle);
@@ -1466,12 +1465,50 @@ class Container extends Prop {
         this.obstacle.name = name + "-obstacle";
     }
     async instantiate() {
-        let data = await VertexDataLoader.instance.getColorized("container", "#ce7633", "#383838", "#6d6d6d");
-        data.applyToMesh(this);
+        let vertexData = await VertexDataLoader.instance.getColorized("container", "#ce7633", "#383838", "#6d6d6d");
+        let min = Infinity;
+        let max = -Infinity;
+        this.height = -Infinity;
+        for (let i = 0; i < vertexData.positions.length / 3; i++) {
+            let x = vertexData.positions[3 * i];
+            let y = vertexData.positions[3 * i + 1];
+            let z = vertexData.positions[3 * i + 2];
+            min = Math.min(min, x, z);
+            max = Math.max(max, x, z);
+            this.height = Math.max(this.height, y);
+        }
+        this.groundWidth = max - min;
+        vertexData.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
     }
+    displayName() {
+        return "Container";
+    }
 }
-class Selectionable extends BABYLON.Mesh {
+class PropEditor {
+    static Select(prop) {
+    }
+    static CreatePanel(prop, onDisposeCallback) {
+        let panel = SpacePanel.CreateSpacePanel();
+        panel.setTarget(prop);
+        panel.addTitle1(prop.displayName().toLocaleUpperCase());
+        panel.addTitle2(prop.name.toLocaleUpperCase());
+        panel.addNumberInput("POS X", prop.position2D.x, (v) => {
+            prop.position2D.x = v;
+        });
+        panel.addNumberInput("POS Y", prop.position2D.y, (v) => {
+            prop.position2D.y = v;
+        });
+        panel.addMediumButtons("DELETE", () => {
+            prop.dispose();
+            if (onDisposeCallback) {
+                onDisposeCallback();
+            }
+        });
+        return panel;
+    }
+    static Unselect(prop) {
+    }
 }
 class Tank extends Prop {
     constructor(name, position2D, rotation2D) {
@@ -1480,13 +1517,27 @@ class Tank extends Prop {
         this.obstacle.name = name + "-obstacle";
     }
     async instantiate() {
-        let data = await VertexDataLoader.instance.getColorized("tank", "#ce7633", "#383838", "#6d6d6d");
-        data.applyToMesh(this);
+        let vertexData = await VertexDataLoader.instance.getColorized("tank", "#ce7633", "#383838", "#6d6d6d");
+        let min = Infinity;
+        let max = -Infinity;
+        this.height = -Infinity;
+        for (let i = 0; i < vertexData.positions.length / 3; i++) {
+            let x = vertexData.positions[3 * i];
+            let y = vertexData.positions[3 * i + 1];
+            let z = vertexData.positions[3 * i + 2];
+            min = Math.min(min, x, z);
+            max = Math.max(max, x, z);
+            this.height = Math.max(this.height, y);
+        }
+        this.groundWidth = max - min;
+        vertexData.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
     }
+    displayName() {
+        return "Tank";
+    }
 }
-/// <reference path="Selectionable.ts"/>
-class WallNode extends Selectionable {
+class WallNode extends Draggable {
     constructor(position2D, wallSystem) {
         super("wallnode");
         this.position2D = position2D;
@@ -1738,18 +1789,12 @@ class Wall extends Selectionable {
             vertexData.positions[3 * i] = cosDir * x - sinDir * z;
             vertexData.positions[3 * i + 2] = sinDir * x + cosDir * z;
         }
-        let min = Infinity;
-        let max = -Infinity;
+        this.groundWidth = 2;
         this.height = -Infinity;
         for (let i = 0; i < vertexData.positions.length / 3; i++) {
-            let x = vertexData.positions[3 * i];
             let y = vertexData.positions[3 * i + 1];
-            let z = vertexData.positions[3 * i + 2];
-            min = Math.min(min, x, z);
-            max = Math.max(max, x, z);
             this.height = Math.max(this.height, y);
         }
-        this.groundWidth = max - min;
         vertexData.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
         this.position.x = (this.node1.position2D.x + this.node2.position2D.x) * 0.5;
@@ -1935,6 +1980,7 @@ class SpacePanel extends HTMLElement {
             let p1 = this._target.position.add(n);
             let p2 = p1.clone();
             p2.y += this._target.groundWidth * 0.5 + this._target.height;
+            let targetScreenPos = BABYLON.Vector3.Project(p0, BABYLON.Matrix.Identity(), this._target.getScene().getTransformMatrix(), this._target.getScene().activeCamera.viewport.toGlobal(1, 1));
             let screenPos = BABYLON.Vector3.Project(p2, BABYLON.Matrix.Identity(), this._target.getScene().getTransformMatrix(), this._target.getScene().activeCamera.viewport.toGlobal(1, 1));
             this.style.left = (screenPos.x * Main.Canvas.width - this.clientWidth * 0.5) + "px";
             this.style.bottom = ((1 - screenPos.y) * Main.Canvas.height) + "px";

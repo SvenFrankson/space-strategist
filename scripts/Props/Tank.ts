@@ -7,8 +7,26 @@ class Tank extends Prop {
     }
 
     public async instantiate(): Promise<void> {
-        let data = await VertexDataLoader.instance.getColorized("tank", "#ce7633", "#383838", "#6d6d6d");
-        data.applyToMesh(this);
+        let vertexData = await VertexDataLoader.instance.getColorized("tank", "#ce7633", "#383838", "#6d6d6d");
+
+        let min = Infinity;
+        let max = - Infinity;
+        this.height = - Infinity;
+        for (let i = 0; i < vertexData.positions.length / 3; i++) {
+            let x = vertexData.positions[3 * i];
+            let y = vertexData.positions[3 * i + 1];
+            let z = vertexData.positions[3 * i + 2];
+            min = Math.min(min, x, z);
+            max = Math.max(max, x, z);
+            this.height = Math.max(this.height, y);
+        }
+        this.groundWidth = max - min;
+
+        vertexData.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
+    }
+
+    public displayName(): string {
+        return "Tank";
     }
 }
