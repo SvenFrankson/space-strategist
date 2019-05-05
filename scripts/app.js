@@ -725,7 +725,7 @@ class WallsEditor {
                 return m instanceof WallNode;
             });
             if (pick.hit && pick.pickedMesh instanceof WallNode) {
-                if (this.selectedWallNode === pick.pickedMesh) {
+                if (this.selectedWallElement === pick.pickedMesh) {
                     this._dragedWallNode = pick.pickedMesh;
                     this.scene.activeCamera.detachControl(Main.Canvas);
                 }
@@ -747,13 +747,13 @@ class WallsEditor {
             this._dragedWallNode = undefined;
             if (Math.abs(this.scene.pointerX - this._pointerDownX) < 3 && Math.abs(this.scene.pointerY - this._pointerDownY) < 3) {
                 let pick = this.scene.pick(this.scene.pointerX, this.scene.pointerY, (m) => {
-                    return m instanceof WallNode;
+                    return m instanceof Selectionable;
                 });
-                if (pick.hit && pick.pickedMesh instanceof WallNode) {
-                    this.selectedWallNode = pick.pickedMesh;
+                if (pick.hit && pick.pickedMesh instanceof Selectionable) {
+                    this.selectedWallElement = pick.pickedMesh;
                 }
                 else {
-                    this.selectedWallNode = undefined;
+                    this.selectedWallElement = undefined;
                 }
             }
             this.scene.activeCamera.attachControl(Main.Canvas);
@@ -765,12 +765,12 @@ class WallsEditor {
             if (pick.hit) {
                 for (let i = 0; i < this.wallSystem.nodes.length; i++) {
                     if (BABYLON.Vector3.DistanceSquared(this.wallSystem.nodes[i].position, pick.pickedPoint) < 1) {
-                        this._selectedWallNode = this.wallSystem.nodes[i];
+                        this._selectedWallElement = this.wallSystem.nodes[i];
                         break;
                     }
                 }
-                if (!this._selectedWallNode) {
-                    this._selectedWallNode = new WallNode(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z), this.wallSystem);
+                if (!this._selectedWallElement) {
+                    this._selectedWallElement = new WallNode(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z), this.wallSystem);
                 }
                 Main.Canvas.removeEventListener("pointerup", this.pointerUpFirst);
                 Main.Canvas.addEventListener("pointerup", this.pointerUpSecond);
@@ -790,8 +790,8 @@ class WallsEditor {
                 if (!otherNode) {
                     otherNode = new WallNode(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z), this.wallSystem);
                 }
-                if (this._selectedWallNode && otherNode && (this._selectedWallNode !== otherNode)) {
-                    this.wallSystem.walls.push(new Wall(this._selectedWallNode, otherNode));
+                if (this._selectedWallElement instanceof WallNode && otherNode && (this._selectedWallElement !== otherNode)) {
+                    this.wallSystem.walls.push(new Wall(this._selectedWallElement, otherNode));
                 }
                 Main.Canvas.removeEventListener("pointerup", this.pointerUpSecond);
                 this.addEventListenerDrag();
@@ -801,35 +801,29 @@ class WallsEditor {
         this.ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 40, height: 40 }, scene);
         this.enable();
     }
-    get selectedWallNode() {
-        return this._selectedWallNode;
+    get selectedWallElement() {
+        return this._selectedWallElement;
     }
-    set selectedWallNode(node) {
-        if (node === this.selectedWallNode) {
+    set selectedWallElement(selectionable) {
+        if (selectionable === this.selectedWallElement) {
             return;
         }
         if (this._selectedWallNodePanel) {
             this._selectedWallNodePanel.dispose();
             this._selectedWallNodePanel = undefined;
         }
-        this._selectedWallNode = node;
-        if (this._selectedWallNode) {
-            this._selectedWallNodePanel = SpacePanel.CreateSpacePanel();
-            this._selectedWallNodePanel.setTarget(this.selectedWallNode);
-            this._selectedWallNodePanel.addTitle1("WALLNODE");
-            this._selectedWallNodePanel.addNumberInput("POS X", this._selectedWallNode.position2D.x, (v) => {
-                this.selectedWallNode.position2D.x = v;
-                this.wallSystem.instantiate();
-            });
-            this._selectedWallNodePanel.addNumberInput("POS Y", this._selectedWallNode.position2D.y, (v) => {
-                this.selectedWallNode.position2D.y = v;
-                this.wallSystem.instantiate();
-            });
-            this._selectedWallNodePanel.addMediumButtons("DELETE", () => {
-                this.selectedWallNode.dispose();
-                this.wallSystem.instantiate();
-                this.selectedWallNode = undefined;
-            });
+        this._selectedWallElement = selectionable;
+        if (this.selectedWallElement) {
+            if (this.selectedWallElement instanceof WallNode) {
+                this._selectedWallNodePanel = WallNodeEditor.CreatePanel(this.selectedWallElement, () => {
+                    this.selectedWallElement = undefined;
+                });
+            }
+            if (this.selectedWallElement instanceof Wall) {
+                this._selectedWallNodePanel = WallEditor.CreatePanel(this.selectedWallElement, () => {
+                    this.selectedWallElement = undefined;
+                });
+            }
         }
     }
     enable() {
@@ -842,7 +836,7 @@ class WallsEditor {
         document.getElementById("add-wall").removeEventListener("click", this.createNode);
     }
     addEventListenerDrag() {
-        this._selectedWallNode = undefined;
+        this._selectedWallElement = undefined;
         Main.Canvas.addEventListener("pointerdown", this.pointerDown);
         Main.Canvas.addEventListener("pointermove", this.pointerMoveOnDrag);
         Main.Canvas.addEventListener("pointerup", this.pointerUp);
@@ -1477,6 +1471,8 @@ class Container extends Prop {
         this.material = Main.cellShadingMaterial;
     }
 }
+class Selectionable extends BABYLON.Mesh {
+}
 class Tank extends Prop {
     constructor(name, position2D, rotation2D) {
         super(name, position2D, rotation2D);
@@ -1489,7 +1485,8 @@ class Tank extends Prop {
         this.material = Main.cellShadingMaterial;
     }
 }
-class WallNode extends BABYLON.Mesh {
+/// <reference path="Selectionable.ts"/>
+class WallNode extends Selectionable {
     constructor(position2D, wallSystem) {
         super("wallnode");
         this.position2D = position2D;
@@ -1692,7 +1689,7 @@ class WallNode extends BABYLON.Mesh {
         return data;
     }
 }
-class Wall extends BABYLON.Mesh {
+class Wall extends Selectionable {
     constructor(node1, node2) {
         super("wall");
         this.node1 = node1;
@@ -1727,21 +1724,33 @@ class Wall extends BABYLON.Mesh {
         return undefined;
     }
     async instantiate() {
-        let data = await VertexDataLoader.instance.getColorized("wall", "#6d6d6d", "#383838", "#ce7633");
-        data = VertexDataLoader.clone(data);
+        let vertexData = await VertexDataLoader.instance.getColorized("wall", "#6d6d6d", "#383838", "#ce7633");
+        vertexData = VertexDataLoader.clone(vertexData);
         let d = this.node1.position2D.subtract(this.node2.position2D);
         let l = d.length() - 2;
         d.scaleInPlace(1 / l);
         let dir = Math2D.AngleFromTo(new BABYLON.Vector2(1, 0), d, true);
         let cosDir = Math.cos(dir);
         let sinDir = Math.sin(dir);
-        for (let i = 0; i < data.positions.length / 3; i++) {
-            let x = data.positions[3 * i] * l;
-            let z = data.positions[3 * i + 2];
-            data.positions[3 * i] = cosDir * x - sinDir * z;
-            data.positions[3 * i + 2] = sinDir * x + cosDir * z;
+        for (let i = 0; i < vertexData.positions.length / 3; i++) {
+            let x = vertexData.positions[3 * i] * l;
+            let z = vertexData.positions[3 * i + 2];
+            vertexData.positions[3 * i] = cosDir * x - sinDir * z;
+            vertexData.positions[3 * i + 2] = sinDir * x + cosDir * z;
         }
-        data.applyToMesh(this);
+        let min = Infinity;
+        let max = -Infinity;
+        this.height = -Infinity;
+        for (let i = 0; i < vertexData.positions.length / 3; i++) {
+            let x = vertexData.positions[3 * i];
+            let y = vertexData.positions[3 * i + 1];
+            let z = vertexData.positions[3 * i + 2];
+            min = Math.min(min, x, z);
+            max = Math.max(max, x, z);
+            this.height = Math.max(this.height, y);
+        }
+        this.groundWidth = max - min;
+        vertexData.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
         this.position.x = (this.node1.position2D.x + this.node2.position2D.x) * 0.5;
         this.position.z = (this.node1.position2D.y + this.node2.position2D.y) * 0.5;
@@ -1826,6 +1835,48 @@ class WallSystem {
             */
             NavGraphManager.AddObstacle(this.nodes[i].obstacle);
         }
+    }
+}
+class WallEditor {
+    static Select(wall) {
+    }
+    static CreatePanel(wall, onDisposeCallback) {
+        let panel = SpacePanel.CreateSpacePanel();
+        panel.setTarget(wall);
+        panel.addTitle1("WALL");
+        panel.addMediumButtons("DELETE", () => {
+            wall.dispose();
+            wall.wallSystem.instantiate();
+            onDisposeCallback();
+        });
+        return panel;
+    }
+    static Unselect(wall) {
+    }
+}
+class WallNodeEditor {
+    static Select(node) {
+    }
+    static CreatePanel(node, onDisposeCallback) {
+        let panel = SpacePanel.CreateSpacePanel();
+        panel.setTarget(node);
+        panel.addTitle1("WALLNODE");
+        panel.addNumberInput("POS X", node.position2D.x, (v) => {
+            node.position2D.x = v;
+            node.wallSystem.instantiate();
+        });
+        panel.addNumberInput("POS Y", node.position2D.y, (v) => {
+            node.position2D.y = v;
+            node.wallSystem.instantiate();
+        });
+        panel.addMediumButtons("DELETE", () => {
+            node.dispose();
+            node.wallSystem.instantiate();
+            onDisposeCallback();
+        });
+        return panel;
+    }
+    static Unselect(node) {
     }
 }
 class Spaceship extends BABYLON.TransformNode {

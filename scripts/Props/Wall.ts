@@ -1,8 +1,8 @@
-class WallNode extends BABYLON.Mesh {
+/// <reference path="Selectionable.ts"/>
+
+class WallNode extends Selectionable {
 
     public obstacle: Obstacle;
-    public groundWidth: number;
-    public height: number;
 
     public dirs: {dir: number, length: number}[] = [];
     public walls: Wall[] = [];
@@ -255,7 +255,7 @@ class WallNode extends BABYLON.Mesh {
     }
 }
 
-class Wall extends BABYLON.Mesh {
+class Wall extends Selectionable {
 
     public wallSystem: WallSystem;
 
@@ -297,8 +297,8 @@ class Wall extends BABYLON.Mesh {
     }
 
     public async instantiate(): Promise<void> {
-        let data = await VertexDataLoader.instance.getColorized("wall", "#6d6d6d", "#383838", "#ce7633");
-        data = VertexDataLoader.clone(data);
+        let vertexData = await VertexDataLoader.instance.getColorized("wall", "#6d6d6d", "#383838", "#ce7633");
+        vertexData = VertexDataLoader.clone(vertexData);
 
         let d = this.node1.position2D.subtract(this.node2.position2D);
         let l = d.length() - 2;
@@ -307,15 +307,27 @@ class Wall extends BABYLON.Mesh {
         let cosDir = Math.cos(dir);
         let sinDir = Math.sin(dir);
 
-        for (let i = 0; i < data.positions.length / 3; i++) {
-            let x = data.positions[3 * i] * l;
-            let z = data.positions[3 * i + 2];
+        for (let i = 0; i < vertexData.positions.length / 3; i++) {
+            let x = vertexData.positions[3 * i] * l;
+            let z = vertexData.positions[3 * i + 2];
 
-            data.positions[3 * i] = cosDir * x - sinDir * z;
-            data.positions[3 * i + 2] = sinDir *x + cosDir * z; 
+            vertexData.positions[3 * i] = cosDir * x - sinDir * z;
+            vertexData.positions[3 * i + 2] = sinDir *x + cosDir * z; 
         }
+        let min = Infinity;
+        let max = - Infinity;
+        this.height = - Infinity;
+        for (let i = 0; i < vertexData.positions.length / 3; i++) {
+            let x = vertexData.positions[3 * i];
+            let y = vertexData.positions[3 * i + 1];
+            let z = vertexData.positions[3 * i + 2];
+            min = Math.min(min, x, z);
+            max = Math.max(max, x, z);
+            this.height = Math.max(this.height, y);
+        }
+        this.groundWidth = max - min;
 
-        data.applyToMesh(this);
+        vertexData.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
 
         this.position.x = (this.node1.position2D.x + this.node2.position2D.x) * 0.5;

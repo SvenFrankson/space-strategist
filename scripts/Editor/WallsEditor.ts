@@ -2,47 +2,36 @@ class WallsEditor {
 
     private _dragedWallNode: WallNode;
     private _selectedWallNodePanel: SpacePanel;
-    private _selectedWallNode: WallNode;
-    private get selectedWallNode(): WallNode {
-        return this._selectedWallNode;
+    private _selectedWallElement: Selectionable;
+    private get selectedWallElement(): Selectionable {
+        return this._selectedWallElement;
     }
-    private set selectedWallNode(node: WallNode) {
-        if (node === this.selectedWallNode) {
+    private set selectedWallElement(selectionable: Selectionable) {
+        if (selectionable === this.selectedWallElement) {
             return;
         }
         if (this._selectedWallNodePanel) {
             this._selectedWallNodePanel.dispose();
             this._selectedWallNodePanel = undefined;
         }
-        this._selectedWallNode = node;
-        if (this._selectedWallNode) {
-            this._selectedWallNodePanel = SpacePanel.CreateSpacePanel();
-            this._selectedWallNodePanel.setTarget(this.selectedWallNode);
-            this._selectedWallNodePanel.addTitle1("WALLNODE");
-            this._selectedWallNodePanel.addNumberInput(
-                "POS X",
-                this._selectedWallNode.position2D.x,
-                (v) => {
-                    this.selectedWallNode.position2D.x = v;
-                    this.wallSystem.instantiate();
-                }
-            );
-            this._selectedWallNodePanel.addNumberInput(
-                "POS Y",
-                this._selectedWallNode.position2D.y,
-                (v) => {
-                    this.selectedWallNode.position2D.y = v;
-                    this.wallSystem.instantiate();
-                }
-            );
-            this._selectedWallNodePanel.addMediumButtons(
-                "DELETE",
-                () => {
-                    this.selectedWallNode.dispose();
-                    this.wallSystem.instantiate();
-                    this.selectedWallNode = undefined;
-                }
-            )
+        this._selectedWallElement = selectionable;
+        if (this.selectedWallElement) {
+            if (this.selectedWallElement instanceof WallNode) {
+                this._selectedWallNodePanel = WallNodeEditor.CreatePanel(
+                    this.selectedWallElement,
+                    () => {
+                        this.selectedWallElement = undefined;
+                    }
+                );
+            }
+            if (this.selectedWallElement instanceof Wall) {
+                this._selectedWallNodePanel = WallEditor.CreatePanel(
+                    this.selectedWallElement,
+                    () => {
+                        this.selectedWallElement = undefined;
+                    }
+                );
+            }
         }
     }
     private ground: BABYLON.Mesh;
@@ -72,7 +61,7 @@ class WallsEditor {
     }
 
     private addEventListenerDrag(): void {
-        this._selectedWallNode = undefined;
+        this._selectedWallElement = undefined;
         Main.Canvas.addEventListener("pointerdown", this.pointerDown);
         Main.Canvas.addEventListener("pointermove", this.pointerMoveOnDrag);
         Main.Canvas.addEventListener("pointerup", this.pointerUp);
@@ -97,7 +86,7 @@ class WallsEditor {
             }
         );
         if (pick.hit && pick.pickedMesh instanceof WallNode) {
-            if (this.selectedWallNode === pick.pickedMesh) {
+            if (this.selectedWallElement === pick.pickedMesh) {
                 this._dragedWallNode = pick.pickedMesh as WallNode;
                 this.scene.activeCamera.detachControl(Main.Canvas);
             }
@@ -128,14 +117,14 @@ class WallsEditor {
                 this.scene.pointerX,
                 this.scene.pointerY,
                 (m) => {
-                    return m instanceof WallNode;
+                    return m instanceof Selectionable;
                 }
             );
-            if (pick.hit && pick.pickedMesh instanceof WallNode) {
-                this.selectedWallNode = pick.pickedMesh;
+            if (pick.hit && pick.pickedMesh instanceof Selectionable) {
+                this.selectedWallElement = pick.pickedMesh;
             }
             else {
-                this.selectedWallNode = undefined;
+                this.selectedWallElement = undefined;
             }
         }
         this.scene.activeCamera.attachControl(Main.Canvas);
@@ -152,12 +141,12 @@ class WallsEditor {
         if (pick.hit) {
             for (let i = 0; i < this.wallSystem.nodes.length; i++) {
                 if (BABYLON.Vector3.DistanceSquared(this.wallSystem.nodes[i].position, pick.pickedPoint) < 1) {
-                    this._selectedWallNode = this.wallSystem.nodes[i];
+                    this._selectedWallElement = this.wallSystem.nodes[i];
                     break;
                 }
             }
-            if (!this._selectedWallNode) {
-                this._selectedWallNode = new WallNode(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z), this.wallSystem);
+            if (!this._selectedWallElement) {
+                this._selectedWallElement = new WallNode(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z), this.wallSystem);
             }
             Main.Canvas.removeEventListener("pointerup", this.pointerUpFirst);
             Main.Canvas.addEventListener("pointerup", this.pointerUpSecond);
@@ -182,8 +171,8 @@ class WallsEditor {
             if (!otherNode) {
                 otherNode = new WallNode(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z), this.wallSystem);
             }
-            if (this._selectedWallNode && otherNode && (this._selectedWallNode !== otherNode)) {
-                this.wallSystem.walls.push(new Wall(this._selectedWallNode, otherNode));
+            if (this._selectedWallElement instanceof WallNode && otherNode && (this._selectedWallElement !== otherNode)) {
+                this.wallSystem.walls.push(new Wall(this._selectedWallElement, otherNode));
             }
             Main.Canvas.removeEventListener("pointerup", this.pointerUpSecond);
             this.addEventListenerDrag();
