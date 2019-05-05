@@ -1,3 +1,7 @@
+interface IMeshWithGroundWidth {
+    groundWidth: number;
+}
+
 class SpacePanel extends HTMLElement {
 
     private _innerBorder: HTMLDivElement;
@@ -19,7 +23,31 @@ class SpacePanel extends HTMLElement {
     }
 
     public dispose(): void {
+        if (this._target) {
+            this._target.getScene().onBeforeRenderObservable.removeCallback(this._update);
+        }
         document.body.removeChild(this);
+    }
+
+    private _target: BABYLON.Mesh & IMeshWithGroundWidth;
+    public setTarget(mesh: BABYLON.Mesh & IMeshWithGroundWidth): void {
+        this._target = mesh;
+        this._target.getScene().onBeforeRenderObservable.add(this._update);
+    }
+
+    private _update = () => {
+        let dView = this._target.position.subtract(this._target.getScene().activeCamera.position);
+        let n = BABYLON.Vector3.Cross(dView, new BABYLON.Vector3(0, 1, 0));
+        n.normalize();
+        n.scaleInPlace(- this._target.groundWidth * 0.5);
+        let screenPos = BABYLON.Vector3.Project(
+            this._target.position.add(n),
+            BABYLON.Matrix.Identity(),
+            this._target.getScene().getTransformMatrix(),
+            this._target.getScene().activeCamera.viewport.toGlobal(1, 1)
+        )
+        this.style.left = (screenPos.x * Main.Canvas.width) + "px";
+        this.style.top = (screenPos.y * Main.Canvas.height) + "px";
     }
 
     public addTitle1(title: string): void {

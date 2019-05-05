@@ -1,6 +1,7 @@
 class WallNode extends BABYLON.Mesh {
 
     public obstacle: Obstacle;
+    public groundWidth: number;
 
     public dirs: {dir: number, length: number}[] = [];
     public walls: Wall[] = [];
@@ -23,7 +24,17 @@ class WallNode extends BABYLON.Mesh {
             for (let i = 0; i < this.dirs.length; i++) {
                 dirs.push(this.dirs[i].dir);
             }
-            WallNode.BuildVertexData(1, ...dirs).applyToMesh(this);
+            let vertexData = WallNode.BuildVertexData(1, ...dirs);
+            let min = Infinity;
+            let max = - Infinity;
+            for (let i = 0; i < vertexData.positions.length / 3; i++) {
+                let x = vertexData.positions[3 * i];
+                let z = vertexData.positions[3 * i + 2];
+                min = Math.min(min, x, z);
+                max = Math.max(max, x, z);
+            }
+            this.groundWidth = max - min;
+            vertexData.applyToMesh(this);
             this.material = Main.cellShadingMaterial;
         }
     }

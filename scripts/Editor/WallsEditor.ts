@@ -17,8 +17,7 @@ class WallsEditor {
         this._selectedWallNode = node;
         if (this._selectedWallNode) {
             this._selectedWallNodePanel = SpacePanel.CreateSpacePanel();
-            this._selectedWallNodePanel.style.top = "100px";
-            this._selectedWallNodePanel.style.left = "200px";
+            this._selectedWallNodePanel.setTarget(this.selectedWallNode);
             this._selectedWallNodePanel.addTitle1("WALLNODE");
             this._selectedWallNodePanel.addNumberInput(
                 "POS X",

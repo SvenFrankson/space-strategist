@@ -815,8 +815,7 @@ class WallsEditor {
         this._selectedWallNode = node;
         if (this._selectedWallNode) {
             this._selectedWallNodePanel = SpacePanel.CreateSpacePanel();
-            this._selectedWallNodePanel.style.top = "100px";
-            this._selectedWallNodePanel.style.left = "200px";
+            this._selectedWallNodePanel.setTarget(this.selectedWallNode);
             this._selectedWallNodePanel.addTitle1("WALLNODE");
             this._selectedWallNodePanel.addNumberInput("POS X", this._selectedWallNode.position2D.x, (v) => {
                 this.selectedWallNode.position2D.x = v;
@@ -1504,7 +1503,17 @@ class WallNode extends BABYLON.Mesh {
             for (let i = 0; i < this.dirs.length; i++) {
                 dirs.push(this.dirs[i].dir);
             }
-            WallNode.BuildVertexData(1, ...dirs).applyToMesh(this);
+            let vertexData = WallNode.BuildVertexData(1, ...dirs);
+            let min = Infinity;
+            let max = -Infinity;
+            for (let i = 0; i < vertexData.positions.length / 3; i++) {
+                let x = vertexData.positions[3 * i];
+                let z = vertexData.positions[3 * i + 2];
+                min = Math.min(min, x, z);
+                max = Math.max(max, x, z);
+            }
+            this.groundWidth = max - min;
+            vertexData.applyToMesh(this);
             this.material = Main.cellShadingMaterial;
         }
     }
@@ -1831,13 +1840,22 @@ class Spaceship extends BABYLON.TransformNode {
     }
 }
 class SpacePanel extends HTMLElement {
+    constructor() {
+        super();
+        this._update = () => {
+            let dView = this._target.position.subtract(this._target.getScene().activeCamera.position);
+            let n = BABYLON.Vector3.Cross(dView, new BABYLON.Vector3(0, 1, 0));
+            n.normalize();
+            n.scaleInPlace(-this._target.groundWidth * 0.5);
+            let screenPos = BABYLON.Vector3.Project(this._target.position.add(n), BABYLON.Matrix.Identity(), this._target.getScene().getTransformMatrix(), this._target.getScene().activeCamera.viewport.toGlobal(1, 1));
+            this.style.left = (screenPos.x * Main.Canvas.width) + "px";
+            this.style.top = (screenPos.y * Main.Canvas.height) + "px";
+        };
+    }
     static CreateSpacePanel() {
         let panel = document.createElement("space-panel");
         document.body.appendChild(panel);
         return panel;
-    }
-    constructor() {
-        super();
     }
     connectedCallback() {
         this._innerBorder = document.createElement("div");
@@ -1845,7 +1863,14 @@ class SpacePanel extends HTMLElement {
         this.appendChild(this._innerBorder);
     }
     dispose() {
+        if (this._target) {
+            this._target.getScene().onBeforeRenderObservable.removeCallback(this._update);
+        }
         document.body.removeChild(this);
+    }
+    setTarget(mesh) {
+        this._target = mesh;
+        this._target.getScene().onBeforeRenderObservable.add(this._update);
     }
     addTitle1(title) {
         let e = document.createElement("h1");
