@@ -11,7 +11,7 @@ class Main {
         Main.Canvas = document.getElementById(canvasElement);
         Main.Engine = new BABYLON.Engine(Main.Canvas, true);
     }
-    createScene() {
+    async createScene() {
         Main.Scene = new BABYLON.Scene(Main.Engine);
         Main.Light = new BABYLON.HemisphericLight("AmbientLight", new BABYLON.Vector3(1, 3, 2), Main.Scene);
         var camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 1, new BABYLON.Vector3(0, 0, 0), Main.Scene);
@@ -74,13 +74,19 @@ class Main {
         worker.position2D = start;
         worker.instantiate();
         let wallSystem = new WallSystem();
-        for (let i = 0; i < 8; i++) {
-            new WallNode(new BABYLON.Vector2(Math.cos(i * Math.PI * 2 / 8) * 16 + Math.random() * 3 - 1.5, -Math.sin(i * Math.PI * 2 / 8) * 16 + Math.random() * 3 - 1.5), wallSystem);
+        if (window.localStorage.getItem("scene-data")) {
+            let data = JSON.parse(window.localStorage.getItem("scene-data"));
+            Serializer.Deserialize(Main.Scene, data);
         }
-        for (let i = 0; i < 7; i++) {
-            wallSystem.walls.push(new Wall(wallSystem.nodes[i], wallSystem.nodes[i + 1]));
+        else {
+            for (let i = 0; i < 8; i++) {
+                new WallNode(new BABYLON.Vector2(Math.cos(i * Math.PI * 2 / 8) * 16 + Math.random() * 3 - 1.5, -Math.sin(i * Math.PI * 2 / 8) * 16 + Math.random() * 3 - 1.5), wallSystem);
+            }
+            for (let i = 0; i < 7; i++) {
+                new Wall(wallSystem.nodes[i], wallSystem.nodes[i + 1]);
+            }
         }
-        wallSystem.instantiate();
+        await wallSystem.instantiate();
         wallSystem.addToScene();
         /*
         let container1 = new Container("c1", new BABYLON.Vector2(1, -5), Math.PI * 0.5);
@@ -515,12 +521,11 @@ class Serializer {
     }
     static findWallSystems(scene) {
         let wallSystems = [];
-        for (let i = 0; i < scene.meshes.length; i++) {
-            let mesh = scene.meshes[i];
-            if (mesh instanceof WallNode) {
-                let wallSystem = mesh.wallSystem;
-                if (wallSystems.indexOf(wallSystem) === -1) {
-                    wallSystems.push(wallSystem);
+        for (let i = 0; i < scene.transformNodes.length; i++) {
+            let node = scene.transformNodes[i];
+            if (node instanceof WallSystem) {
+                if (wallSystems.indexOf(node) === -1) {
+                    wallSystems.push(node);
                 }
             }
         }
@@ -768,7 +773,7 @@ class SceneEditor {
                     otherNode = new WallNode(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z), this.wallSystem);
                 }
                 if (this._selectedElement instanceof WallNode && otherNode && (this._selectedElement !== otherNode)) {
-                    this.wallSystem.walls.push(new Wall(this._selectedElement, otherNode));
+                    new Wall(this._selectedElement, otherNode);
                 }
                 Main.Canvas.removeEventListener("pointerup", this.pointerUpSecond);
                 this.addEventListenerDrag();
@@ -1759,9 +1764,15 @@ class Wall extends Selectionable {
         if (indexNode1 > -1) {
             this.node1.walls.splice(indexNode1, 1);
         }
+        if (this.node1.walls.length === 0) {
+            this.node1.dispose(doNotRecurse, disposeMaterialAndTextures);
+        }
         let indexNode2 = this.node2.walls.indexOf(this);
         if (indexNode2 > -1) {
             this.node2.walls.splice(indexNode2, 1);
+        }
+        if (this.node2.walls.length === 0) {
+            this.node2.dispose(doNotRecurse, disposeMaterialAndTextures);
         }
         super.dispose(doNotRecurse, disposeMaterialAndTextures);
     }
@@ -1814,24 +1825,29 @@ class WallNodeData {
 }
 class WallSystemData {
     constructor() {
-        this.nodesDatas = [];
+        this.nodesData = [];
         this.wallsData = [];
     }
 }
-class WallSystem {
+class WallSystem extends BABYLON.TransformNode {
     constructor() {
+        super("wall-system");
         this.nodes = [];
         this.walls = [];
     }
     serialize() {
         let data = new WallSystemData();
         for (let i = 0; i < this.nodes.length; i++) {
-            data.nodesDatas.push(new WallNodeData(this.nodes[i].position2D));
+            data.nodesData.push(new WallNodeData(this.nodes[i].position2D));
         }
         for (let i = 0; i < this.walls.length; i++) {
             let wall = this.walls[i];
             data.wallsData.push(new WallData(this.nodes.indexOf(wall.node1), this.nodes.indexOf(wall.node2)));
         }
+        console.log("Serialize.");
+        console.log("NodesCount = " + data.nodesData.length);
+        console.log("WallsCount = " + data.wallsData.length);
+        console.log(data);
         return data;
     }
     deserialize(data) {
@@ -1841,15 +1857,16 @@ class WallSystem {
         while (this.walls.length > 0) {
             this.walls.pop().dispose();
         }
-        for (let i = 0; i < data.nodesDatas.length; i++) {
-            new WallNode(new BABYLON.Vector2(data.nodesDatas[i].position2D.x, data.nodesDatas[i].position2D.y), this);
+        for (let i = 0; i < data.nodesData.length; i++) {
+            new WallNode(new BABYLON.Vector2(data.nodesData[i].position2D.x, data.nodesData[i].position2D.y), this);
         }
         for (let i = 0; i < data.wallsData.length; i++) {
             let wallData = data.wallsData[i];
             new Wall(this.nodes[wallData.node1Index], this.nodes[wallData.node2Index]);
         }
-        console.log("Walls " + this.walls.length);
-        console.log("Nodes " + this.nodes.length);
+        console.log("Deserialize.");
+        console.log("NodesCount = " + data.nodesData.length);
+        console.log("WallsCount = " + data.wallsData.length);
     }
     async instantiate() {
         for (let i = 0; i < this.nodes.length; i++) {

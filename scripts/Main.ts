@@ -21,7 +21,7 @@ class Main {
         Main.Engine = new BABYLON.Engine(Main.Canvas, true);
     }
 
-    createScene(): void {
+    public async createScene(): Promise<void> {
         Main.Scene = new BABYLON.Scene(Main.Engine);
 
         Main.Light = new BABYLON.HemisphericLight("AmbientLight", new BABYLON.Vector3(1, 3, 2), Main.Scene);
@@ -92,24 +92,29 @@ class Main {
         worker.instantiate();
 
         let wallSystem = new WallSystem();
-        for (let i = 0; i < 8; i++) {
-            new WallNode(
-                new BABYLON.Vector2(
-                    Math.cos(i * Math.PI * 2 / 8) * 16 + Math.random() * 3 - 1.5,
-                    - Math.sin(i * Math.PI * 2 / 8) * 16 + Math.random() * 3 - 1.5
-                ),
-                wallSystem
-            )
+        if (window.localStorage.getItem("scene-data")) {
+            let data = JSON.parse(window.localStorage.getItem("scene-data"));
+            Serializer.Deserialize(Main.Scene, data);
         }
-        for (let i = 0; i < 7; i++) {
-            wallSystem.walls.push(
+        else {
+            for (let i = 0; i < 8; i++) {
+                new WallNode(
+                    new BABYLON.Vector2(
+                        Math.cos(i * Math.PI * 2 / 8) * 16 + Math.random() * 3 - 1.5,
+                        - Math.sin(i * Math.PI * 2 / 8) * 16 + Math.random() * 3 - 1.5
+                    ),
+                    wallSystem
+                )
+            }
+            for (let i = 0; i < 7; i++) {
                 new Wall(
                     wallSystem.nodes[i],
                     wallSystem.nodes[i + 1]
                 )
-            );
+            }
         }
-        wallSystem.instantiate();
+
+        await wallSystem.instantiate();
         wallSystem.addToScene();
 
         /*

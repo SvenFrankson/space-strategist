@@ -277,9 +277,15 @@ class Wall extends Selectionable {
         if (indexNode1 > -1) {
             this.node1.walls.splice(indexNode1, 1);
         }
+        if (this.node1.walls.length === 0) {
+            this.node1.dispose(doNotRecurse, disposeMaterialAndTextures);
+        }
         let indexNode2 = this.node2.walls.indexOf(this);
         if (indexNode2 > -1) {
             this.node2.walls.splice(indexNode2, 1);
+        }
+        if (this.node2.walls.length === 0) {
+            this.node2.dispose(doNotRecurse, disposeMaterialAndTextures);
         }
         super.dispose(doNotRecurse, disposeMaterialAndTextures);
     }
@@ -344,19 +350,23 @@ class WallNodeData {
 
 class WallSystemData {
 
-    public nodesDatas: WallNodeData[] = [];
+    public nodesData: WallNodeData[] = [];
     public wallsData: WallData[] = [];
 }
 
-class WallSystem {
+class WallSystem extends BABYLON.TransformNode {
 
     public nodes: WallNode[] = [];
     public walls: Wall[] = [];
 
+    constructor() {
+        super("wall-system");
+    }
+
     public serialize(): WallSystemData {
         let data = new WallSystemData();
         for (let i = 0; i < this.nodes.length; i++) {
-            data.nodesDatas.push(new WallNodeData(this.nodes[i].position2D));
+            data.nodesData.push(new WallNodeData(this.nodes[i].position2D));
         }
         for (let i = 0; i < this.walls.length; i++) {
             let wall = this.walls[i];
@@ -367,6 +377,10 @@ class WallSystem {
                 )
             );
         }
+        console.log("Serialize.");
+        console.log("NodesCount = " + data.nodesData.length);
+        console.log("WallsCount = " + data.wallsData.length);
+        console.log(data);
         return data;
     }
 
@@ -377,11 +391,11 @@ class WallSystem {
         while (this.walls.length > 0) {
             this.walls.pop().dispose();
         }
-        for (let i = 0; i < data.nodesDatas.length; i++) {
+        for (let i = 0; i < data.nodesData.length; i++) {
             new WallNode(
                 new BABYLON.Vector2(
-                    data.nodesDatas[i].position2D.x,
-                    data.nodesDatas[i].position2D.y
+                    data.nodesData[i].position2D.x,
+                    data.nodesData[i].position2D.y
                 ),
                 this
             );
@@ -393,8 +407,9 @@ class WallSystem {
                 this.nodes[wallData.node2Index]
             );
         }
-        console.log("Walls " + this.walls.length);
-        console.log("Nodes " + this.nodes.length);
+        console.log("Deserialize.");
+        console.log("NodesCount = " + data.nodesData.length);
+        console.log("WallsCount = " + data.wallsData.length);
     }
 
     public async instantiate(): Promise<void> {

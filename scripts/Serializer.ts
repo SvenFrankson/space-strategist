@@ -18,12 +18,11 @@ class Serializer {
 
     public static findWallSystems(scene: BABYLON.Scene): WallSystem[] {
         let wallSystems = [];
-        for (let i = 0; i < scene.meshes.length; i++) {
-            let mesh = scene.meshes[i];
-            if (mesh instanceof WallNode) {
-                let wallSystem = mesh.wallSystem;
-                if (wallSystems.indexOf(wallSystem) === -1) {
-                    wallSystems.push(wallSystem);
+        for (let i = 0; i < scene.transformNodes.length; i++) {
+            let node = scene.transformNodes[i];
+            if (node instanceof WallSystem) {
+                if (wallSystems.indexOf(node) === -1) {
+                    wallSystems.push(node);
                 }
             }
         }

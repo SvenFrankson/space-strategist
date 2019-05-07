@@ -216,7 +216,7 @@ class SceneEditor {
                 otherNode = new WallNode(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z), this.wallSystem);
             }
             if (this._selectedElement instanceof WallNode && otherNode && (this._selectedElement !== otherNode)) {
-                this.wallSystem.walls.push(new Wall(this._selectedElement, otherNode));
+                new Wall(this._selectedElement, otherNode)
             }
             Main.Canvas.removeEventListener("pointerup", this.pointerUpSecond);
             this.addEventListenerDrag();
