@@ -26,7 +26,7 @@ class Tank extends Prop {
         this.material = Main.cellShadingMaterial;
     }
 
-    public displayName(): string {
+    public elementName(): string {
         return "Tank";
     }
 }

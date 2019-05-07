@@ -94,66 +94,8 @@ class Main {
         let wallSystem = new WallSystem();
         if (window.localStorage.getItem("scene-data")) {
             let data = JSON.parse(window.localStorage.getItem("scene-data"));
-            Serializer.Deserialize(Main.Scene, data);
+            await Serializer.Deserialize(Main.Scene, data);
         }
-        else {
-            for (let i = 0; i < 8; i++) {
-                new WallNode(
-                    new BABYLON.Vector2(
-                        Math.cos(i * Math.PI * 2 / 8) * 16 + Math.random() * 3 - 1.5,
-                        - Math.sin(i * Math.PI * 2 / 8) * 16 + Math.random() * 3 - 1.5
-                    ),
-                    wallSystem
-                )
-            }
-            for (let i = 0; i < 7; i++) {
-                new Wall(
-                    wallSystem.nodes[i],
-                    wallSystem.nodes[i + 1]
-                )
-            }
-        }
-
-        await wallSystem.instantiate();
-        wallSystem.addToScene();
-
-        /*
-        let container1 = new Container("c1", new BABYLON.Vector2(1, -5), Math.PI * 0.5);
-        container1.instantiate();
-        let container2 = new Container("c2", new BABYLON.Vector2(3, 0), Math.PI * 0.5);
-        container2.instantiate();
-        let container3 = new Container("c3", new BABYLON.Vector2(-2, 0), Math.PI * 0.4);
-        container3.instantiate();
-        let container4 = new Container("c4", new BABYLON.Vector2(-2, 5), Math.PI * 0.5);
-        container4.instantiate();
-        */
-        let container1 = new Container("c1", new BABYLON.Vector2(-3, -2), 0);
-        container1.addToScene();
-        container1.instantiate();
-
-        let container2 = new Container("c1", new BABYLON.Vector2(-1.5, 1.75), Math.PI * 0.5);
-        container2.addToScene();
-        container2.instantiate();
-
-        let container21 = new Tank("c1", new BABYLON.Vector2(-6, 1.75), Math.PI * 0.8);
-        container21.addToScene();
-        container21.instantiate();
-        
-        let container3 = new Container("c1", new BABYLON.Vector2(1.5, - 1.75), Math.PI * 0.5);
-        container3.addToScene();
-        container3.instantiate();
-        
-        let container4 = new Container("c1", new BABYLON.Vector2(3, 2), 0);
-        container4.addToScene();
-        container4.instantiate();
-        
-        let container41 = new Tank("c1", new BABYLON.Vector2(6, 2), 0);
-        container41.addToScene();
-        container41.instantiate();
-        
-        let container5 = new Container("c1", new BABYLON.Vector2(1.5, 5.25), Math.PI * 0.5);
-        container5.addToScene();
-        container5.instantiate();
 
         let navGraph = NavGraphManager.GetForRadius(0);
         navGraph.update();

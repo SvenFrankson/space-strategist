@@ -7,7 +7,7 @@ class PropEditor {
     public static CreatePanel(prop: Prop, onDisposeCallback?: () => void): SpacePanel {
         let panel = SpacePanel.CreateSpacePanel();
         panel.setTarget(prop);
-        panel.addTitle1(prop.displayName().toLocaleUpperCase());
+        panel.addTitle1(prop.elementName().toLocaleUpperCase());
         panel.addTitle2(prop.name.toLocaleUpperCase());
         panel.addNumberInput(
             "POS X",
