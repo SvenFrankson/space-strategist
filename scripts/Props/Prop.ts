@@ -47,10 +47,10 @@ abstract class Prop extends Draggable {
     }
 
     public static Deserialize(data: PropData): Prop {
-        if(data.elementName = "Container") {
+        if(data.elementName === "Container") {
             return new Container(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
         }
-        if(data.elementName = "Tank") {
+        if(data.elementName === "Tank") {
             return new Tank(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
         }
         return undefined;

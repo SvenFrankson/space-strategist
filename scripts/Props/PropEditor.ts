@@ -23,6 +23,13 @@ class PropEditor {
                 prop.position2D.y = v;
             }
         );
+        panel.addNumberInput(
+            "ROTATION",
+            prop.rotation2D,
+            (v) => {
+                prop.rotation2D = v / 180 * Math.PI;
+            }
+        );
         panel.addMediumButtons(
             "DELETE",
             () => {

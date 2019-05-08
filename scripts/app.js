@@ -639,12 +639,12 @@ class SceneEditor {
         this.scene = scene;
         this.createContainer = () => {
             this.selectedElement = undefined;
-            this._newProp = new Container("container", BABYLON.Vector2.Zero(), 0);
+            this._newProp = new Container("", BABYLON.Vector2.Zero(), 0);
             this._newProp.instantiate();
         };
         this.createTank = () => {
             this.selectedElement = undefined;
-            this._newProp = new Tank("tank", BABYLON.Vector2.Zero(), 0);
+            this._newProp = new Tank("", BABYLON.Vector2.Zero(), 0);
             this._newProp.instantiate();
         };
         this.createNode = () => {
@@ -1444,10 +1444,10 @@ class Prop extends Draggable {
         return data;
     }
     static Deserialize(data) {
-        if (data.elementName = "Container") {
+        if (data.elementName === "Container") {
             return new Container(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
         }
-        if (data.elementName = "Tank") {
+        if (data.elementName === "Tank") {
             return new Tank(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
         }
         return undefined;
@@ -1460,6 +1460,10 @@ class Prop extends Draggable {
 class Container extends Prop {
     constructor(name, position2D, rotation2D) {
         super(name, position2D, rotation2D);
+        if (this.name === "") {
+            let containerCount = this.getScene().meshes.filter((m) => { return m instanceof Container; }).length;
+            this.name = "container-" + containerCount;
+        }
         this.obstacle = Obstacle.CreateRect(this.position2D.x, this.position2D.y, 2, 4, this.rotation2D);
         this.obstacle.name = name + "-obstacle";
     }
@@ -1498,6 +1502,9 @@ class PropEditor {
         panel.addNumberInput("POS Y", prop.position2D.y, (v) => {
             prop.position2D.y = v;
         });
+        panel.addNumberInput("ROTATION", prop.rotation2D, (v) => {
+            prop.rotation2D = v / 180 * Math.PI;
+        });
         panel.addMediumButtons("DELETE", () => {
             prop.dispose();
             if (onDisposeCallback) {
@@ -1512,6 +1519,10 @@ class PropEditor {
 class Tank extends Prop {
     constructor(name, position2D, rotation2D) {
         super(name, position2D, rotation2D);
+        if (this.name === "") {
+            let tankCount = this.getScene().meshes.filter((m) => { return m instanceof Tank; }).length;
+            this.name = "tank-" + tankCount;
+        }
         this.obstacle = Obstacle.CreateHexagon(this.position2D.x, this.position2D.y, 1.5);
         this.obstacle.name = name + "-obstacle";
     }

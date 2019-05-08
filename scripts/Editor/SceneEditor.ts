@@ -70,13 +70,13 @@ class SceneEditor {
 
     private createContainer = () => {
         this.selectedElement = undefined;
-        this._newProp = new Container("container", BABYLON.Vector2.Zero(), 0);
+        this._newProp = new Container("", BABYLON.Vector2.Zero(), 0);
         this._newProp.instantiate();
     }
 
     private createTank = () => {
         this.selectedElement = undefined;
-        this._newProp = new Tank("tank", BABYLON.Vector2.Zero(), 0);
+        this._newProp = new Tank("", BABYLON.Vector2.Zero(), 0);
         this._newProp.instantiate();
     }
 

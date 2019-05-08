@@ -2,6 +2,10 @@ class Tank extends Prop {
 
     constructor(name: string, position2D: BABYLON.Vector2, rotation2D: number) {
         super(name, position2D, rotation2D);
+        if (this.name === "") {
+            let tankCount = this.getScene().meshes.filter((m) => { return m instanceof Tank; }).length;
+            this.name = "tank-" + tankCount;
+        }
         this.obstacle = Obstacle.CreateHexagon(this.position2D.x, this.position2D.y, 1.5);
         this.obstacle.name = name + "-obstacle";
     }
