@@ -2045,10 +2045,17 @@ class SpacePanel extends HTMLElement {
         this._target.getScene().onBeforeRenderObservable.add(this._update);
     }
     addTitle1(title) {
+        let titleLine = document.createElement("div");
+        titleLine.classList.add("space-title-1-line");
         let e = document.createElement("h1");
         e.classList.add("space-title-1");
         e.textContent = title;
-        this._innerBorder.appendChild(e);
+        titleLine.appendChild(e);
+        let eShadow = document.createElement("div");
+        eShadow.classList.add("space-title-1-shadow");
+        eShadow.textContent = title;
+        titleLine.appendChild(eShadow);
+        this._innerBorder.appendChild(titleLine);
     }
     addTitle2(title) {
         let e = document.createElement("h2");

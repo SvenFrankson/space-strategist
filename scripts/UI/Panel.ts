@@ -86,10 +86,17 @@ class SpacePanel extends HTMLElement {
     }
 
     public addTitle1(title: string): void {
+        let titleLine = document.createElement("div");
+        titleLine.classList.add("space-title-1-line");
         let e = document.createElement("h1");
         e.classList.add("space-title-1");
         e.textContent = title;
-        this._innerBorder.appendChild(e);
+        titleLine.appendChild(e);
+        let eShadow = document.createElement("div");
+        eShadow.classList.add("space-title-1-shadow");
+        eShadow.textContent = title;
+        titleLine.appendChild(eShadow);
+        this._innerBorder.appendChild(titleLine);
     }
 
     public addTitle2(title: string): void {
