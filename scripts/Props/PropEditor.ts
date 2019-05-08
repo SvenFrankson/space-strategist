@@ -4,7 +4,11 @@ class PropEditor {
 
     }
 
-    public static CreatePanel(prop: Prop, onDisposeCallback?: () => void): SpacePanel {
+    public static CreatePanel(
+        prop: Prop,
+        onDisposeCallback?: () => void,
+        onCloneCallback?: (clone: Prop) => void
+    ): SpacePanel {
         let panel = SpacePanel.CreateSpacePanel();
         panel.setTarget(prop);
         panel.addTitle1(prop.elementName().toLocaleUpperCase());
@@ -31,6 +35,21 @@ class PropEditor {
             }
         );
         panel.addMediumButtons(
+            "CLONE",
+            () => {
+                let data = prop.serialize();
+                let splitName = data.name.split("-");
+                if (splitName.length === 2) {
+                    let counter = parseInt(splitName[1]);
+                    if (isFinite(counter)) {
+                        data.name = splitName[0] + "-" + (counter + 1);
+                    }
+                }
+                let clone = Prop.Deserialize(data);
+                if (onCloneCallback) {
+                    onCloneCallback(clone);
+                }
+            },
             "DELETE",
             () => {
                 prop.dispose();

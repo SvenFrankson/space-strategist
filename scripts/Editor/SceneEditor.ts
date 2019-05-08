@@ -38,6 +38,11 @@ class SceneEditor {
                     this.selectedElement,
                     () => {
                         this.selectedElement = undefined;
+                    },
+                    (prop) => {
+                        this.selectedElement = undefined;
+                        this._newProp = prop;
+                        this._newProp.instantiate();
                     }
                 );
             }

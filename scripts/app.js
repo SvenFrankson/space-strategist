@@ -781,6 +781,10 @@ class SceneEditor {
             else if (this.selectedElement instanceof Prop) {
                 this._selectedElementPanel = PropEditor.CreatePanel(this.selectedElement, () => {
                     this.selectedElement = undefined;
+                }, (prop) => {
+                    this.selectedElement = undefined;
+                    this._newProp = prop;
+                    this._newProp.instantiate();
                 });
             }
         }
@@ -1491,7 +1495,7 @@ class Container extends Prop {
 class PropEditor {
     static Select(prop) {
     }
-    static CreatePanel(prop, onDisposeCallback) {
+    static CreatePanel(prop, onDisposeCallback, onCloneCallback) {
         let panel = SpacePanel.CreateSpacePanel();
         panel.setTarget(prop);
         panel.addTitle1(prop.elementName().toLocaleUpperCase());
@@ -1505,7 +1509,20 @@ class PropEditor {
         panel.addNumberInput("ROTATION", prop.rotation2D, (v) => {
             prop.rotation2D = v / 180 * Math.PI;
         });
-        panel.addMediumButtons("DELETE", () => {
+        panel.addMediumButtons("CLONE", () => {
+            let data = prop.serialize();
+            let splitName = data.name.split("-");
+            if (splitName.length === 2) {
+                let counter = parseInt(splitName[1]);
+                if (isFinite(counter)) {
+                    data.name = splitName[0] + "-" + (counter + 1);
+                }
+            }
+            let clone = Prop.Deserialize(data);
+            if (onCloneCallback) {
+                onCloneCallback(clone);
+            }
+        }, "DELETE", () => {
             prop.dispose();
             if (onDisposeCallback) {
                 onDisposeCallback();
