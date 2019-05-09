@@ -78,13 +78,14 @@ class Main {
             let data = JSON.parse(window.localStorage.getItem("scene-data"));
             await Serializer.Deserialize(Main.Scene, data);
         }
-        let navGraph = NavGraphManager.GetForRadius(0);
+        let navGraph = NavGraphManager.GetForRadius(0.5);
         navGraph.update();
         navGraph.computePathFromTo(start, end);
-        navGraph.display(Main.Scene);
         worker.currentPath = navGraph.path;
         let sceneEditor = new SceneEditor(wallSystem, Main.Scene);
         sceneEditor.enable();
+        let navGraphConsole = new NavGraphConsole(Main.Scene);
+        navGraphConsole.enable();
         document.getElementById("save-scene").addEventListener("click", () => {
             let data = Serializer.Serialize(Main.Scene);
             window.localStorage.setItem("scene-data", JSON.stringify(data));
@@ -958,7 +959,7 @@ class SpaceshipMaterial {
 }
 class NavGraph {
     constructor() {
-        this.offset = 1;
+        this.offset = 0.5;
         this.obstacles = [];
     }
     setStart(s) {
@@ -1150,23 +1151,35 @@ class NavGraph {
         this.points.pop();
         return this.path;
     }
+    toggleDisplay(scene) {
+        if (this._devLineMeshes) {
+            this.hide();
+        }
+        else {
+            this.display(scene);
+        }
+    }
     display(scene) {
+        this.hide();
+        this._devLineMeshes = new BABYLON.TransformNode("NavGraphDevLinesMeshes", scene);
         for (let i = 0; i < this.points.length; i++) {
             let p = this.points[i];
             BABYLON.MeshBuilder.CreateSphere("p-" + i, { diameter: 0.1 }, scene).position.copyFromFloats(p.position.x, -0.2, p.position.y);
             for (let j = 0; j < p.links.length; j++) {
                 let p2 = p.links[j].other(p);
                 if (p.index < p2.index) {
-                    BABYLON.MeshBuilder.CreateLines("line", {
+                    let devLinesMesh = BABYLON.MeshBuilder.CreateLines("line", {
                         points: [
-                            new BABYLON.Vector3(p.position.x, -0.1, p.position.y),
-                            new BABYLON.Vector3(p2.position.x, -0.1, p2.position.y)
+                            new BABYLON.Vector3(p.position.x, 0.1, p.position.y),
+                            new BABYLON.Vector3(p2.position.x, 0.1, p2.position.y)
                         ],
                         colors: [
-                            new BABYLON.Color4(0.5, 0.5, 0.5, 1),
-                            new BABYLON.Color4(0.5, 0.5, 0.5, 1)
+                            new BABYLON.Color4(0, 0, 1, 1),
+                            new BABYLON.Color4(0, 0, 1, 1)
                         ]
                     }, scene);
+                    devLinesMesh.renderingGroupId = 1;
+                    devLinesMesh.parent = this._devLineMeshes;
                 }
             }
         }
@@ -1175,11 +1188,52 @@ class NavGraph {
             let colors = [];
             for (let i = 0; i < this.path.length; i++) {
                 let p = this.path[i];
-                points.push(new BABYLON.Vector3(p.x, 0.1, p.y));
-                colors.push(new BABYLON.Color4(1, 0, 0, 1));
+                points.push(new BABYLON.Vector3(p.x, 0.3, p.y));
+                colors.push(new BABYLON.Color4(0, 1, 0, 1));
             }
-            BABYLON.MeshBuilder.CreateLines("shape", { points: points, colors: colors }, scene);
+            let devLinesMesh = BABYLON.MeshBuilder.CreateLines("shape", { points: points, colors: colors }, scene);
+            devLinesMesh.renderingGroupId = 1;
+            devLinesMesh.parent = this._devLineMeshes;
         }
+    }
+    hide() {
+        if (this._devLineMeshes) {
+            this._devLineMeshes.dispose();
+            this._devLineMeshes = undefined;
+        }
+    }
+}
+class NavGraphConsole {
+    constructor(scene) {
+        this.scene = scene;
+        this._offset = 0.5;
+        this._navGraph = NavGraphManager.GetForRadius(this._offset);
+    }
+    enable() {
+        this._panel = SpacePanel.CreateSpacePanel();
+        this._panel.addTitle1("NAVGRAPH");
+        this._panel.addTitle2("dev console");
+        this._panel.addNumberInput("OFFSET", this._offset, (v) => {
+            this._offset = v;
+            this._navGraph.hide();
+            this._navGraph = NavGraphManager.GetForRadius(this._offset);
+        });
+        this._panel.addLargeButton("Toggle Obstacles", () => {
+            this._navGraph.update();
+            for (let i = 0; i < this._navGraph.obstacles.length; i++) {
+                let o = this._navGraph.obstacles[i];
+                o.toggleDisplay(this.scene);
+            }
+        });
+        this._panel.addLargeButton("Toggle NavGraph", () => {
+            this._navGraph.update();
+            this._navGraph.toggleDisplay(this.scene);
+        });
+        this._panel.style.left = "10px";
+        this._panel.style.bottom = "10px";
+    }
+    disable() {
+        this._panel.dispose();
     }
 }
 class NavGraphManager {
@@ -1188,7 +1242,7 @@ class NavGraphManager {
         this._navGraphs = new Map();
         this._navGraphZero = new NavGraph();
         this._navGraphZero.offset = 0;
-        this._navGraphs.set(0, new NavGraph());
+        this._navGraphs.set(0, this._navGraphZero);
     }
     static GetForRadius(radius) {
         return NavGraphManager.Instance.getForOffset(radius);
@@ -1344,15 +1398,34 @@ class Obstacle {
     computePath(offset = 1) {
         return this.shape.getPath(offset);
     }
+    toggleDisplay(scene) {
+        if (this._devLineMesh) {
+            this.hide();
+        }
+        else {
+            this.display(scene);
+        }
+    }
     display(scene) {
+        this.hide();
         let path = this.shape.getPath();
         let points = [];
+        let colors = [];
         for (let i = 0; i < path.length; i++) {
             let p = path[i];
-            points.push(new BABYLON.Vector3(p.x, 0, p.y));
+            points.push(new BABYLON.Vector3(p.x, 0.2, p.y));
+            colors.push(new BABYLON.Color4(1, 0, 0, 1));
         }
         points.push(points[0]);
-        return BABYLON.MeshBuilder.CreateLines("shape", { points: points }, scene);
+        colors.push(new BABYLON.Color4(1, 0, 0, 1));
+        this._devLineMesh = BABYLON.MeshBuilder.CreateLines("shape", { points: points, colors: colors }, scene);
+        this._devLineMesh.renderingGroupId = 1;
+    }
+    hide() {
+        if (this._devLineMesh) {
+            this._devLineMesh.dispose();
+            this._devLineMesh = undefined;
+        }
     }
 }
 class Shape {
@@ -2011,6 +2084,9 @@ class SpacePanel extends HTMLElement {
     constructor() {
         super();
         this._update = () => {
+            if (!this._target) {
+                return;
+            }
             let dView = this._target.position.subtract(this._target.getScene().activeCamera.position);
             let n = BABYLON.Vector3.Cross(dView, new BABYLON.Vector3(0, 1, 0));
             n.normalize();
@@ -2089,6 +2165,7 @@ class SpacePanel extends HTMLElement {
         let inputElement = document.createElement("input");
         inputElement.classList.add("space-input", "space-input-number");
         inputElement.setAttribute("type", "number");
+        inputElement.setAttribute("step", "0.01");
         inputElement.value = value.toFixed(precision);
         inputElement.addEventListener("input", (ev) => {
             if (ev.srcElement instanceof HTMLInputElement) {
@@ -2118,6 +2195,20 @@ class SpacePanel extends HTMLElement {
             if (ev.srcElement instanceof HTMLInputElement) {
                 onInputCallback(ev.srcElement.value);
             }
+        });
+        lineElement.appendChild(inputElement);
+        this._innerBorder.appendChild(lineElement);
+        return inputElement;
+    }
+    addLargeButton(value, onClickCallback) {
+        let lineElement = document.createElement("div");
+        lineElement.classList.add("space-panel-line");
+        let inputElement = document.createElement("input");
+        inputElement.classList.add("space-button-lg");
+        inputElement.setAttribute("type", "button");
+        inputElement.value = value;
+        inputElement.addEventListener("click", () => {
+            onClickCallback();
         });
         lineElement.appendChild(inputElement);
         this._innerBorder.appendChild(lineElement);

@@ -39,14 +39,34 @@ class Obstacle {
         return this.shape.getPath(offset);
     }
 
-    public display(scene: BABYLON.Scene): BABYLON.LinesMesh {
+    private _devLineMesh: BABYLON.LinesMesh;
+    public toggleDisplay(scene: BABYLON.Scene): void {
+        if (this._devLineMesh) {
+            this.hide();
+        }
+        else {
+            this.display(scene);
+        }
+    }
+    public display(scene: BABYLON.Scene): void {
+        this.hide();
         let path = this.shape.getPath();
         let points: BABYLON.Vector3[] = [];
+        let colors: BABYLON.Color4[] = [];
         for (let i = 0; i < path.length; i++) {
             let p = path[i];
-            points.push(new BABYLON.Vector3(p.x, 0, p.y));
+            points.push(new BABYLON.Vector3(p.x, 0.2, p.y));
+            colors.push(new BABYLON.Color4(1, 0, 0, 1));
         }
         points.push(points[0]);
-        return BABYLON.MeshBuilder.CreateLines("shape", { points: points }, scene);
+        colors.push(new BABYLON.Color4(1, 0, 0, 1));
+        this._devLineMesh = BABYLON.MeshBuilder.CreateLines("shape", { points: points, colors: colors }, scene);
+        this._devLineMesh.renderingGroupId = 1;
+    }
+    public hide(): void {
+        if (this._devLineMesh) {
+            this._devLineMesh.dispose();
+            this._devLineMesh = undefined;
+        }
     }
 }

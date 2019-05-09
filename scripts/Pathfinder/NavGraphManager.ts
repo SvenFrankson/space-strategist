@@ -10,7 +10,7 @@ class NavGraphManager {
         this._navGraphs = new Map<number, NavGraph>();
         this._navGraphZero = new NavGraph();
         this._navGraphZero.offset = 0;
-        this._navGraphs.set(0, new NavGraph());
+        this._navGraphs.set(0, this._navGraphZero);
     }
 
     public static GetForRadius(radius: number): NavGraph {

@@ -97,15 +97,17 @@ class Main {
             await Serializer.Deserialize(Main.Scene, data);
         }
 
-        let navGraph = NavGraphManager.GetForRadius(0);
+        let navGraph = NavGraphManager.GetForRadius(0.5);
         navGraph.update();
         navGraph.computePathFromTo(start, end);
-        navGraph.display(Main.Scene);
 
         worker.currentPath = navGraph.path;
 
         let sceneEditor = new SceneEditor(wallSystem, Main.Scene);
         sceneEditor.enable();
+
+        let navGraphConsole = new NavGraphConsole(Main.Scene);
+        navGraphConsole.enable();
 
         document.getElementById("save-scene").addEventListener("click", () => {
             let data = Serializer.Serialize(Main.Scene);

@@ -1,6 +1,6 @@
 class NavGraph {
 
-    public offset: number = 1;
+    public offset: number = 0.5;
     public path: BABYLON.Vector2[];
     public start: NavGraphPoint;
     public end: NavGraphPoint;
@@ -208,28 +208,40 @@ class NavGraph {
 
         return this.path;
     }
-
+    private _devLineMeshes: BABYLON.TransformNode;
+    public toggleDisplay(scene: BABYLON.Scene): void {
+        if (this._devLineMeshes) {
+            this.hide();
+        }
+        else {
+            this.display(scene);
+        }
+    }
     public display(scene: BABYLON.Scene): void {
+        this.hide();
+        this._devLineMeshes = new BABYLON.TransformNode("NavGraphDevLinesMeshes", scene);
         for (let i = 0; i < this.points.length; i++) {
             let p = this.points[i];
             BABYLON.MeshBuilder.CreateSphere("p-" + i, { diameter: 0.1 }, scene).position.copyFromFloats(p.position.x, - 0.2, p.position.y);
             for (let j = 0; j < p.links.length; j++) {
                 let p2 = p.links[j].other(p);
                 if (p.index < p2.index) {
-                    BABYLON.MeshBuilder.CreateLines(
+                    let devLinesMesh = BABYLON.MeshBuilder.CreateLines(
                         "line",
                         { 
                             points: [
-                                new BABYLON.Vector3(p.position.x, - 0.1, p.position.y),
-                                new BABYLON.Vector3(p2.position.x, - 0.1, p2.position.y)
+                                new BABYLON.Vector3(p.position.x, 0.1, p.position.y),
+                                new BABYLON.Vector3(p2.position.x, 0.1, p2.position.y)
                             ],
                             colors: [
-                                new BABYLON.Color4(0.5, 0.5, 0.5, 1),
-                                new BABYLON.Color4(0.5, 0.5, 0.5, 1)
+                                new BABYLON.Color4(0, 0, 1, 1),
+                                new BABYLON.Color4(0, 0, 1, 1)
                             ]
                         },
                         scene
                     );
+                    devLinesMesh.renderingGroupId = 1;
+                    devLinesMesh.parent = this._devLineMeshes;
                 }
             }
         }
@@ -238,10 +250,18 @@ class NavGraph {
             let colors: BABYLON.Color4[] = [];
             for (let i = 0; i < this.path.length; i++) {
                 let p = this.path[i];
-                points.push(new BABYLON.Vector3(p.x, 0.1, p.y));
-                colors.push(new BABYLON.Color4(1, 0, 0, 1));
+                points.push(new BABYLON.Vector3(p.x, 0.3, p.y));
+                colors.push(new BABYLON.Color4(0, 1, 0, 1));
             }
-            BABYLON.MeshBuilder.CreateLines("shape", { points: points, colors: colors }, scene);
+            let devLinesMesh = BABYLON.MeshBuilder.CreateLines("shape", { points: points, colors: colors }, scene);
+            devLinesMesh.renderingGroupId = 1;
+            devLinesMesh.parent = this._devLineMeshes;
+        }
+    }
+    public hide(): void {
+        if (this._devLineMeshes) {
+            this._devLineMeshes.dispose();
+            this._devLineMeshes = undefined;
         }
     }
 }

@@ -126,6 +126,19 @@ space-panel-label {
     text-align: center;
 }
 
+.space-button-lg {
+    display: inline-block;
+    width: 90%;
+    padding: 5px;
+    margin-left: 4%;
+    margin-right: 4%;
+    margin-top: 5px;
+    margin-top: 5px;
+    border: solid 1px white;
+    background-color: rgba(40, 66, 57, 0.8);
+    border-radius: 2px;
+}
+
 .space-button {
     display: inline-block;
     width: 40%;

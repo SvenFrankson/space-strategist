@@ -14,8 +14,8 @@ Exporter version: 5.4.2, Blender version: 2.78 (sub 0)
 		num uvs            :  0
 		num uvs2           :  0
 		num colors         :  176
-		num indices        :  108
+		num indices        :  102
 ========= Writing of scene file started =========
 ========= Writing of scene file completed =========
 ========= end of processing =========
-elapsed time:  0 min, 0.026 secs
+elapsed time:  0 min, 0.097 secs

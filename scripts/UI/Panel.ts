@@ -57,6 +57,9 @@ class SpacePanel extends HTMLElement {
     }
 
     private _update = () => {
+        if (!this._target) {
+            return;
+        }
         let dView = this._target.position.subtract(this._target.getScene().activeCamera.position);
         let n = BABYLON.Vector3.Cross(dView, new BABYLON.Vector3(0, 1, 0));
         n.normalize();
@@ -115,6 +118,7 @@ class SpacePanel extends HTMLElement {
         let inputElement = document.createElement("input");
         inputElement.classList.add("space-input", "space-input-number");
         inputElement.setAttribute("type", "number");
+        inputElement.setAttribute("step", "0.01");
         inputElement.value = value.toFixed(precision);
         inputElement.addEventListener(
             "input",
@@ -150,6 +154,24 @@ class SpacePanel extends HTMLElement {
                 if (ev.srcElement instanceof HTMLInputElement) {
                     onInputCallback(ev.srcElement.value);
                 }
+            }
+        );
+        lineElement.appendChild(inputElement);
+        this._innerBorder.appendChild(lineElement);
+        return inputElement;
+    }
+
+    public addLargeButton(value: string, onClickCallback: () => void): HTMLInputElement {
+        let lineElement = document.createElement("div");
+        lineElement.classList.add("space-panel-line");
+        let inputElement = document.createElement("input");
+        inputElement.classList.add("space-button-lg");
+        inputElement.setAttribute("type", "button");
+        inputElement.value = value;
+        inputElement.addEventListener(
+            "click",
+            () => {
+                onClickCallback();
             }
         );
         lineElement.appendChild(inputElement);
