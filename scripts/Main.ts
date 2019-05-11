@@ -97,7 +97,7 @@ class Main {
             await Serializer.Deserialize(Main.Scene, data);
         }
 
-        let navGraph = NavGraphManager.GetForRadius(0.5);
+        let navGraph = NavGraphManager.GetForRadius(1);
         navGraph.update();
         navGraph.computePathFromTo(start, end);
 

@@ -1,6 +1,6 @@
 class NavGraphConsole {
 
-    private _offset: number = 0.5;
+    private _offset: number = 1;
     private _panel: SpacePanel;
     private _navGraph: NavGraph;
 
@@ -21,6 +21,35 @@ class NavGraphConsole {
                 this._navGraph = NavGraphManager.GetForRadius(this._offset);
             }
         );
+        this._panel.addCheckBox(
+            "OBSTACLES",
+            false,
+            (v) => {
+                this._navGraph.update();
+                for (let i = 0; i < this._navGraph.obstacles.length; i++) {
+                    let o = this._navGraph.obstacles[i];
+                    if (v) {
+                        o.display(this.scene);
+                    }
+                    else {
+                        o.hide();
+                    }
+                }
+            }
+        )
+        this._panel.addCheckBox(
+            "NAVGRAPH",
+            false,
+            (v) => {
+                this._navGraph.update();
+                if (v) {
+                    this._navGraph.display(this.scene);
+                }
+                else {
+                    this._navGraph.hide();
+                }
+            }
+        )
         this._panel.addLargeButton(
             "Toggle Obstacles",
             () => {

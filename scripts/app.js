@@ -78,7 +78,7 @@ class Main {
             let data = JSON.parse(window.localStorage.getItem("scene-data"));
             await Serializer.Deserialize(Main.Scene, data);
         }
-        let navGraph = NavGraphManager.GetForRadius(0.5);
+        let navGraph = NavGraphManager.GetForRadius(1);
         navGraph.update();
         navGraph.computePathFromTo(start, end);
         worker.currentPath = navGraph.path;
@@ -1206,7 +1206,7 @@ class NavGraph {
 class NavGraphConsole {
     constructor(scene) {
         this.scene = scene;
-        this._offset = 0.5;
+        this._offset = 1;
         this._navGraph = NavGraphManager.GetForRadius(this._offset);
     }
     enable() {
@@ -1217,6 +1217,27 @@ class NavGraphConsole {
             this._offset = v;
             this._navGraph.hide();
             this._navGraph = NavGraphManager.GetForRadius(this._offset);
+        });
+        this._panel.addCheckBox("OBSTACLES", false, (v) => {
+            this._navGraph.update();
+            for (let i = 0; i < this._navGraph.obstacles.length; i++) {
+                let o = this._navGraph.obstacles[i];
+                if (v) {
+                    o.display(this.scene);
+                }
+                else {
+                    o.hide();
+                }
+            }
+        });
+        this._panel.addCheckBox("NAVGRAPH", false, (v) => {
+            this._navGraph.update();
+            if (v) {
+                this._navGraph.display(this.scene);
+            }
+            else {
+                this._navGraph.hide();
+            }
         });
         this._panel.addLargeButton("Toggle Obstacles", () => {
             this._navGraph.update();
@@ -2156,7 +2177,7 @@ class SpacePanel extends HTMLElement {
         e.textContent = title;
         this._innerBorder.appendChild(e);
     }
-    addNumberInput(label, value, onInputCallback, precision = 2) {
+    addNumberInput(label, value, onInputCallback, precision = 1) {
         let lineElement = document.createElement("div");
         lineElement.classList.add("space-panel-line");
         let labelElement = document.createElement("space-panel-label");
@@ -2165,8 +2186,8 @@ class SpacePanel extends HTMLElement {
         let inputElement = document.createElement("input");
         inputElement.classList.add("space-input", "space-input-number");
         inputElement.setAttribute("type", "number");
-        inputElement.setAttribute("step", "0.01");
-        inputElement.value = value.toFixed(precision);
+        let step = 1 / (Math.pow(2, Math.round(precision)));
+        inputElement.setAttribute("step", step.toString());
         inputElement.addEventListener("input", (ev) => {
             if (ev.srcElement instanceof HTMLInputElement) {
                 let v = parseFloat(ev.srcElement.value);
@@ -2239,6 +2260,24 @@ class SpacePanel extends HTMLElement {
         }
         this._innerBorder.appendChild(lineElement);
         return inputs;
+    }
+    addCheckBox(label, value, onToggleCallback) {
+        let lineElement = document.createElement("div");
+        lineElement.classList.add("space-panel-line");
+        let labelElement = document.createElement("space-panel-label");
+        labelElement.textContent = label;
+        lineElement.appendChild(labelElement);
+        let inputElement = document.createElement("input");
+        inputElement.classList.add("space-input", "space-input-toggle");
+        inputElement.setAttribute("type", "checkbox");
+        inputElement.addEventListener("input", (ev) => {
+            if (ev.srcElement instanceof HTMLInputElement) {
+                onToggleCallback(ev.srcElement.checked);
+            }
+        });
+        lineElement.appendChild(inputElement);
+        this._innerBorder.appendChild(lineElement);
+        return inputElement;
     }
 }
 window.customElements.define("space-panel", SpacePanel);

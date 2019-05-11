@@ -109,7 +109,7 @@ class SpacePanel extends HTMLElement {
         this._innerBorder.appendChild(e);
     }
 
-    public addNumberInput(label: string, value: number, onInputCallback: (v: number) => void, precision: number = 2): HTMLInputElement {
+    public addNumberInput(label: string, value: number, onInputCallback: (v: number) => void, precision: number = 1): HTMLInputElement {
         let lineElement = document.createElement("div");
         lineElement.classList.add("space-panel-line");
         let labelElement = document.createElement("space-panel-label");
@@ -118,8 +118,8 @@ class SpacePanel extends HTMLElement {
         let inputElement = document.createElement("input");
         inputElement.classList.add("space-input", "space-input-number");
         inputElement.setAttribute("type", "number");
-        inputElement.setAttribute("step", "0.01");
-        inputElement.value = value.toFixed(precision);
+        let step = 1 / (Math.pow(2, Math.round(precision)));
+        inputElement.setAttribute("step", step.toString());
         inputElement.addEventListener(
             "input",
             (ev) => {
@@ -210,6 +210,28 @@ class SpacePanel extends HTMLElement {
         }
         this._innerBorder.appendChild(lineElement);
         return inputs;
+    }
+
+    public addCheckBox(label: string, value: boolean, onToggleCallback: (v: boolean) => void): HTMLInputElement {
+        let lineElement = document.createElement("div");
+        lineElement.classList.add("space-panel-line");
+        let labelElement = document.createElement("space-panel-label");
+        labelElement.textContent = label;
+        lineElement.appendChild(labelElement);
+        let inputElement = document.createElement("input");
+        inputElement.classList.add("space-input", "space-input-toggle");
+        inputElement.setAttribute("type", "checkbox");
+        inputElement.addEventListener(
+            "input",
+            (ev) => {
+                if (ev.srcElement instanceof HTMLInputElement) {
+                    onToggleCallback(ev.srcElement.checked);
+                }
+            }
+        );
+        lineElement.appendChild(inputElement);
+        this._innerBorder.appendChild(lineElement);
+        return inputElement;
     }
 }
 
