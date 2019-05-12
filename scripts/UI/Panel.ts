@@ -95,7 +95,7 @@ class SpacePanel extends HTMLElement {
         e.classList.add("space-title-1");
         e.textContent = title;
         titleLine.appendChild(e);
-        let eShadow = document.createElement("div");
+        let eShadow = document.createElement("span");
         eShadow.classList.add("space-title-1-shadow");
         eShadow.textContent = title;
         titleLine.appendChild(eShadow);
@@ -118,6 +118,7 @@ class SpacePanel extends HTMLElement {
         let inputElement = document.createElement("input");
         inputElement.classList.add("space-input", "space-input-number");
         inputElement.setAttribute("type", "number");
+        inputElement.value = value.toFixed(precision);
         let step = 1 / (Math.pow(2, Math.round(precision)));
         inputElement.setAttribute("step", step.toString());
         inputElement.addEventListener(

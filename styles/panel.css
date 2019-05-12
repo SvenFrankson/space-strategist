@@ -86,25 +86,25 @@ space-panel-label {
 }
 
 .space-title-1 {
-    margin-top: 0;
-    margin-bottom: 0;
+    display: inline;
     padding-top: 0;
     padding-bottom: 0;
     font-family: "Anurati";
 }
 
 .space-title-1-shadow {
-    text-align: right;
+    display: inline-block;
     padding-top: 0;
     padding-bottom: 0;
-    margin-top: -8px;
-    margin-bottom: 0;
+    margin-bottom: 16px;
     color: #083325;
     font-size: 16px;
+    transform: translateX(-50%) translateY(16px);
 }
 
 .space-title-2 {
-    margin-top: 0;
+    margin-top: 8px;
+    margin-bottom: 8px;
     font-size: 18px;
 }
 

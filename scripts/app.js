@@ -86,15 +86,6 @@ class Main {
         sceneEditor.enable();
         let navGraphConsole = new NavGraphConsole(Main.Scene);
         navGraphConsole.enable();
-        document.getElementById("save-scene").addEventListener("click", () => {
-            let data = Serializer.Serialize(Main.Scene);
-            window.localStorage.setItem("scene-data", JSON.stringify(data));
-        });
-        document.getElementById("load-scene").addEventListener("click", () => {
-            let data = JSON.parse(window.localStorage.getItem("scene-data"));
-            Serializer.Deserialize(Main.Scene, data);
-            wallSystem.instantiate();
-        });
     }
     animate() {
         Main.Engine.runRenderLoop(() => {
@@ -792,16 +783,29 @@ class SceneEditor {
     }
     enable() {
         this.ground.isVisible = true;
-        document.getElementById("add-container").addEventListener("click", this.createContainer);
-        document.getElementById("add-tank").addEventListener("click", this.createTank);
-        document.getElementById("add-wall").addEventListener("click", this.createNode);
+        this._panel = SpacePanel.CreateSpacePanel();
+        this._panel.addTitle1("EDITOR");
+        this._panel.addTitle2("PROPS");
+        this._panel.addLargeButton("CONTAINER", this.createContainer);
+        this._panel.addLargeButton("TANK", this.createTank);
+        this._panel.addLargeButton("WALL", this.createNode);
+        this._panel.addTitle2("DATA");
+        this._panel.addMediumButtons("SAVE", () => {
+            let data = Serializer.Serialize(Main.Scene);
+            window.localStorage.setItem("scene-data", JSON.stringify(data));
+        }, "LOAD", () => {
+            let data = JSON.parse(window.localStorage.getItem("scene-data"));
+            Serializer.Deserialize(Main.Scene, data);
+            this.wallSystem.instantiate();
+        });
         this.addEventListenerDrag();
+        this._panel.style.left = "10px";
+        this._panel.style.top = "10px";
     }
     disable() {
         this.ground.isVisible = false;
-        document.getElementById("add-container").removeEventListener("click", this.createContainer);
-        document.getElementById("add-tank").removeEventListener("click", this.createTank);
-        document.getElementById("add-wall").removeEventListener("click", this.createNode);
+        this.removeEventListenerDrag();
+        this._panel.dispose();
     }
     addEventListenerDrag() {
         this._selectedElement = undefined;
@@ -1215,7 +1219,7 @@ class NavGraphConsole {
     enable() {
         this._panel = SpacePanel.CreateSpacePanel();
         this._panel.addTitle1("NAVGRAPH");
-        this._panel.addTitle2("dev console");
+        this._panel.addTitle2("DEV CONSOLE");
         this._panel.addNumberInput("OFFSET", this._offset, (v) => {
             this._offset = v;
             this._navGraph.hide();
@@ -2170,7 +2174,7 @@ class SpacePanel extends HTMLElement {
         e.classList.add("space-title-1");
         e.textContent = title;
         titleLine.appendChild(e);
-        let eShadow = document.createElement("div");
+        let eShadow = document.createElement("span");
         eShadow.classList.add("space-title-1-shadow");
         eShadow.textContent = title;
         titleLine.appendChild(eShadow);
@@ -2191,6 +2195,7 @@ class SpacePanel extends HTMLElement {
         let inputElement = document.createElement("input");
         inputElement.classList.add("space-input", "space-input-number");
         inputElement.setAttribute("type", "number");
+        inputElement.value = value.toFixed(precision);
         let step = 1 / (Math.pow(2, Math.round(precision)));
         inputElement.setAttribute("step", step.toString());
         inputElement.addEventListener("input", (ev) => {

@@ -108,17 +108,6 @@ class Main {
 
         let navGraphConsole = new NavGraphConsole(Main.Scene);
         navGraphConsole.enable();
-
-        document.getElementById("save-scene").addEventListener("click", () => {
-            let data = Serializer.Serialize(Main.Scene);
-            window.localStorage.setItem("scene-data", JSON.stringify(data));
-        })
-
-        document.getElementById("load-scene").addEventListener("click", () => {
-            let data = JSON.parse(window.localStorage.getItem("scene-data"));
-            Serializer.Deserialize(Main.Scene, data);
-            wallSystem.instantiate();
-        })
     }
 
     public animate(): void {

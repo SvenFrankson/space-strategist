@@ -48,6 +48,8 @@ class SceneEditor {
             }
         }
     }
+
+    private _panel: SpacePanel;
     private ground: BABYLON.Mesh;
 
     constructor(
@@ -60,17 +62,41 @@ class SceneEditor {
 
     public enable() {
         this.ground.isVisible = true;
-        document.getElementById("add-container").addEventListener("click", this.createContainer);
-        document.getElementById("add-tank").addEventListener("click", this.createTank);
-        document.getElementById("add-wall").addEventListener("click", this.createNode);
+        
+        this._panel = SpacePanel.CreateSpacePanel();
+        this._panel.addTitle1("EDITOR");
+        this._panel.addTitle2("PROPS");
+        this._panel.addLargeButton("CONTAINER", this.createContainer);
+        this._panel.addLargeButton("TANK", this.createTank);
+        this._panel.addLargeButton("WALL", this.createNode);
+        this._panel.addTitle2("DATA");
+
+        this._panel.addMediumButtons(
+            "SAVE",
+            () => {
+                let data = Serializer.Serialize(Main.Scene);
+                window.localStorage.setItem("scene-data", JSON.stringify(data));
+            },
+            "LOAD",
+            () => {
+                let data = JSON.parse(window.localStorage.getItem("scene-data"));
+                Serializer.Deserialize(Main.Scene, data);
+                this.wallSystem.instantiate();
+            }
+        )
+
         this.addEventListenerDrag();
+
+        this._panel.style.left = "10px";
+        this._panel.style.top = "10px";
     }
 
     public disable() {
         this.ground.isVisible = false;
-        document.getElementById("add-container").removeEventListener("click", this.createContainer);
-        document.getElementById("add-tank").removeEventListener("click", this.createTank);
-        document.getElementById("add-wall").removeEventListener("click", this.createNode);
+
+        this.removeEventListenerDrag();
+
+        this._panel.dispose();
     }
 
     private createContainer = () => {
