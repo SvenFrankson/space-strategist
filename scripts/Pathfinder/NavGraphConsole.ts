@@ -21,50 +21,43 @@ class NavGraphConsole {
                 this._navGraph = NavGraphManager.GetForRadius(this._offset);
             }
         );
-        this._panel.addCheckBox(
+        this._panel.addConditionalButton(
             "OBSTACLES",
-            false,
-            (v) => {
+            () => {
+                if (this._navGraph && this._navGraph.obstacles[0] && this._navGraph.obstacles[0].isDisplayed()) {
+                    return "HIDE";
+                }
+                return "SHOW";
+            },
+            () => {
                 this._navGraph.update();
                 for (let i = 0; i < this._navGraph.obstacles.length; i++) {
                     let o = this._navGraph.obstacles[i];
-                    if (v) {
-                        o.display(this.scene);
-                    }
-                    else {
+                    if (o.isDisplayed()) {
                         o.hide();
                     }
+                    else {
+                        o.display(this.scene);
+                    }
                 }
             }
         )
-        this._panel.addCheckBox(
+        this._panel.addConditionalButton(
             "NAVGRAPH",
-            false,
-            (v) => {
+            () => {
+                if (this._navGraph.isDisplayed()) {
+                    return "HIDE";
+                }   
+                return "SHOW";
+            },
+            () => {
                 this._navGraph.update();
-                if (v) {
-                    this._navGraph.display(this.scene);
-                }
-                else {
+                if (this._navGraph.isDisplayed()) {
                     this._navGraph.hide();
                 }
-            }
-        )
-        this._panel.addLargeButton(
-            "Toggle Obstacles",
-            () => {
-                this._navGraph.update();
-                for (let i = 0; i < this._navGraph.obstacles.length; i++) {
-                    let o = this._navGraph.obstacles[i];
-                    o.toggleDisplay(this.scene);
+                else {
+                    this._navGraph.display(this.scene);
                 }
-            }
-        );
-        this._panel.addLargeButton(
-            "Toggle NavGraph",
-            () => {
-                this._navGraph.update();
-                this._navGraph.toggleDisplay(this.scene);
             }
         );
         this._panel.style.left = "10px";

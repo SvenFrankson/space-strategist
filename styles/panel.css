@@ -156,6 +156,19 @@ space-panel-label {
     color: lightgray;
 }
 
+.space-button-inline {
+    display: inline-block;
+    width: 50%;
+    height: 24px;
+    margin-left: 5%;
+    margin-right: 0;
+    border: solid 1px white;
+    background-color: rgba(40, 66, 57, 0.8);
+    border-radius: 2px;
+    font-family: "Orbitron Light";
+    color: lightgray;
+}
+
 .space-input-toggle {
     vertical-align: bottom;
     margin-top: 0;

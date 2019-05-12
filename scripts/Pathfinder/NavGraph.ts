@@ -209,8 +209,11 @@ class NavGraph {
         return this.path;
     }
     private _devLineMeshes: BABYLON.TransformNode;
+    public isDisplayed(): boolean {
+        return this._devLineMeshes !== undefined;
+    }
     public toggleDisplay(scene: BABYLON.Scene): void {
-        if (this._devLineMeshes) {
+        if (this.isDisplayed()) {
             this.hide();
         }
         else {

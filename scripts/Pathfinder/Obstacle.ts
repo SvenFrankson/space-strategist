@@ -40,8 +40,11 @@ class Obstacle {
     }
 
     private _devLineMesh: BABYLON.LinesMesh;
+    public isDisplayed(): boolean {
+        return this._devLineMesh !== undefined;
+    }
     public toggleDisplay(scene: BABYLON.Scene): void {
-        if (this._devLineMesh) {
+        if (this.isDisplayed()) {
             this.hide();
         }
         else {

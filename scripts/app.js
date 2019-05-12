@@ -1151,8 +1151,11 @@ class NavGraph {
         this.points.pop();
         return this.path;
     }
+    isDisplayed() {
+        return this._devLineMeshes !== undefined;
+    }
     toggleDisplay(scene) {
-        if (this._devLineMeshes) {
+        if (this.isDisplayed()) {
             this.hide();
         }
         else {
@@ -1218,37 +1221,36 @@ class NavGraphConsole {
             this._navGraph.hide();
             this._navGraph = NavGraphManager.GetForRadius(this._offset);
         });
-        this._panel.addCheckBox("OBSTACLES", false, (v) => {
+        this._panel.addConditionalButton("OBSTACLES", () => {
+            if (this._navGraph && this._navGraph.obstacles[0] && this._navGraph.obstacles[0].isDisplayed()) {
+                return "HIDE";
+            }
+            return "SHOW";
+        }, () => {
             this._navGraph.update();
             for (let i = 0; i < this._navGraph.obstacles.length; i++) {
                 let o = this._navGraph.obstacles[i];
-                if (v) {
-                    o.display(this.scene);
-                }
-                else {
+                if (o.isDisplayed()) {
                     o.hide();
                 }
+                else {
+                    o.display(this.scene);
+                }
             }
         });
-        this._panel.addCheckBox("NAVGRAPH", false, (v) => {
-            this._navGraph.update();
-            if (v) {
-                this._navGraph.display(this.scene);
+        this._panel.addConditionalButton("NAVGRAPH", () => {
+            if (this._navGraph.isDisplayed()) {
+                return "HIDE";
             }
-            else {
+            return "SHOW";
+        }, () => {
+            this._navGraph.update();
+            if (this._navGraph.isDisplayed()) {
                 this._navGraph.hide();
             }
-        });
-        this._panel.addLargeButton("Toggle Obstacles", () => {
-            this._navGraph.update();
-            for (let i = 0; i < this._navGraph.obstacles.length; i++) {
-                let o = this._navGraph.obstacles[i];
-                o.toggleDisplay(this.scene);
+            else {
+                this._navGraph.display(this.scene);
             }
-        });
-        this._panel.addLargeButton("Toggle NavGraph", () => {
-            this._navGraph.update();
-            this._navGraph.toggleDisplay(this.scene);
         });
         this._panel.style.left = "10px";
         this._panel.style.bottom = "10px";
@@ -1419,8 +1421,11 @@ class Obstacle {
     computePath(offset = 1) {
         return this.shape.getPath(offset);
     }
+    isDisplayed() {
+        return this._devLineMesh !== undefined;
+    }
     toggleDisplay(scene) {
-        if (this._devLineMesh) {
+        if (this.isDisplayed()) {
             this.hide();
         }
         else {
@@ -2230,6 +2235,24 @@ class SpacePanel extends HTMLElement {
         inputElement.value = value;
         inputElement.addEventListener("click", () => {
             onClickCallback();
+        });
+        lineElement.appendChild(inputElement);
+        this._innerBorder.appendChild(lineElement);
+        return inputElement;
+    }
+    addConditionalButton(label, value, onClickCallback) {
+        let lineElement = document.createElement("div");
+        lineElement.classList.add("space-panel-line");
+        let labelElement = document.createElement("space-panel-label");
+        labelElement.textContent = label;
+        lineElement.appendChild(labelElement);
+        let inputElement = document.createElement("input");
+        inputElement.classList.add("space-button-inline");
+        inputElement.setAttribute("type", "button");
+        inputElement.value = value();
+        inputElement.addEventListener("click", () => {
+            onClickCallback();
+            inputElement.value = value();
         });
         lineElement.appendChild(inputElement);
         this._innerBorder.appendChild(lineElement);

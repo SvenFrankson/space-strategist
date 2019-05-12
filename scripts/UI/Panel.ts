@@ -179,6 +179,28 @@ class SpacePanel extends HTMLElement {
         return inputElement;
     }
 
+    public addConditionalButton(label: string, value: () => string, onClickCallback: () => void): HTMLInputElement {
+        let lineElement = document.createElement("div");
+        lineElement.classList.add("space-panel-line");
+        let labelElement = document.createElement("space-panel-label");
+        labelElement.textContent = label;
+        lineElement.appendChild(labelElement);
+        let inputElement = document.createElement("input");
+        inputElement.classList.add("space-button-inline");
+        inputElement.setAttribute("type", "button");
+        inputElement.value = value();
+        inputElement.addEventListener(
+            "click",
+            () => {
+                onClickCallback();
+                inputElement.value = value();
+            }
+        );
+        lineElement.appendChild(inputElement);
+        this._innerBorder.appendChild(lineElement);
+        return inputElement;
+    }
+
     public addMediumButtons(value1: string, onClickCallback1: () => void, value2?: string, onClickCallback2?: () => void): HTMLInputElement[] {
         let lineElement = document.createElement("div");
         lineElement.classList.add("space-panel-line");
