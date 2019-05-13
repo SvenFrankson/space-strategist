@@ -70,22 +70,18 @@ class Main {
         BABYLON.MeshBuilder.CreateSphere("start", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(start.x, 0, start.y);
         let end = new BABYLON.Vector2(0, 10);
         BABYLON.MeshBuilder.CreateSphere("end", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(end.x, 0, end.y);
-        let worker = new DroneWorker();
-        worker.position2D = start;
-        worker.instantiate();
         let wallSystem = new WallSystem();
         if (window.localStorage.getItem("scene-data")) {
             let data = JSON.parse(window.localStorage.getItem("scene-data"));
             await Serializer.Deserialize(Main.Scene, data);
         }
-        let navGraph = NavGraphManager.GetForRadius(1);
-        navGraph.update();
-        navGraph.computePathFromTo(start, end);
-        worker.currentPath = navGraph.path;
         let sceneEditor = new SceneEditor(wallSystem, Main.Scene);
         sceneEditor.enable();
         let navGraphConsole = new NavGraphConsole(Main.Scene);
         navGraphConsole.enable();
+        let worker = new DroneWorker();
+        worker.position2D = start;
+        worker.instantiate();
     }
     animate() {
         Main.Engine.runRenderLoop(() => {
@@ -562,10 +558,13 @@ class DroneWorker extends BABYLON.Mesh {
         this.position2D = BABYLON.Vector2.Zero();
         this.rotation2D = 0;
         this._update = () => {
+            if (!this.currentPath || this.currentPath.length === 0) {
+                this._findPath();
+            }
+            this._moveOnPath();
             this.position.x = this.position2D.x;
             this.position.z = this.position2D.y;
             this.rotation.y = -this.rotation2D;
-            this._moveOnPath();
         };
         this._moveOnPath = () => {
             if (this.currentPath && this.currentPath.length > 0) {
@@ -590,6 +589,34 @@ class DroneWorker extends BABYLON.Mesh {
         let data = await VertexDataLoader.instance.getColorized("worker", "#ce7633", "#383838", "#6d6d6d", "#c94022", "#1c1c1c");
         data.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
+    }
+    findRandomDestination(radius = 10) {
+        let attempts = 0;
+        while (attempts++ < 10) {
+            let random = new BABYLON.Vector2(Math.random() * 2 * radius - radius, Math.random() * 2 * radius - radius);
+            random.addInPlace(this.position2D);
+            let graph = NavGraphManager.GetForRadius(1);
+            for (let i = 0; i < graph.obstacles.length; i++) {
+                let o = graph.obstacles[i];
+                if (o.contains(random, 1)) {
+                    random = undefined;
+                    break;
+                }
+            }
+            if (random) {
+                return random;
+            }
+        }
+        return undefined;
+    }
+    _findPath() {
+        let dest = this.findRandomDestination();
+        if (dest) {
+            let navGraph = NavGraphManager.GetForRadius(1);
+            navGraph.update();
+            navGraph.computePathFromTo(this.position2D, dest);
+            this.currentPath = navGraph.path;
+        }
     }
 }
 class SpaceshipControler {
@@ -868,8 +895,8 @@ class VertexDataLoader {
         });
     }
     async getColorized(name, baseColorHex = "#FFFFFF", frameColorHex = "", color1Hex = "", // Replace red
-        color2Hex = "", // Replace green
-        color3Hex = "" // Replace blue
+    color2Hex = "", // Replace green
+    color3Hex = "" // Replace blue
     ) {
         let baseColor;
         if (baseColorHex !== "") {
@@ -1458,6 +1485,9 @@ class Obstacle {
         let path = this.shape.getPath(offset);
         this._path.set(offset, path);
         return path;
+    }
+    contains(point, offset = 1, forceCompute = false) {
+        return Math2D.IsPointInPath(point, this.getPath(offset, forceCompute));
     }
     isDisplayed() {
         return this._devLineMesh !== undefined;

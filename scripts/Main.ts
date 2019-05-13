@@ -87,27 +87,21 @@ class Main {
         let end = new BABYLON.Vector2(0, 10);
         BABYLON.MeshBuilder.CreateSphere("end", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(end.x, 0, end.y);
 
-        let worker = new DroneWorker();
-        worker.position2D = start;
-        worker.instantiate();
-
         let wallSystem = new WallSystem();
         if (window.localStorage.getItem("scene-data")) {
             let data = JSON.parse(window.localStorage.getItem("scene-data"));
             await Serializer.Deserialize(Main.Scene, data);
         }
 
-        let navGraph = NavGraphManager.GetForRadius(1);
-        navGraph.update();
-        navGraph.computePathFromTo(start, end);
-
-        worker.currentPath = navGraph.path;
-
         let sceneEditor = new SceneEditor(wallSystem, Main.Scene);
         sceneEditor.enable();
 
         let navGraphConsole = new NavGraphConsole(Main.Scene);
         navGraphConsole.enable();
+
+        let worker = new DroneWorker();
+        worker.position2D = start;
+        worker.instantiate();
     }
 
     public animate(): void {

@@ -80,6 +80,10 @@ class Obstacle {
         return path;
     }
 
+    public contains(point: BABYLON.Vector2, offset: number = 1, forceCompute: boolean = false): boolean {
+        return Math2D.IsPointInPath(point, this.getPath(offset, forceCompute));
+    }
+
     private _devLineMesh: BABYLON.LinesMesh;
     public isDisplayed(): boolean {
         return this._devLineMesh !== undefined;
