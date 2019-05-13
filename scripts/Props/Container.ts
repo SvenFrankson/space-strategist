@@ -8,7 +8,7 @@ class Container extends Prop {
             let containerCount = this.getScene().meshes.filter((m) => { return m instanceof Container; }).length;
             this.name = "container-" + containerCount;
         }
-        this.obstacle = Obstacle.CreateRect(this.position2D.x, this.position2D.y, 2, 4, this.rotation2D);
+        this.obstacle = Obstacle.CreateRectWithPosRotSource(this, 2, 4);
         this.obstacle.name = name + "-obstacle";
     }
 

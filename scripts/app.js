@@ -1391,39 +1391,73 @@ class NavGraphPoint {
     }
 }
 class Obstacle {
-    constructor() {
+    constructor(posRotSource = undefined) {
+        this.posRotSource = posRotSource;
         this.name = (Math.random() * 100).toFixed(0);
         this._path = new Map();
+    }
+    get position2D() {
+        if (this.posRotSource) {
+            return this.posRotSource.position2D;
+        }
+        return this._position2D;
+    }
+    set position2D(v) {
+        this._position2D = v;
+    }
+    get rotation2D() {
+        if (this.posRotSource) {
+            return this.posRotSource.rotation2D;
+        }
+        return this._rotation2D;
+    }
+    set rotation2D(v) {
+        this._rotation2D = v;
+    }
+    static CreateRectWithPosRotSource(posRotSource, w = 1, h = 1) {
+        let rect = new Obstacle();
+        rect.posRotSource = posRotSource;
+        rect.shape = new Rect(w, h);
+        rect.shape.posRotSource = posRotSource;
+        return rect;
     }
     static CreateRect(x, y, w = 1, h = 1, rotation = 0) {
         let rect = new Obstacle();
         rect.shape = new Rect(w, h);
-        rect.shape.position = new BABYLON.Vector2(x, y);
-        rect.shape.rotation = rotation;
+        rect.shape.position2D = new BABYLON.Vector2(x, y);
+        rect.shape.rotation2D = rotation;
         return rect;
+    }
+    static CreateHexagonWithPosRotSource(posRotSource, radius = 1) {
+        let hexagon = new Obstacle();
+        hexagon.posRotSource = posRotSource;
+        hexagon.shape = new Hexagon(radius);
+        hexagon.shape.posRotSource = posRotSource;
+        return hexagon;
     }
     static CreateHexagon(x, y, radius = 1) {
         let hexagon = new Obstacle();
         hexagon.shape = new Hexagon(radius);
-        hexagon.shape.position = new BABYLON.Vector2(x, y);
+        hexagon.shape.position2D = new BABYLON.Vector2(x, y);
         return hexagon;
     }
     static CreatePolygon(x, y, points) {
         let polygon = new Obstacle();
         polygon.shape = new Polygon(points);
-        polygon.shape.position = new BABYLON.Vector2(x, y);
+        polygon.shape.position2D = new BABYLON.Vector2(x, y);
         return polygon;
     }
     getPath(offset = 1, forceCompute = false) {
         let path = this._path.get(offset);
         if (!path || forceCompute) {
             path = this.computePath(offset);
-            this._path.set(offset, path);
         }
         return path;
     }
     computePath(offset = 1) {
-        return this.shape.getPath(offset);
+        let path = this.shape.getPath(offset);
+        this._path.set(offset, path);
+        return path;
     }
     isDisplayed() {
         return this._devLineMesh !== undefined;
@@ -1459,11 +1493,27 @@ class Obstacle {
     }
 }
 class Shape {
-    constructor() {
-        this.position = BABYLON.Vector2.Zero();
-        this.rotation = 0;
+    constructor(posRotSource = undefined) {
+        this.posRotSource = posRotSource;
     }
-    ;
+    get position2D() {
+        if (this.posRotSource) {
+            return this.posRotSource.position2D;
+        }
+        return this._position2D;
+    }
+    set position2D(v) {
+        this._position2D = v;
+    }
+    get rotation2D() {
+        if (this.posRotSource) {
+            return this.posRotSource.rotation2D;
+        }
+        return this._rotation2D;
+    }
+    set rotation2D(v) {
+        this._rotation2D = v;
+    }
 }
 class Rect extends Shape {
     constructor(width = 1, height = 1) {
@@ -1479,8 +1529,8 @@ class Rect extends Shape {
             new BABYLON.Vector2(-(this.width + offset) * 0.5, (this.height + offset) * 0.5)
         ];
         for (let i = 0; i < this._path.length; i++) {
-            Math2D.RotateInPlace(this._path[i], this.rotation);
-            this._path[i].addInPlace(this.position);
+            Math2D.RotateInPlace(this._path[i], this.rotation2D);
+            this._path[i].addInPlace(this.position2D);
         }
         return this._path;
     }
@@ -1496,8 +1546,8 @@ class Hexagon extends Shape {
             this._path.push(new BABYLON.Vector2(Math.cos(i * Math.PI / 3) * (this.radius + offset), Math.sin(i * Math.PI / 3) * (this.radius + offset)));
         }
         for (let i = 0; i < this._path.length; i++) {
-            Math2D.RotateInPlace(this._path[i], this.rotation);
-            this._path[i].addInPlace(this.position);
+            Math2D.RotateInPlace(this._path[i], this.rotation2D);
+            this._path[i].addInPlace(this.position2D);
         }
         return this._path;
     }
@@ -1510,7 +1560,7 @@ class Polygon extends Shape {
     getPath(offset = 0) {
         this._path = Math2D.FattenShrinkPointShape(this.points, offset);
         for (let i = 0; i < this._path.length; i++) {
-            this._path[i].addInPlace(this.position);
+            this._path[i].addInPlace(this.position2D);
         }
         return this._path;
     }
@@ -1571,7 +1621,7 @@ class Container extends Prop {
             let containerCount = this.getScene().meshes.filter((m) => { return m instanceof Container; }).length;
             this.name = "container-" + containerCount;
         }
-        this.obstacle = Obstacle.CreateRect(this.position2D.x, this.position2D.y, 2, 4, this.rotation2D);
+        this.obstacle = Obstacle.CreateRectWithPosRotSource(this, 2, 4);
         this.obstacle.name = name + "-obstacle";
     }
     async instantiate() {
@@ -1643,7 +1693,7 @@ class Tank extends Prop {
             let tankCount = this.getScene().meshes.filter((m) => { return m instanceof Tank; }).length;
             this.name = "tank-" + tankCount;
         }
-        this.obstacle = Obstacle.CreateHexagon(this.position2D.x, this.position2D.y, 1.5);
+        this.obstacle = Obstacle.CreateHexagonWithPosRotSource(this, 1.5);
         this.obstacle.name = name + "-obstacle";
     }
     async instantiate() {

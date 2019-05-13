@@ -1,10 +1,35 @@
+interface IHasPosRot {
+    position2D: BABYLON.Vector2;
+    rotation2D: number;
+}
+
 abstract class Shape {
 
-    public position: BABYLON.Vector2 = BABYLON.Vector2.Zero();;
-    public rotation: number = 0;
+    private _position2D: BABYLON.Vector2;
+    public get position2D(): BABYLON.Vector2 {
+        if (this.posRotSource) {
+            return this.posRotSource.position2D;
+        }
+        return this._position2D;
+    }
+    public set position2D(v: BABYLON.Vector2) {
+        this._position2D = v;
+    }
+    private _rotation2D: number;
+    public get rotation2D(): number {
+        if (this.posRotSource) {
+            return this.posRotSource.rotation2D;
+        }
+        return this._rotation2D;
+    }
+    public set rotation2D(v: number) {
+        this._rotation2D = v;
+    }
     protected _path: BABYLON.Vector2[];
 
-    constructor() {
+    constructor(
+        public posRotSource: IHasPosRot = undefined
+    ) {
 
     }
 
@@ -28,8 +53,8 @@ class Rect extends Shape {
             new BABYLON.Vector2(- (this.width + offset) * 0.5, (this.height + offset) * 0.5)
         ];
         for (let i = 0; i < this._path.length; i++) {
-            Math2D.RotateInPlace(this._path[i], this.rotation);
-            this._path[i].addInPlace(this.position);
+            Math2D.RotateInPlace(this._path[i], this.rotation2D);
+            this._path[i].addInPlace(this.position2D);
         }
         return this._path;
     }
@@ -52,8 +77,8 @@ class Hexagon extends Shape {
             ));
         }
         for (let i = 0; i < this._path.length; i++) {
-            Math2D.RotateInPlace(this._path[i], this.rotation);
-            this._path[i].addInPlace(this.position);
+            Math2D.RotateInPlace(this._path[i], this.rotation2D);
+            this._path[i].addInPlace(this.position2D);
         }
         return this._path;
     }
@@ -70,7 +95,7 @@ class Polygon extends Shape {
     public getPath(offset: number = 0): BABYLON.Vector2[] {
         this._path = Math2D.FattenShrinkPointShape(this.points, offset);
         for (let i = 0; i < this._path.length; i++) {
-            this._path[i].addInPlace(this.position);
+            this._path[i].addInPlace(this.position2D);
         }
         return this._path;
     }

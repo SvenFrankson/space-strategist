@@ -1,28 +1,68 @@
 class Obstacle {
 
     public name: string = (Math.random() * 100).toFixed(0);
+    private _position2D: BABYLON.Vector2;
+    public get position2D(): BABYLON.Vector2 {
+        if (this.posRotSource) {
+            return this.posRotSource.position2D;
+        }
+        return this._position2D;
+    }
+    public set position2D(v: BABYLON.Vector2) {
+        this._position2D = v;
+    }
+    private _rotation2D: number;
+    public get rotation2D(): number {
+        if (this.posRotSource) {
+            return this.posRotSource.rotation2D;
+        }
+        return this._rotation2D;
+    }
+    public set rotation2D(v: number) {
+        this._rotation2D = v;
+    }
     public shape: Shape;
     private _path: Map<number, BABYLON.Vector2[]> = new Map<number, BABYLON.Vector2[]>();
 
+    constructor(
+        public posRotSource: IHasPosRot = undefined
+    ) {
+
+    }
+
+    public static CreateRectWithPosRotSource(posRotSource: IHasPosRot, w: number = 1, h: number = 1): Obstacle {
+        let rect = new Obstacle();
+        rect.posRotSource = posRotSource;
+        rect.shape = new Rect(w, h);
+        rect.shape.posRotSource = posRotSource;
+        return rect;
+    }
     public static CreateRect(x: number, y: number, w: number = 1, h: number = 1, rotation: number = 0): Obstacle {
         let rect = new Obstacle();
         rect.shape = new Rect(w, h);
-        rect.shape.position = new BABYLON.Vector2(x, y);
-        rect.shape.rotation = rotation;
+        rect.shape.position2D = new BABYLON.Vector2(x, y);
+        rect.shape.rotation2D = rotation;
         return rect;
     }
 
+    public static CreateHexagonWithPosRotSource(posRotSource: IHasPosRot, radius: number = 1): Obstacle {
+        let hexagon = new Obstacle();
+        hexagon.posRotSource = posRotSource
+        hexagon.shape = new Hexagon(radius);
+        hexagon.shape.posRotSource = posRotSource;
+        return hexagon;
+    }
     public static CreateHexagon(x: number, y: number, radius: number = 1): Obstacle {
         let hexagon = new Obstacle();
         hexagon.shape = new Hexagon(radius);
-        hexagon.shape.position = new BABYLON.Vector2(x, y);
+        hexagon.shape.position2D = new BABYLON.Vector2(x, y);
         return hexagon;
     }
 
     public static CreatePolygon(x: number, y: number, points: BABYLON.Vector2[]): Obstacle {
         let polygon = new Obstacle();
         polygon.shape = new Polygon(points);
-        polygon.shape.position = new BABYLON.Vector2(x, y);
+        polygon.shape.position2D = new BABYLON.Vector2(x, y);
         return polygon;
     }
 
@@ -30,13 +70,14 @@ class Obstacle {
         let path = this._path.get(offset);
         if (!path || forceCompute) {
             path = this.computePath(offset);
-            this._path.set(offset, path)
         }
         return path;
     }
 
     public computePath(offset: number = 1): BABYLON.Vector2[] {
-        return this.shape.getPath(offset);
+        let path = this.shape.getPath(offset);
+        this._path.set(offset, path)
+        return path;
     }
 
     private _devLineMesh: BABYLON.LinesMesh;
