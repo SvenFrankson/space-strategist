@@ -50,19 +50,14 @@ class SceneEditor {
     }
 
     private _panel: SpacePanel;
-    private ground: BABYLON.Mesh;
+    private ground: Ground;
 
     constructor(
         public wallSystem: WallSystem,
         public scene: BABYLON.Scene
     ) {
-        let groundData = new BABYLON.VertexData();
-        groundData.positions = [-40, 0, -40, 40, 0, -40, 40, 0, 40, -40, 0, 40];
-        groundData.indices = [0, 1, 2, 0, 2, 3];
-        groundData.normals = [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0];
-        groundData.uvs = [0, 0, 4, 0, 4, 4, 0, 4];
-        this.ground = new BABYLON.Mesh("ground");
-        groundData.applyToMesh(this.ground);
+        this.ground = new Ground(50, 50);
+        this.ground.instantiate();
         this.ground.material = Main.groundMaterial;
         this.enable();
     }

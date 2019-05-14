@@ -779,13 +779,8 @@ class SceneEditor {
                 this.wallSystem.instantiate();
             }
         };
-        let groundData = new BABYLON.VertexData();
-        groundData.positions = [-40, 0, -40, 40, 0, -40, 40, 0, 40, -40, 0, 40];
-        groundData.indices = [0, 1, 2, 0, 2, 3];
-        groundData.normals = [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0];
-        groundData.uvs = [0, 0, 4, 0, 4, 4, 0, 4];
-        this.ground = new BABYLON.Mesh("ground");
-        groundData.applyToMesh(this.ground);
+        this.ground = new Ground(50, 50);
+        this.ground.instantiate();
         this.ground.material = Main.groundMaterial;
         this.enable();
     }
@@ -910,8 +905,8 @@ class VertexDataLoader {
         });
     }
     async getColorized(name, baseColorHex = "#FFFFFF", frameColorHex = "", color1Hex = "", // Replace red
-    color2Hex = "", // Replace green
-    color3Hex = "" // Replace blue
+        color2Hex = "", // Replace green
+        color3Hex = "" // Replace blue
     ) {
         let baseColor;
         if (baseColorHex !== "") {
@@ -2203,6 +2198,47 @@ class Spaceship extends BABYLON.TransformNode {
                 resolve();
             });
         });
+    }
+}
+class Ground extends BABYLON.Mesh {
+    constructor(width, height) {
+        super("ground");
+        this.width = width;
+        this.height = height;
+    }
+    instantiate() {
+        let data = new BABYLON.VertexData();
+        let positions = [];
+        let indices = [];
+        let colors = [];
+        let uvs = [];
+        let normals = [];
+        let stepCountW = Math.ceil(this.width / 5) + 1;
+        let stepZeroW = Math.ceil(-stepCountW / 2);
+        let stepCountH = Math.ceil(this.height / 5) + 1;
+        let stepZeroH = Math.ceil(-stepCountH / 2);
+        for (let j = 0; j < stepCountH; j++) {
+            for (let i = 0; i < stepCountW; i++) {
+                let x = (stepZeroW + i) * 5;
+                let y = (stepZeroH + j) * 5;
+                positions.push(x, 0, y);
+                let c = Math.random() * 0.5 + 0.5;
+                colors.push(c, c, c, 1);
+                uvs.push(i, j);
+                normals.push(0, 1, 0);
+                if (i + 1 < stepCountW && j + 1 < stepCountH) {
+                    let index = i + j * stepCountW;
+                    indices.push(index, index + 1, index + 1 + stepCountW);
+                    indices.push(index, index + 1 + stepCountW, index + stepCountW);
+                }
+            }
+        }
+        data.positions = positions;
+        data.indices = indices;
+        data.colors = colors;
+        data.uvs = uvs;
+        data.normals = normals;
+        data.applyToMesh(this);
     }
 }
 class SpacePanel extends HTMLElement {
