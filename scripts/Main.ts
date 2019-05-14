@@ -16,6 +16,16 @@ class Main {
 		return Main._cellShadingMaterial;
 	}
 
+    public static _groundMaterial: BABYLON.CellMaterial;
+	public static get groundMaterial(): BABYLON.CellMaterial {
+		if (!Main._groundMaterial) {
+            Main._groundMaterial = new BABYLON.CellMaterial("CellMaterial", Main.Scene);
+            Main._groundMaterial.diffuseTexture = new BABYLON.Texture("/img/ground.jpg", Main.Scene);
+			Main._groundMaterial.computeHighLevel = true;
+		}
+		return Main._groundMaterial;
+	}
+
     constructor(canvasElement: string) {
         Main.Canvas = document.getElementById(canvasElement) as HTMLCanvasElement;
         Main.Engine = new BABYLON.Engine(Main.Canvas, true);

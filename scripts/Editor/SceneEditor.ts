@@ -56,7 +56,14 @@ class SceneEditor {
         public wallSystem: WallSystem,
         public scene: BABYLON.Scene
     ) {
-        this.ground = BABYLON.MeshBuilder.CreateGround("ground", {width: 40, height: 40}, scene);
+        let groundData = new BABYLON.VertexData();
+        groundData.positions = [-40, 0, -40, 40, 0, -40, 40, 0, 40, -40, 0, 40];
+        groundData.indices = [0, 1, 2, 0, 2, 3];
+        groundData.normals = [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0];
+        groundData.uvs = [0, 0, 4, 0, 4, 4, 0, 4];
+        this.ground = new BABYLON.Mesh("ground");
+        groundData.applyToMesh(this.ground);
+        this.ground.material = Main.groundMaterial;
         this.enable();
     }
 

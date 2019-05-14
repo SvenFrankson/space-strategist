@@ -7,6 +7,14 @@ class Main {
         }
         return Main._cellShadingMaterial;
     }
+    static get groundMaterial() {
+        if (!Main._groundMaterial) {
+            Main._groundMaterial = new BABYLON.CellMaterial("CellMaterial", Main.Scene);
+            Main._groundMaterial.diffuseTexture = new BABYLON.Texture("/img/ground.jpg", Main.Scene);
+            Main._groundMaterial.computeHighLevel = true;
+        }
+        return Main._groundMaterial;
+    }
     constructor(canvasElement) {
         Main.Canvas = document.getElementById(canvasElement);
         Main.Engine = new BABYLON.Engine(Main.Canvas, true);
@@ -771,7 +779,14 @@ class SceneEditor {
                 this.wallSystem.instantiate();
             }
         };
-        this.ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 40, height: 40 }, scene);
+        let groundData = new BABYLON.VertexData();
+        groundData.positions = [-40, 0, -40, 40, 0, -40, 40, 0, 40, -40, 0, 40];
+        groundData.indices = [0, 1, 2, 0, 2, 3];
+        groundData.normals = [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0];
+        groundData.uvs = [0, 0, 4, 0, 4, 4, 0, 4];
+        this.ground = new BABYLON.Mesh("ground");
+        groundData.applyToMesh(this.ground);
+        this.ground.material = Main.groundMaterial;
         this.enable();
     }
     get selectedElement() {
