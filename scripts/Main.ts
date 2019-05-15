@@ -109,7 +109,7 @@ class Main {
         let navGraphConsole = new NavGraphConsole(Main.Scene);
         navGraphConsole.enable();
 
-        let worker = new DroneWorker();
+        let worker = new Fongus();
         worker.position2D = start;
         worker.instantiate();
     }
