@@ -620,6 +620,7 @@ class DroneWorker extends BABYLON.Mesh {
     _findPath() {
         let dest = this.findRandomDestination();
         if (dest) {
+            BABYLON.MeshBuilder.CreateBox("box", { size: 0.5 }).position.copyFromFloats(dest.x, 1, dest.y);
             let navGraph = NavGraphManager.GetForRadius(1);
             navGraph.update();
             navGraph.computePathFromTo(this.position2D, dest);
@@ -1121,8 +1122,15 @@ class NavGraph {
         }
     }
     computePathFromTo(from, to) {
+        let linkSum = 0;
+        for (let i = 0; i < this.points.length; i++) {
+            linkSum += this.points[i].links.length;
+        }
         this.setStart(from);
         this.setEnd(to);
+        for (let i = 0; i < this.points.length; i++) {
+            this.points[i].distanceToEnd = Infinity;
+        }
         this.points.push(this.start, this.end);
         let newPoints = [this.start, this.end];
         for (let i = 0; i < newPoints.length; i++) {
@@ -1183,6 +1191,7 @@ class NavGraph {
             }
         }
         this.end.distanceToEnd = 0;
+        this.start.distanceToEnd = Infinity;
         this.end.propagateDistanceToEnd();
         this.path = [this.start.position];
         this.start.appendNextPathPoint(this.path);
@@ -1384,6 +1393,12 @@ class NavGraphPoint {
         if (this.links[0]) {
             let other = this.links[0].other(this);
             if (other.distanceToEnd < Infinity) {
+                if (path.indexOf(other.position) !== -1) {
+                    console.warn("oups");
+                    console.log(path);
+                    console.log(this);
+                    return;
+                }
                 path.push(other.position);
                 if (other.distanceToEnd > 0) {
                     other.appendNextPathPoint(path);

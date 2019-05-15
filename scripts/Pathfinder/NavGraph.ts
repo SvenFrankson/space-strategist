@@ -133,8 +133,15 @@ class NavGraph {
     }
 
     public computePathFromTo(from: BABYLON.Vector2, to: BABYLON.Vector2): BABYLON.Vector2[] {
+        let linkSum = 0;
+        for (let i = 0; i < this.points.length; i++) {
+            linkSum += this.points[i].links.length;
+        }
         this.setStart(from);
-        this.setEnd(to);        
+        this.setEnd(to);
+        for (let i = 0; i < this.points.length; i++) {
+            this.points[i].distanceToEnd = Infinity;
+        }        
         this.points.push(this.start, this.end);
         let newPoints = [this.start, this.end];
 
@@ -197,6 +204,7 @@ class NavGraph {
         }
 
         this.end.distanceToEnd = 0;
+        this.start.distanceToEnd = Infinity;
         this.end.propagateDistanceToEnd();
         this.path = [this.start.position];
         this.start.appendNextPathPoint(this.path);
