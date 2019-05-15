@@ -64,12 +64,6 @@ class NavGraphPoint {
         if (this.links[0]) {
             let other = this.links[0].other(this);
             if (other.distanceToEnd < Infinity) {
-                if (path.indexOf(other.position) !== -1) {
-                    console.warn("oups");
-                    console.log(path);
-                    console.log(this);
-                    return;
-                }
                 path.push(other.position);
                 if (other.distanceToEnd > 0) {
                     other.appendNextPathPoint(path);
