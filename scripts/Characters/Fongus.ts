@@ -31,19 +31,28 @@ class Fongus extends BABYLON.Mesh {
         let newFongi = new BABYLON.Mesh("fongi");
         newFongi.position.copyFrom(this.position);
         newFongi.position.x += Math.random() * 2 - 1;
+        newFongi.position.y = -0.1;
         newFongi.position.z += Math.random() * 2 - 1;
+        newFongi.rotation.x = Math.random() - 0.5 * Math.PI * 0.25;
         newFongi.rotation.y = Math.random() * 2 * Math.PI;
+        newFongi.rotation.z = Math.random() - 0.5 * Math.PI * 0.25;
         newFongi.scaling.copyFromFloats(0.01, 0.01, 0.01);
 
-        let data = await VertexDataLoader.instance.get("fongus-1");
+        let color = BABYLON.Color3.FromHexString("#38bad1");
+        color.r += Math.random() * 0.2 - 0.1;
+        color.g += Math.random() * 0.2 - 0.1;
+        color.b += Math.random() * 0.2 - 0.1;
+        let model = Math.floor(Math.random() * 2);
+        let data = await VertexDataLoader.instance.getColorized("fongus-" + model, color.toHexString());
         data.applyToMesh(newFongi);
+        newFongi.material = Main.cellShadingMaterial;
 
         let k = 0;
         let size = 0.5 + Math.random();
         let newFongiAnim = () => {
             k++;
-            let scale = k / 30 * k / 30 * size;
-            if (k < 30) {
+            let scale = k / 20 * k / 20 * size;
+            if (k < 20) {
                 newFongi.scaling.copyFromFloats(scale, scale, scale);
             }
             else {
@@ -55,14 +64,15 @@ class Fongus extends BABYLON.Mesh {
         this.getScene().onBeforeRenderObservable.add(newFongiAnim);
         this.fongis.push(newFongi);
 
-        if (this.fongis.length > 12) {
-            let oldFongi = this.fongis.splice(0, 1)[0];
+        if (this.fongis.length > 20) {
+            let index = Math.floor(Math.random() * 3)
+            let oldFongi = this.fongis.splice(index, 1)[0];
             let k = 0;
             let size = oldFongi.scaling.x;
             let oldFongiAnim = () => {
                 k++;
-                let scale = (1 - k / 20 * k / 20) * size;
-                if (k < 20) {
+                let scale = (1 - k / 15 * k / 15) * size;
+                if (k < 15) {
                     oldFongi.scaling.copyFromFloats(scale, scale, scale);
                 }
                 else {
