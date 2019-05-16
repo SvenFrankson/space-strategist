@@ -42,7 +42,7 @@ class Fongus extends BABYLON.Mesh {
         color.r += Math.random() * 0.2 - 0.1;
         color.g += Math.random() * 0.2 - 0.1;
         color.b += Math.random() * 0.2 - 0.1;
-        let model = Math.floor(Math.random() * 2);
+        let model = Math.floor(Math.random() * 3);
         let data = await VertexDataLoader.instance.getColorized("fongus-" + model, color.toHexString());
         data.applyToMesh(newFongi);
         newFongi.material = Main.cellShadingMaterial;

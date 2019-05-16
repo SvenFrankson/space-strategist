@@ -9,14 +9,13 @@ Exporter version: 5.4.2, Blender version: 2.78 (sub 0)
 	WARNING: No active camera has been assigned, or is not in a currently selected Blender layer
 	processing begun of mesh:  Circle.001
 		WARNING: No materials have been assigned: 
-		num positions      :  33
-		num normals        :  33
+		num positions      :  32
+		num normals        :  32
 		num uvs            :  0
 		num uvs2           :  0
-		num colors         :  132
-		num indices        :  171
-		WARNING: # of 0 area faces found:  6
+		num colors         :  128
+		num indices        :  138
 ========= Writing of scene file started =========
 ========= Writing of scene file completed =========
 ========= end of processing =========
-elapsed time:  0 min, 0.032 secs
+elapsed time:  0 min, 0.02 secs
