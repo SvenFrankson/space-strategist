@@ -516,6 +516,24 @@ class Serializer {
     }
 }
 class SpaceMath {
+    static easeOutElastic(t, b = 0, c = 1, d = 1) {
+        var s = 1.70158;
+        var p = 0;
+        var a = c;
+        if (t == 0)
+            return b;
+        if ((t /= d) == 1)
+            return b + c;
+        if (!p)
+            p = d * .3;
+        if (a < Math.abs(c)) {
+            a = c;
+            var s = p / 4;
+        }
+        else
+            var s = p / (2 * Math.PI) * Math.asin(c / a);
+        return a * Math.pow(2, -10 * t) * Math.sin((t * d - s) * (2 * Math.PI) / p) + c + b;
+    }
     static ProjectPerpendicularAt(v, at) {
         let p = BABYLON.Vector3.Zero();
         let k = (v.x * at.x + v.y * at.y + v.z * at.z);
@@ -633,6 +651,7 @@ class Fongus extends BABYLON.Mesh {
         this.position2D = BABYLON.Vector2.Zero();
         this.rotation2D = 0;
         this.fongis = [];
+        this.anims = new Map();
         this._timeout = Infinity;
         this._update = () => {
             this._timeout--;
@@ -688,26 +707,33 @@ class Fongus extends BABYLON.Mesh {
         let data = await VertexDataLoader.instance.getColorized("fongus-" + model, color.toHexString());
         data.applyToMesh(newFongi);
         newFongi.material = Main.cellShadingMaterial;
-        let speed = Math.round(10 + Math.random() * 20);
+        let speed = Math.round(60 + Math.random() * 120);
         let k = 0;
         let size = 0.5 + Math.random();
         let newFongiAnim = () => {
             k++;
-            let scale = k / speed * k / speed * size;
+            let scale = SpaceMath.easeOutElastic(k / speed) * size;
             if (k < speed) {
                 newFongi.scaling.copyFromFloats(scale, scale, scale);
             }
             else {
                 newFongi.scaling.copyFromFloats(size, size, size);
+                this.anims.delete(newFongi);
                 this.getScene().onBeforeRenderObservable.removeCallback(newFongiAnim);
             }
         };
+        this.anims.set(newFongi, newFongiAnim);
         this.getScene().onBeforeRenderObservable.add(newFongiAnim);
         this.fongis.push(newFongi);
         if (this.fongis.length > 20) {
             let speed = Math.round(5 + Math.random() * 15);
             let index = Math.floor(Math.random() * 3);
             let oldFongi = this.fongis.splice(index, 1)[0];
+            let newAnim = this.anims.get(oldFongi);
+            if (newAnim) {
+                this.anims.delete(oldFongi);
+                this.getScene().onBeforeRenderObservable.removeCallback(newAnim);
+            }
             let k = 0;
             let size = oldFongi.scaling.x;
             let oldFongiAnim = () => {
@@ -746,7 +772,6 @@ class Fongus extends BABYLON.Mesh {
     _findPath() {
         let dest = this.findRandomDestination();
         if (dest) {
-            BABYLON.MeshBuilder.CreateBox("box", { size: 0.5 }).position.copyFromFloats(dest.x, 1, dest.y);
             let navGraph = NavGraphManager.GetForRadius(1);
             navGraph.update();
             navGraph.computePathFromTo(this.position2D, dest);

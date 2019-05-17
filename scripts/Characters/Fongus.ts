@@ -6,6 +6,7 @@ class Fongus extends BABYLON.Mesh {
     public currentPath: BABYLON.Vector2[];
 
     public fongis: BABYLON.Mesh[] = [];
+    public anims: Map<BABYLON.Mesh, () => void> = new Map<BABYLON.Mesh, () => void>(); 
 
     constructor() {
         super("fongus");
@@ -53,20 +54,22 @@ class Fongus extends BABYLON.Mesh {
         data.applyToMesh(newFongi);
         newFongi.material = Main.cellShadingMaterial;
 
-        let speed = Math.round(10 + Math.random() * 20);
+        let speed = Math.round(60 + Math.random() * 120);
         let k = 0;
         let size = 0.5 + Math.random();
         let newFongiAnim = () => {
             k++;
-            let scale = k / speed * k / speed * size;
+            let scale = SpaceMath.easeOutElastic(k / speed) * size;
             if (k < speed) {
                 newFongi.scaling.copyFromFloats(scale, scale, scale);
             }
             else {
                 newFongi.scaling.copyFromFloats(size, size, size);
+                this.anims.delete(newFongi);
                 this.getScene().onBeforeRenderObservable.removeCallback(newFongiAnim);
             }
         }
+        this.anims.set(newFongi, newFongiAnim);
         this.getScene().onBeforeRenderObservable.add(newFongiAnim);
         this.fongis.push(newFongi);
 
@@ -74,6 +77,11 @@ class Fongus extends BABYLON.Mesh {
             let speed = Math.round(5 + Math.random() * 15);
             let index = Math.floor(Math.random() * 3)
             let oldFongi = this.fongis.splice(index, 1)[0];
+            let newAnim = this.anims.get(oldFongi);
+            if (newAnim) {
+                this.anims.delete(oldFongi);
+                this.getScene().onBeforeRenderObservable.removeCallback(newAnim);
+            }
             let k = 0;
             let size = oldFongi.scaling.x;
             let oldFongiAnim = () => {
@@ -114,7 +122,6 @@ class Fongus extends BABYLON.Mesh {
     private _findPath(): void {
         let dest = this.findRandomDestination();
         if (dest) {
-            BABYLON.MeshBuilder.CreateBox("box", {size: 0.5}).position.copyFromFloats(dest.x, 1, dest.y);
             let navGraph = NavGraphManager.GetForRadius(1);
             navGraph.update();
             navGraph.computePathFromTo(this.position2D, dest);
