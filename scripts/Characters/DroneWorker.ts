@@ -50,7 +50,6 @@ class DroneWorker extends BABYLON.Mesh {
     private _findPath(): void {
         let dest = this.findRandomDestination();
         if (dest) {
-            BABYLON.MeshBuilder.CreateBox("box", {size: 0.5}).position.copyFromFloats(dest.x, 1, dest.y);
             let navGraph = NavGraphManager.GetForRadius(1);
             navGraph.update();
             navGraph.computePathFromTo(this.position2D, dest);
