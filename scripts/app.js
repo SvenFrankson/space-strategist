@@ -634,7 +634,13 @@ class Fongus extends BABYLON.Mesh {
         this.position2D = BABYLON.Vector2.Zero();
         this.rotation2D = 0;
         this.fongis = [];
+        this._timeout = Infinity;
         this._update = () => {
+            this._timeout--;
+            if (this._timeout <= 0) {
+                this._generateNewFongi();
+                this._timeout = Math.round(5 + Math.random() * 10);
+            }
             if (!this.currentPath || this.currentPath.length === 0) {
                 this._findPath();
             }
@@ -663,7 +669,7 @@ class Fongus extends BABYLON.Mesh {
         this.getScene().onBeforeRenderObservable.add(this._update);
     }
     async instantiate() {
-        this._generateNewFongi();
+        this._timeout = 0;
     }
     async _generateNewFongi() {
         let newFongi = new BABYLON.Mesh("fongi");
@@ -683,31 +689,32 @@ class Fongus extends BABYLON.Mesh {
         let data = await VertexDataLoader.instance.getColorized("fongus-" + model, color.toHexString());
         data.applyToMesh(newFongi);
         newFongi.material = Main.cellShadingMaterial;
+        let speed = Math.round(10 + Math.random() * 20);
         let k = 0;
         let size = 0.5 + Math.random();
         let newFongiAnim = () => {
             k++;
-            let scale = k / 20 * k / 20 * size;
-            if (k < 20) {
+            let scale = k / speed * k / speed * size;
+            if (k < speed) {
                 newFongi.scaling.copyFromFloats(scale, scale, scale);
             }
             else {
                 newFongi.scaling.copyFromFloats(size, size, size);
                 this.getScene().onBeforeRenderObservable.removeCallback(newFongiAnim);
-                this._generateNewFongi();
             }
         };
         this.getScene().onBeforeRenderObservable.add(newFongiAnim);
         this.fongis.push(newFongi);
         if (this.fongis.length > 20) {
+            let speed = Math.round(5 + Math.random() * 15);
             let index = Math.floor(Math.random() * 3);
             let oldFongi = this.fongis.splice(index, 1)[0];
             let k = 0;
             let size = oldFongi.scaling.x;
             let oldFongiAnim = () => {
                 k++;
-                let scale = (1 - k / 15 * k / 15) * size;
-                if (k < 15) {
+                let scale = (1 - k / speed * k / speed) * size;
+                if (k < speed) {
                     oldFongi.scaling.copyFromFloats(scale, scale, scale);
                 }
                 else {
