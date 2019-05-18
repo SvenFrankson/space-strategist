@@ -721,13 +721,13 @@ class Fongus extends BABYLON.Mesh {
         particleMaterial.emissiveColor = BABYLON.Color3.Red();
         var plane = BABYLON.Mesh.CreatePlane("plane", 0.2, this.getScene());
         let repairParticle = new BABYLON.SolidParticleSystem('SPS', this.getScene());
-        repairParticle.addShape(plane, 20);
+        repairParticle.addShape(plane, 15);
         var mesh = repairParticle.buildMesh();
         mesh.material = particleMaterial;
         plane.dispose(); // free memory
         // SPS behavior definition
         var particleSpeed = 0.05;
-        var gravity = -0.005;
+        var gravity = -0.003;
         // init
         repairParticle.initParticles = () => {
             // just recycle everything
@@ -750,9 +750,10 @@ class Fongus extends BABYLON.Mesh {
             particle.rotation.x = Math.random() * 3.5;
             particle.rotation.y = Math.random() * 3.5;
             particle.rotation.z = Math.random() * 3.5;
-            particle.color.r = Math.random() * 0.4 + 0.3;
-            particle.color.g = 1;
-            particle.color.b = particle.color.r;
+            let color = Math.random() * 0.4 + 0.3;
+            particle.color.r = color;
+            particle.color.g = color;
+            particle.color.b = color;
             particle.color.a = 1;
             return particle;
         };
