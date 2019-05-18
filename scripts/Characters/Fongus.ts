@@ -57,9 +57,85 @@ class Fongus extends BABYLON.Mesh {
         let speed = Math.round(60 + Math.random() * 120);
         let k = 0;
         let size = 0.5 + Math.random();
+
+         // SPS creation
+         let particleMaterial = new BABYLON.StandardMaterial(name + "-material", this.getScene());
+        particleMaterial.specularColor.copyFromFloats(0, 0, 0);
+        particleMaterial.emissiveColor = BABYLON.Color3.Red();
+
+         var plane = BABYLON.Mesh.CreatePlane("plane", 0.2, this.getScene());
+         let repairParticle = new BABYLON.SolidParticleSystem('SPS', this.getScene());
+         repairParticle.addShape(plane, 20);
+         var mesh = repairParticle.buildMesh();
+         mesh.material = particleMaterial;
+         plane.dispose();  // free memory
+         
+
+         // SPS behavior definition
+         var particleSpeed = 0.05;
+         var gravity = -0.005;
+
+         // init
+         repairParticle.initParticles = () => {
+             // just recycle everything
+             for (var p = 0; p < repairParticle.nbParticles; p++) {
+                 repairParticle.recycleParticle(repairParticle.particles[p]);
+             }
+         };
+
+         // recycle
+         repairParticle.recycleParticle = (particle) => {
+             // Set particle new velocity, scale and rotation
+             // As this function is called for each particle, we don't allocate new
+             // memory by using "new BABYLON.Vector3()" but we set directly the
+             // x, y, z particle properties instead
+             particle.position.x = 0;
+             particle.position.y = 0;
+             particle.position.z = 0;
+             particle.velocity.x = (Math.random() - 0.5) * particleSpeed;
+             particle.velocity.y = Math.random() * particleSpeed;
+             particle.velocity.z = (Math.random() - 0.5) * particleSpeed;
+             particle.rotation.x = Math.random() * 3.5;
+             particle.rotation.y = Math.random() * 3.5;
+             particle.rotation.z = Math.random() * 3.5;
+             particle.color.r = Math.random() * 0.4 + 0.3;
+             particle.color.g = 1;
+             particle.color.b = particle.color.r;
+             particle.color.a = 1;
+             return particle;
+         };
+
+         // update : will be called by setParticles()
+         repairParticle.updateParticle = (particle) => {  
+             // some physics here 
+             if (particle.position.y < 0) {
+                 repairParticle.recycleParticle(particle);
+             }
+             particle.velocity.y += gravity;                         // apply gravity to y
+             (particle.position).addInPlace(particle.velocity);      // update particle new position
+             particle.position.y += particleSpeed / 2;
+             particle.scale.scaleInPlace(0.95);
+             return particle;
+         };
+
+
+         // init all particle values and set them once to apply textures, colors, etc
+         repairParticle.initParticles();
+         repairParticle.setParticles();
+         
+         // Tuning : plane particles facing, so billboard and no rotation computation
+         // colors not changing then, neither textures
+         repairParticle.billboard = true;
+         repairParticle.computeParticleRotation = false;
+         repairParticle.computeParticleColor = false;
+         repairParticle.computeParticleTexture = false;
+
+         repairParticle.mesh.position.copyFrom(newFongi.position);
+
         let newFongiAnim = () => {
             k++;
             let scale = SpaceMath.easeOutElastic(k / speed) * size;
+            repairParticle.setParticles();
             if (k < speed) {
                 newFongi.scaling.copyFromFloats(scale, scale, scale);
             }
@@ -67,6 +143,7 @@ class Fongus extends BABYLON.Mesh {
                 newFongi.scaling.copyFromFloats(size, size, size);
                 this.anims.delete(newFongi);
                 this.getScene().onBeforeRenderObservable.removeCallback(newFongiAnim);
+                repairParticle.dispose();
             }
         }
         this.anims.set(newFongi, newFongiAnim);
