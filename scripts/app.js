@@ -656,7 +656,7 @@ class Fongus extends BABYLON.Mesh {
         this.position2D = BABYLON.Vector2.Zero();
         this.rotation2D = 0;
         this.fongis = [];
-        this.anims = new Map();
+        this.animsCleanUp = new Map();
         this._timeout = Infinity;
         this._update = () => {
             this._timeout--;
@@ -708,39 +708,38 @@ class Fongus extends BABYLON.Mesh {
         color.r += Math.random() * 0.2 - 0.1;
         color.g += Math.random() * 0.2 - 0.1;
         color.b += Math.random() * 0.2 - 0.1;
+        let colorBase = new BABYLON.Color3(color.r * 0.4 + 0.6, color.g * 0.4 + 0.6, color.b * 0.4 + 0.6);
         let model = Math.floor(Math.random() * 3);
-        let data = await VertexDataLoader.instance.getColorized("fongus-" + model, color.toHexString());
+        let data = await VertexDataLoader.instance.getColorized("fongus-" + model, colorBase.toHexString(), "", color.toHexString());
         data.applyToMesh(newFongi);
         newFongi.material = Main.cellShadingMaterial;
-        let speed = Math.round(60 + Math.random() * 120);
+        let top = BABYLON.Vector3.Zero();
+        let positions = data.positions;
+        for (let i = 0; i < positions.length / 3; i++) {
+            if (top.y < positions[3 * i + 1]) {
+                top.copyFromFloats(positions[3 * i], positions[3 * i + 1], positions[3 * i + 2]);
+            }
+        }
+        let speed = Math.round(100 + Math.random() * 200);
         let k = 0;
         let size = 0.5 + Math.random();
         // SPS creation
         let particleMaterial = new BABYLON.StandardMaterial(name + "-material", this.getScene());
         particleMaterial.specularColor.copyFromFloats(0, 0, 0);
-        particleMaterial.emissiveColor = BABYLON.Color3.Red();
+        particleMaterial.emissiveColor = BABYLON.Color3.Gray();
         var plane = BABYLON.Mesh.CreatePlane("plane", 0.2, this.getScene());
-        let repairParticle = new BABYLON.SolidParticleSystem('SPS', this.getScene());
-        repairParticle.addShape(plane, 15);
-        var mesh = repairParticle.buildMesh();
+        let earthParticle = new BABYLON.SolidParticleSystem('SPS', this.getScene());
+        earthParticle.addShape(plane, 15);
+        var mesh = earthParticle.buildMesh();
         mesh.material = particleMaterial;
-        plane.dispose(); // free memory
-        // SPS behavior definition
         var particleSpeed = 0.05;
         var gravity = -0.003;
-        // init
-        repairParticle.initParticles = () => {
-            // just recycle everything
-            for (var p = 0; p < repairParticle.nbParticles; p++) {
-                repairParticle.recycleParticle(repairParticle.particles[p]);
+        earthParticle.initParticles = () => {
+            for (var p = 0; p < earthParticle.nbParticles; p++) {
+                earthParticle.recycleParticle(earthParticle.particles[p]);
             }
         };
-        // recycle
-        repairParticle.recycleParticle = (particle) => {
-            // Set particle new velocity, scale and rotation
-            // As this function is called for each particle, we don't allocate new
-            // memory by using "new BABYLON.Vector3()" but we set directly the
-            // x, y, z particle properties instead
+        earthParticle.recycleParticle = (particle) => {
             particle.position.x = 0;
             particle.position.y = 0;
             particle.position.z = 0;
@@ -757,53 +756,53 @@ class Fongus extends BABYLON.Mesh {
             particle.color.a = 1;
             return particle;
         };
-        // update : will be called by setParticles()
-        repairParticle.updateParticle = (particle) => {
-            // some physics here 
+        earthParticle.updateParticle = (particle) => {
             if (particle.position.y < 0) {
-                repairParticle.recycleParticle(particle);
+                earthParticle.recycleParticle(particle);
             }
-            particle.velocity.y += gravity; // apply gravity to y
-            (particle.position).addInPlace(particle.velocity); // update particle new position
+            particle.velocity.y += gravity;
+            (particle.position).addInPlace(particle.velocity);
             particle.position.y += particleSpeed / 2;
             particle.scale.scaleInPlace(0.95);
             return particle;
         };
         // init all particle values and set them once to apply textures, colors, etc
-        repairParticle.initParticles();
-        repairParticle.setParticles();
-        // Tuning : plane particles facing, so billboard and no rotation computation
-        // colors not changing then, neither textures
-        repairParticle.billboard = true;
-        repairParticle.computeParticleRotation = false;
-        repairParticle.computeParticleColor = false;
-        repairParticle.computeParticleTexture = false;
-        repairParticle.mesh.position.copyFrom(newFongi.position);
+        earthParticle.initParticles();
+        earthParticle.setParticles();
+        earthParticle.billboard = true;
+        earthParticle.computeParticleRotation = false;
+        earthParticle.computeParticleColor = false;
+        earthParticle.computeParticleTexture = false;
+        earthParticle.mesh.position.copyFrom(newFongi.position);
+        let rSpeed = 0.8 * Math.random() - 0.4;
         let newFongiAnim = () => {
+            rSpeed *= 0.95;
+            newFongi.rotation.y += rSpeed;
             k++;
-            let scale = SpaceMath.easeOutElastic(k / speed) * size;
-            repairParticle.setParticles();
             if (k < speed) {
+                let scale = SpaceMath.easeOutElastic(k / speed) * size;
+                earthParticle.setParticles();
                 newFongi.scaling.copyFromFloats(scale, scale, scale);
             }
             else {
                 newFongi.scaling.copyFromFloats(size, size, size);
-                this.anims.delete(newFongi);
-                this.getScene().onBeforeRenderObservable.removeCallback(newFongiAnim);
-                repairParticle.dispose();
+                earthParticle.dispose();
             }
         };
-        this.anims.set(newFongi, newFongiAnim);
+        this.animsCleanUp.set(newFongi, () => {
+            this.getScene().onBeforeRenderObservable.removeCallback(newFongiAnim);
+            earthParticle.dispose();
+        });
         this.getScene().onBeforeRenderObservable.add(newFongiAnim);
         this.fongis.push(newFongi);
         if (this.fongis.length > 20) {
             let speed = Math.round(5 + Math.random() * 15);
             let index = Math.floor(Math.random() * 3);
             let oldFongi = this.fongis.splice(index, 1)[0];
-            let newAnim = this.anims.get(oldFongi);
-            if (newAnim) {
-                this.anims.delete(oldFongi);
-                this.getScene().onBeforeRenderObservable.removeCallback(newAnim);
+            let animCleanUp = this.animsCleanUp.get(oldFongi);
+            if (animCleanUp) {
+                animCleanUp();
+                this.animsCleanUp.delete(oldFongi);
             }
             let k = 0;
             let size = oldFongi.scaling.x;
