@@ -11,7 +11,7 @@ class Turret extends Prop {
             let turretCount = this.getScene().meshes.filter((m) => { return m instanceof Turret; }).length;
             this.name = "turret-" + turretCount;
         }
-        this.obstacle = Obstacle.CreateRectWithPosRotSource(this, 1, 1);
+        this.obstacle = Obstacle.CreateRectWithPosRotSource(this, 2, 2);
         this.obstacle.name = name + "-obstacle";
         this.getScene().onBeforeRenderObservable.add(this._update);
     }
@@ -34,6 +34,9 @@ class Turret extends Prop {
         this._canon.material = Main.cellShadingMaterial;
         this._canon.parent = this._head;
         this._canon.position.copyFromFloats(0, 0.7, 0);
+
+        this.groundWidth = 2;
+        this.height = 3;
     }
 
     private _dirForward: BABYLON.Vector2 = BABYLON.Vector2.Zero();
