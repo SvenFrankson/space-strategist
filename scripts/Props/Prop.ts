@@ -53,6 +53,9 @@ abstract class Prop extends Draggable {
         if(data.elementName === "Tank") {
             return new Tank(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
         }
+        if(data.elementName === "Turret") {
+            return new Turret(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
+        }
         return undefined;
     }
 

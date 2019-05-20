@@ -70,6 +70,7 @@ class SceneEditor {
         this._panel.addTitle2("PROPS");
         this._panel.addLargeButton("CONTAINER", this.createContainer);
         this._panel.addLargeButton("TANK", this.createTank);
+        this._panel.addLargeButton("TURRET", this.createTurret);
         this._panel.addLargeButton("WALL", this.createNode);
         this._panel.addTitle2("DATA");
 
@@ -110,6 +111,12 @@ class SceneEditor {
     private createTank = () => {
         this.selectedElement = undefined;
         this._newProp = new Tank("", BABYLON.Vector2.Zero(), 0);
+        this._newProp.instantiate();
+    }
+
+    private createTurret = () => {
+        this.selectedElement = undefined;
+        this._newProp = new Turret("", BABYLON.Vector2.Zero(), 0);
         this._newProp.instantiate();
     }
 

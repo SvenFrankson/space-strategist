@@ -50,7 +50,7 @@ class Fongus extends BABYLON.Mesh {
         color.g += Math.random() * 0.2 - 0.1;
         color.b += Math.random() * 0.2 - 0.1;
         let colorBase = new BABYLON.Color3(
-            color.r * 0.4 + 0.6,
+            color.r * 0.4 + 0.6,    
             color.g * 0.4 + 0.6,
             color.b * 0.4 + 0.6,
         )

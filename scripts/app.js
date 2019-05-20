@@ -896,6 +896,11 @@ class SceneEditor {
             this._newProp = new Tank("", BABYLON.Vector2.Zero(), 0);
             this._newProp.instantiate();
         };
+        this.createTurret = () => {
+            this.selectedElement = undefined;
+            this._newProp = new Turret("", BABYLON.Vector2.Zero(), 0);
+            this._newProp.instantiate();
+        };
         this.createNode = () => {
             this.selectedElement = undefined;
             this.removeEventListenerDrag();
@@ -1047,6 +1052,7 @@ class SceneEditor {
         this._panel.addTitle2("PROPS");
         this._panel.addLargeButton("CONTAINER", this.createContainer);
         this._panel.addLargeButton("TANK", this.createTank);
+        this._panel.addLargeButton("TURRET", this.createTurret);
         this._panel.addLargeButton("WALL", this.createNode);
         this._panel.addTitle2("DATA");
         this._panel.addMediumButtons("SAVE", () => {
@@ -1877,6 +1883,9 @@ class Prop extends Draggable {
         if (data.elementName === "Tank") {
             return new Tank(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
         }
+        if (data.elementName === "Turret") {
+            return new Turret(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
+        }
         return undefined;
     }
     elementName() {
@@ -1985,6 +1994,58 @@ class Tank extends Prop {
     }
     elementName() {
         return "Tank";
+    }
+}
+class Turret extends Prop {
+    constructor(name, position2D, rotation2D) {
+        super(name, position2D, rotation2D);
+        this._dirForward = BABYLON.Vector2.Zero();
+        this._dirToTarget = BABYLON.Vector2.Zero();
+        this._update = () => {
+            if (this.target) {
+                this._dirForward.copyFromFloats(0, 1);
+                this._dirToTarget.copyFrom(this.target.position2D);
+                this._dirToTarget.subtractInPlace(this.position2D);
+                let azimut = Math2D.AngleFromTo(this._dirForward, this._dirToTarget);
+                this._head.rotation.y = -azimut;
+                let tanElevation = 2.8 / this._dirToTarget.length();
+                let elevation = Math.atan(tanElevation);
+                this._canon.rotation.x = elevation;
+            }
+            else {
+                let meshes = this.getScene().meshes.find((m) => { return m instanceof Fongus; });
+                if (meshes instanceof Fongus) {
+                    this.target = meshes;
+                }
+            }
+        };
+        if (this.name === "") {
+            let turretCount = this.getScene().meshes.filter((m) => { return m instanceof Turret; }).length;
+            this.name = "turret-" + turretCount;
+        }
+        this.obstacle = Obstacle.CreateRectWithPosRotSource(this, 1, 1);
+        this.obstacle.name = name + "-obstacle";
+        this.getScene().onBeforeRenderObservable.add(this._update);
+    }
+    async instantiate() {
+        let data = await VertexDataLoader.instance.get("turret-base");
+        data.applyToMesh(this);
+        this.material = Main.cellShadingMaterial;
+        this._head = new BABYLON.Mesh("turret-head");
+        let headData = await VertexDataLoader.instance.get("turret-head");
+        headData.applyToMesh(this._head);
+        this._head.material = Main.cellShadingMaterial;
+        this._head.parent = this;
+        this._head.position.copyFromFloats(0, 2.1, 0);
+        this._canon = new BABYLON.Mesh("turret-canon");
+        let canonData = await VertexDataLoader.instance.get("turret-canon");
+        canonData.applyToMesh(this._canon);
+        this._canon.material = Main.cellShadingMaterial;
+        this._canon.parent = this._head;
+        this._canon.position.copyFromFloats(0, 0.7, 0);
+    }
+    elementName() {
+        return "Turret";
     }
 }
 class WallNode extends Draggable {
