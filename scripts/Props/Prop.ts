@@ -9,7 +9,7 @@ class PropData {
 
 abstract class Prop extends Draggable {
 
-    public rotation2D: number;
+    public rotation2D: number = 0;
 
     public obstacle: Obstacle;
 

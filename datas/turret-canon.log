@@ -9,13 +9,13 @@ Exporter version: 5.4.2, Blender version: 2.78 (sub 0)
 	WARNING: No active camera has been assigned, or is not in a currently selected Blender layer
 	processing begun of mesh:  canon
 		WARNING: No materials have been assigned: 
-		num positions      :  89
-		num normals        :  89
+		num positions      :  108
+		num normals        :  108
 		num uvs            :  0
 		num uvs2           :  0
-		num colors         :  0
+		num colors         :  432
 		num indices        :  474
 ========= Writing of scene file started =========
 ========= Writing of scene file completed =========
 ========= end of processing =========
-elapsed time:  0 min, 0.0534 secs
+elapsed time:  0 min, 0.044 secs

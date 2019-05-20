@@ -1852,6 +1852,7 @@ class PropData {
 class Prop extends Draggable {
     constructor(name, position2D, rotation2D) {
         super(name);
+        this.rotation2D = 0;
         this._updatePosition = () => {
             this.position.x = this.position2D.x;
             this.position.z = this.position2D.y;
@@ -2028,17 +2029,17 @@ class Turret extends Prop {
         this.getScene().onBeforeRenderObservable.add(this._update);
     }
     async instantiate() {
-        let data = await VertexDataLoader.instance.get("turret-base");
+        let data = await VertexDataLoader.instance.getColorized("turret-base", "#ce7633", "#383838", "#6d6d6d", "#d0d0d0", "#ce7633");
         data.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
         this._head = new BABYLON.Mesh("turret-head");
-        let headData = await VertexDataLoader.instance.get("turret-head");
+        let headData = await VertexDataLoader.instance.getColorized("turret-head", "#ce7633", "#383838", "#6d6d6d");
         headData.applyToMesh(this._head);
         this._head.material = Main.cellShadingMaterial;
         this._head.parent = this;
         this._head.position.copyFromFloats(0, 2.1, 0);
         this._canon = new BABYLON.Mesh("turret-canon");
-        let canonData = await VertexDataLoader.instance.get("turret-canon");
+        let canonData = await VertexDataLoader.instance.getColorized("turret-canon", "#ce7633", "#383838", "#6d6d6d");
         canonData.applyToMesh(this._canon);
         this._canon.material = Main.cellShadingMaterial;
         this._canon.parent = this._head;
