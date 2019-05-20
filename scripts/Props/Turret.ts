@@ -42,6 +42,9 @@ class Turret extends Prop {
     private _dirForward: BABYLON.Vector2 = BABYLON.Vector2.Zero();
     private _dirToTarget: BABYLON.Vector2 = BABYLON.Vector2.Zero();
     private _update = () => {
+        if (Math.random() < 1 / 120) {
+            this.fire();
+        }
         if (this.target) {
             this._dirForward.copyFromFloats(0, 1);
             this._dirToTarget.copyFrom(this.target.position2D);
@@ -58,6 +61,27 @@ class Turret extends Prop {
                 this.target = meshes;
             }
         }
+    }
+
+    private async fire(): Promise<void> {
+        let bullet = new BABYLON.Mesh("bullet");
+        let data = await VertexDataLoader.instance.getColorized("turret-ammo", "#101010", "", "#ff0000");
+        data.applyToMesh(bullet);
+        bullet.rotation.y = this._head.rotation.y;
+        bullet.rotation.x = this._canon.rotation.x;
+        bullet.position.copyFrom(this.position);
+        bullet.position.y += 2.8;
+        let k = 0;
+        let dir = this._canon.getDirection(BABYLON.Axis.Z).scaleInPlace(1);
+        let ammoUpdate = () => {
+            k++;
+            bullet.position.addInPlace(dir);
+            if (k > 1000 || bullet.position.y < 0) {
+                bullet.getScene().onBeforeRenderObservable.removeCallback(ammoUpdate);
+                bullet.dispose();
+            }
+        }
+        bullet.getScene().onBeforeRenderObservable.add(ammoUpdate);
     }
 
     public elementName(): string {
