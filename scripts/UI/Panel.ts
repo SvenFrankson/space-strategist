@@ -53,6 +53,7 @@ class SpacePanel extends HTMLElement {
             this._target.getScene(),
         );
         this._line.renderingGroupId = 1;
+        this._line.layerMask = 0x10000000;
         this._target.getScene().onBeforeRenderObservable.add(this._update);
     }
 
@@ -60,7 +61,7 @@ class SpacePanel extends HTMLElement {
         if (!this._target) {
             return;
         }
-        let dView = this._target.position.subtract(this._target.getScene().activeCamera.position);
+        let dView = this._target.position.subtract(Main.Camera.position);
         let n = BABYLON.Vector3.Cross(dView, new BABYLON.Vector3(0, 1, 0));
         n.normalize();
         n.scaleInPlace(- this._target.groundWidth * 0.5);
@@ -68,17 +69,11 @@ class SpacePanel extends HTMLElement {
         let p1 = this._target.position.add(n);
         let p2 = p1.clone();
         p2.y += this._target.groundWidth * 0.5 + this._target.height;
-        let targetScreenPos = BABYLON.Vector3.Project(
-            p0,
-            BABYLON.Matrix.Identity(),
-            this._target.getScene().getTransformMatrix(),
-            this._target.getScene().activeCamera.viewport.toGlobal(1, 1)
-        );
         let screenPos = BABYLON.Vector3.Project(
             p2,
             BABYLON.Matrix.Identity(),
             this._target.getScene().getTransformMatrix(),
-            this._target.getScene().activeCamera.viewport.toGlobal(1, 1)
+            Main.Camera.viewport.toGlobal(1, 1)
         );
         this.style.left = (screenPos.x * Main.Canvas.width - this.clientWidth * 0.5) + "px";
         this.style.bottom = ((1 - screenPos.y) * Main.Canvas.height) + "px";

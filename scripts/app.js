@@ -22,9 +22,9 @@ class Main {
     async createScene() {
         Main.Scene = new BABYLON.Scene(Main.Engine);
         Main.Light = new BABYLON.HemisphericLight("AmbientLight", new BABYLON.Vector3(1, 3, 2), Main.Scene);
-        var camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 1, new BABYLON.Vector3(0, 0, 0), Main.Scene);
-        camera.setPosition(new BABYLON.Vector3(0, 5, -10));
-        camera.attachControl(Main.Canvas, true);
+        Main.Camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 1, new BABYLON.Vector3(0, 0, 0), Main.Scene);
+        Main.Camera.setPosition(new BABYLON.Vector3(0, 5, -10));
+        Main.Camera.attachControl(Main.Canvas, true);
         BABYLON.Effect.ShadersStore["EdgeFragmentShader"] = `
 			#ifdef GL_ES
 			precision highp float;
@@ -65,13 +65,17 @@ class Main {
 				}
 			}
         `;
-        let depthMap = Main.Scene.enableDepthRenderer(camera).getDepthMap();
-        var postProcess = new BABYLON.PostProcess("Edge", "Edge", ["width", "height"], ["depthSampler"], 1, camera);
+        let depthMap = Main.Scene.enableDepthRenderer(Main.Camera).getDepthMap();
+        var postProcess = new BABYLON.PostProcess("Edge", "Edge", ["width", "height"], ["depthSampler"], 1, Main.Camera);
         postProcess.onApply = (effect) => {
             effect.setTexture("depthSampler", depthMap);
             effect.setFloat("width", Main.Engine.getRenderWidth());
             effect.setFloat("height", Main.Engine.getRenderHeight());
         };
+        var noPostProcessCamera = new BABYLON.FreeCamera("no-post-process-camera", BABYLON.Vector3.Zero(), Main.Scene);
+        noPostProcessCamera.parent = Main.Camera;
+        noPostProcessCamera.layerMask = 0x10000000;
+        Main.Scene.activeCameras.push(Main.Camera, noPostProcessCamera);
         new VertexDataLoader(Main.Scene);
         new NavGraphManager();
         let start = new BABYLON.Vector2(0, -10);
@@ -917,7 +921,7 @@ class SceneEditor {
             if (pick.hit && pick.pickedMesh instanceof Draggable) {
                 if (this.selectedElement === pick.pickedMesh) {
                     this._draggedElement = pick.pickedMesh;
-                    this.scene.activeCamera.detachControl(Main.Canvas);
+                    Main.Camera.detachControl(Main.Canvas);
                 }
             }
         };
@@ -964,7 +968,7 @@ class SceneEditor {
                     this.selectedElement = undefined;
                 }
             }
-            this.scene.activeCamera.attachControl(Main.Canvas);
+            Main.Camera.attachControl(Main.Canvas);
         };
         this.pointerUpFirst = () => {
             let pick = this.scene.pick(this.scene.pointerX, this.scene.pointerY, (m) => {
@@ -2003,7 +2007,7 @@ class Turret extends Prop {
         this._dirForward = BABYLON.Vector2.Zero();
         this._dirToTarget = BABYLON.Vector2.Zero();
         this._update = () => {
-            if (Math.random() < 1 / 120) {
+            if (Math.random() < 1 / 30) {
                 this.fire();
             }
             if (this.target) {
@@ -2011,7 +2015,7 @@ class Turret extends Prop {
                 this._dirToTarget.copyFrom(this.target.position2D);
                 this._dirToTarget.subtractInPlace(this.position2D);
                 let azimut = Math2D.AngleFromTo(this._dirForward, this._dirToTarget);
-                this._head.rotation.y = -azimut;
+                this._headBase.rotation.y = -azimut;
                 let tanElevation = 2.8 / this._dirToTarget.length();
                 let elevation = Math.atan(tanElevation);
                 this._canon.rotation.x = elevation;
@@ -2035,12 +2039,15 @@ class Turret extends Prop {
         let data = await VertexDataLoader.instance.getColorized("turret-base", "#ce7633", "#383838", "#6d6d6d", "#d0d0d0", "#ce7633");
         data.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
+        this._headBase = new BABYLON.Mesh("turret-canonBase");
+        this._headBase.parent = this;
+        this._headBase.position.copyFromFloats(0, 2.1, 0);
         this._head = new BABYLON.Mesh("turret-head");
         let headData = await VertexDataLoader.instance.getColorized("turret-head", "#ce7633", "#383838", "#6d6d6d");
         headData.applyToMesh(this._head);
         this._head.material = Main.cellShadingMaterial;
-        this._head.parent = this;
-        this._head.position.copyFromFloats(0, 2.1, 0);
+        this._head.parent = this._headBase;
+        this._head.position.copyFromFloats(0, 0, 0);
         this._canon = new BABYLON.Mesh("turret-canon");
         let canonData = await VertexDataLoader.instance.getColorized("turret-canon", "#ce7633", "#383838", "#6d6d6d");
         canonData.applyToMesh(this._canon);
@@ -2052,9 +2059,10 @@ class Turret extends Prop {
     }
     async fire() {
         let bullet = new BABYLON.Mesh("bullet");
-        let data = await VertexDataLoader.instance.getColorized("turret-ammo", "#101010", "", "#ff0000");
+        bullet.layerMask = 0x10000000;
+        let data = await VertexDataLoader.instance.getColorized("turret-ammo", "#101010", "", "#d0d0d0");
         data.applyToMesh(bullet);
-        bullet.rotation.y = this._head.rotation.y;
+        bullet.rotation.y = this._headBase.rotation.y;
         bullet.rotation.x = this._canon.rotation.x;
         bullet.position.copyFrom(this.position);
         bullet.position.y += 2.8;
@@ -2063,9 +2071,16 @@ class Turret extends Prop {
         let ammoUpdate = () => {
             k++;
             bullet.position.addInPlace(dir);
-            if (k > 1000 || bullet.position.y < 0) {
-                bullet.getScene().onBeforeRenderObservable.removeCallback(ammoUpdate);
-                bullet.dispose();
+            if (k < 30) {
+                let t = k / 30;
+                this._head.position.z = -0.25 * ((1 - t) - Math.pow(1 - t, 16));
+            }
+            else {
+                this._head.position.z = 0;
+                if (k > 1000 || bullet.position.y < 0) {
+                    bullet.getScene().onBeforeRenderObservable.removeCallback(ammoUpdate);
+                    bullet.dispose();
+                }
             }
         };
         bullet.getScene().onBeforeRenderObservable.add(ammoUpdate);
@@ -2565,7 +2580,7 @@ class SpacePanel extends HTMLElement {
             if (!this._target) {
                 return;
             }
-            let dView = this._target.position.subtract(this._target.getScene().activeCamera.position);
+            let dView = this._target.position.subtract(Main.Camera.position);
             let n = BABYLON.Vector3.Cross(dView, new BABYLON.Vector3(0, 1, 0));
             n.normalize();
             n.scaleInPlace(-this._target.groundWidth * 0.5);
@@ -2573,8 +2588,7 @@ class SpacePanel extends HTMLElement {
             let p1 = this._target.position.add(n);
             let p2 = p1.clone();
             p2.y += this._target.groundWidth * 0.5 + this._target.height;
-            let targetScreenPos = BABYLON.Vector3.Project(p0, BABYLON.Matrix.Identity(), this._target.getScene().getTransformMatrix(), this._target.getScene().activeCamera.viewport.toGlobal(1, 1));
-            let screenPos = BABYLON.Vector3.Project(p2, BABYLON.Matrix.Identity(), this._target.getScene().getTransformMatrix(), this._target.getScene().activeCamera.viewport.toGlobal(1, 1));
+            let screenPos = BABYLON.Vector3.Project(p2, BABYLON.Matrix.Identity(), this._target.getScene().getTransformMatrix(), Main.Camera.viewport.toGlobal(1, 1));
             this.style.left = (screenPos.x * Main.Canvas.width - this.clientWidth * 0.5) + "px";
             this.style.bottom = ((1 - screenPos.y) * Main.Canvas.height) + "px";
             this._line.setVerticesData(BABYLON.VertexBuffer.PositionKind, [...p0.asArray(), ...p2.asArray()]);
@@ -2613,6 +2627,7 @@ class SpacePanel extends HTMLElement {
             ]
         }, this._target.getScene());
         this._line.renderingGroupId = 1;
+        this._line.layerMask = 0x10000000;
         this._target.getScene().onBeforeRenderObservable.add(this._update);
     }
     addTitle1(title) {

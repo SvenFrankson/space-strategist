@@ -154,7 +154,7 @@ class SceneEditor {
         if (pick.hit && pick.pickedMesh instanceof Draggable) {
             if (this.selectedElement === pick.pickedMesh) {
                 this._draggedElement = pick.pickedMesh as Draggable;
-                this.scene.activeCamera.detachControl(Main.Canvas);
+                Main.Camera.detachControl(Main.Canvas);
             }
         }
     }
@@ -211,7 +211,7 @@ class SceneEditor {
                 this.selectedElement = undefined;
             }
         }
-        this.scene.activeCamera.attachControl(Main.Canvas);
+        Main.Camera.attachControl(Main.Canvas);
     }
 
     private pointerUpFirst = () => {

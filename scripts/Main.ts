@@ -5,7 +5,8 @@ class Main {
     public static Canvas: HTMLCanvasElement;
     public static Engine: BABYLON.Engine;
     public static Scene: BABYLON.Scene;
-    public static Light: BABYLON.Light;
+	public static Light: BABYLON.Light;
+	public static Camera: BABYLON.ArcRotateCamera;
 
     public static _cellShadingMaterial: BABYLON.CellMaterial;
 	public static get cellShadingMaterial(): BABYLON.CellMaterial {
@@ -36,9 +37,9 @@ class Main {
 
         Main.Light = new BABYLON.HemisphericLight("AmbientLight", new BABYLON.Vector3(1, 3, 2), Main.Scene);
 
-        var camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 1, new BABYLON.Vector3(0, 0, 0), Main.Scene);
-        camera.setPosition(new BABYLON.Vector3(0, 5, - 10));
-        camera.attachControl(Main.Canvas, true);
+        Main.Camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 1, new BABYLON.Vector3(0, 0, 0), Main.Scene);
+        Main.Camera.setPosition(new BABYLON.Vector3(0, 5, - 10));
+        Main.Camera.attachControl(Main.Canvas, true);
 
         BABYLON.Effect.ShadersStore["EdgeFragmentShader"] = `
 			#ifdef GL_ES
@@ -81,13 +82,19 @@ class Main {
 			}
         `;
         
-        let depthMap = Main.Scene.enableDepthRenderer(camera).getDepthMap();
-		var postProcess = new BABYLON.PostProcess("Edge", "Edge", ["width", "height"], ["depthSampler"], 1, camera);
+        let depthMap = Main.Scene.enableDepthRenderer(Main.Camera).getDepthMap();
+		var postProcess = new BABYLON.PostProcess("Edge", "Edge", ["width", "height"], ["depthSampler"], 1, Main.Camera);
 		postProcess.onApply = (effect) => {
 			effect.setTexture("depthSampler", depthMap);
 			effect.setFloat("width", Main.Engine.getRenderWidth());
 			effect.setFloat("height", Main.Engine.getRenderHeight());
-        };
+		};
+		
+		var noPostProcessCamera = new BABYLON.FreeCamera("no-post-process-camera", BABYLON.Vector3.Zero(), Main.Scene);
+		noPostProcessCamera.parent = Main.Camera;
+		noPostProcessCamera.layerMask = 0x10000000;
+		
+		Main.Scene.activeCameras.push(Main.Camera, noPostProcessCamera);
 
         new VertexDataLoader(Main.Scene);
         new NavGraphManager();
