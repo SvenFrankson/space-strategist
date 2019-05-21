@@ -73,7 +73,7 @@ class Turret extends Prop {
         bullet.layerMask = 0x10000000;
         let data = await VertexDataLoader.instance.getColorized("turret-ammo", "#101010", "", "#d0d0d0");
         data.applyToMesh(bullet);
-        bullet.rotation.y = this._headBase.rotation.y;
+        bullet.rotation.y = - this.rotation2D + this._headBase.rotation.y;
         bullet.rotation.x = this._canon.rotation.x;
         bullet.position.copyFrom(this.position);
         bullet.position.y += 2.8;
