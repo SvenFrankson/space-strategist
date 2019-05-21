@@ -78,10 +78,6 @@ class Main {
         Main.Scene.activeCameras.push(Main.Camera, noPostProcessCamera);
         new VertexDataLoader(Main.Scene);
         new NavGraphManager();
-        let start = new BABYLON.Vector2(0, -10);
-        BABYLON.MeshBuilder.CreateSphere("start", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(start.x, 0, start.y);
-        let end = new BABYLON.Vector2(0, 10);
-        BABYLON.MeshBuilder.CreateSphere("end", { diameter: 0.1 }, Main.Scene).position.copyFromFloats(end.x, 0, end.y);
         let wallSystem = new WallSystem();
         if (window.localStorage.getItem("scene-data")) {
             let data = JSON.parse(window.localStorage.getItem("scene-data"));
@@ -94,7 +90,7 @@ class Main {
         let performanceConsole = new PerformanceConsole(Main.Scene);
         performanceConsole.enable();
         let worker = new Fongus();
-        worker.position2D = start;
+        worker.position2D = new BABYLON.Vector2(0, -10);
         worker.instantiate();
     }
     animate() {
