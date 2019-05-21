@@ -1,4 +1,4 @@
-/// <reference path="Draggable.ts"/>
+/// <reference path="../Draggable.ts"/>
 
 class PropData {
     public elementName: string;
@@ -8,8 +8,6 @@ class PropData {
 }
 
 abstract class Prop extends Draggable {
-
-    public rotation2D: number = 0;
 
     public obstacle: Obstacle;
 

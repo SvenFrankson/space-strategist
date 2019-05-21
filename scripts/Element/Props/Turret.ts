@@ -4,7 +4,7 @@ class Turret extends Prop {
     private _head: BABYLON.Mesh;
     private _canon: BABYLON.Mesh;
 
-    public target: IHasPosRot;
+    public target: Character;
 
     constructor(name: string, position2D: BABYLON.Vector2, rotation2D: number) {
         super(name, position2D, rotation2D);
@@ -47,11 +47,11 @@ class Turret extends Prop {
     private _dirForward: BABYLON.Vector2 = BABYLON.Vector2.Zero();
     private _dirToTarget: BABYLON.Vector2 = BABYLON.Vector2.Zero();
     private _update = () => {
-        if (Math.random() < 1 / 30) {
-            this.fire();
-        }
-        if (this.target) {
-            this._dirForward.copyFromFloats(0, 1);
+        if (this.target && this.target.alive) {
+            if (Math.random() < 1 / 120) {
+                this.fire();
+            }
+            this._dirForward.copyFrom(this.forward2D)
             this._dirToTarget.copyFrom(this.target.position2D);
             this._dirToTarget.subtractInPlace(this.position2D);
             let azimut = Math2D.AngleFromTo(this._dirForward, this._dirToTarget);
@@ -61,9 +61,9 @@ class Turret extends Prop {
             this._canon.rotation.x = elevation;
         }
         else {
-            let meshes = this.getScene().meshes.find((m) => { return m instanceof Fongus; });
-            if (meshes instanceof Fongus) {
-                this.target = meshes;
+            let mesh = this.getScene().meshes.find((m) => { return (m instanceof Character) && m.alive; });
+            if (mesh instanceof Character) {
+                this.target = mesh;
             }
         }
     }
@@ -89,6 +89,7 @@ class Turret extends Prop {
             else {
                 this._head.position.z = 0;
                 if (k > 1000 || bullet.position.y < 0) {
+                    this.target.wound();
                     bullet.getScene().onBeforeRenderObservable.removeCallback(ammoUpdate);
                     bullet.dispose();
                 }

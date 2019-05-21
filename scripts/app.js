@@ -66,13 +66,13 @@ class Main {
 			}
         `;
         let depthMap = Main.Scene.enableDepthRenderer(Main.Camera).getDepthMap();
-        var postProcess = new BABYLON.PostProcess("Edge", "Edge", ["width", "height"], ["depthSampler"], 1, Main.Camera);
+        let postProcess = new BABYLON.PostProcess("Edge", "Edge", ["width", "height"], ["depthSampler"], 1, Main.Camera);
         postProcess.onApply = (effect) => {
             effect.setTexture("depthSampler", depthMap);
             effect.setFloat("width", Main.Engine.getRenderWidth());
             effect.setFloat("height", Main.Engine.getRenderHeight());
         };
-        var noPostProcessCamera = new BABYLON.FreeCamera("no-post-process-camera", BABYLON.Vector3.Zero(), Main.Scene);
+        let noPostProcessCamera = new BABYLON.FreeCamera("no-post-process-camera", BABYLON.Vector3.Zero(), Main.Scene);
         noPostProcessCamera.parent = Main.Camera;
         noPostProcessCamera.layerMask = 0x10000000;
         Main.Scene.activeCameras.push(Main.Camera, noPostProcessCamera);
@@ -587,272 +587,6 @@ class AdmiralCamera extends BABYLON.FreeCamera {
         this.attachControl(Main.Canvas);
     }
 }
-class DroneWorker extends BABYLON.Mesh {
-    constructor() {
-        super("droneWorker");
-        this.position2D = BABYLON.Vector2.Zero();
-        this.rotation2D = 0;
-        this._update = () => {
-            if (!this.currentPath || this.currentPath.length === 0) {
-                this._findPath();
-            }
-            this._moveOnPath();
-            this.position.x = this.position2D.x;
-            this.position.z = this.position2D.y;
-            this.rotation.y = -this.rotation2D;
-        };
-        this._moveOnPath = () => {
-            if (this.currentPath && this.currentPath.length > 0) {
-                let next = this.currentPath[0];
-                let distanceToNext = Math2D.Distance(this.position2D, next);
-                if (distanceToNext <= 0.05) {
-                    this.currentPath.splice(0, 1);
-                    return this._moveOnPath();
-                }
-                let stepToNext = next.subtract(this.position2D).normalize();
-                let rotationToNext = Math2D.AngleFromTo(new BABYLON.Vector2(0, 1), stepToNext);
-                stepToNext.scaleInPlace(Math.min(distanceToNext, 0.05));
-                this.position2D.addInPlace(stepToNext);
-                if (isFinite(rotationToNext)) {
-                    this.rotation2D = Math2D.StepFromToCirular(this.rotation2D, rotationToNext, Math.PI / 60);
-                }
-            }
-        };
-        this.getScene().onBeforeRenderObservable.add(this._update);
-    }
-    async instantiate() {
-        let data = await VertexDataLoader.instance.getColorized("worker", "#ce7633", "#383838", "#6d6d6d", "#c94022", "#1c1c1c");
-        data.applyToMesh(this);
-        this.material = Main.cellShadingMaterial;
-    }
-    findRandomDestination(radius = 10) {
-        let attempts = 0;
-        while (attempts++ < 10) {
-            let random = new BABYLON.Vector2(Math.random() * 2 * radius - radius, Math.random() * 2 * radius - radius);
-            random.addInPlace(this.position2D);
-            let graph = NavGraphManager.GetForRadius(1);
-            for (let i = 0; i < graph.obstacles.length; i++) {
-                let o = graph.obstacles[i];
-                if (o.contains(random, 1)) {
-                    random = undefined;
-                    break;
-                }
-            }
-            if (random) {
-                return random;
-            }
-        }
-        return undefined;
-    }
-    _findPath() {
-        let dest = this.findRandomDestination();
-        if (dest) {
-            let navGraph = NavGraphManager.GetForRadius(1);
-            navGraph.update();
-            navGraph.computePathFromTo(this.position2D, dest);
-            this.currentPath = navGraph.path;
-        }
-    }
-}
-class Fongus extends BABYLON.Mesh {
-    constructor() {
-        super("fongus");
-        this.position2D = BABYLON.Vector2.Zero();
-        this.rotation2D = 0;
-        this.fongis = [];
-        this.animsCleanUp = new Map();
-        this._timeout = Infinity;
-        this._update = () => {
-            this._timeout--;
-            if (this._timeout <= 0) {
-                this._generateNewFongi();
-                this._timeout = Math.round(5 + Math.random() * 10);
-            }
-            if (!this.currentPath || this.currentPath.length === 0) {
-                this._findPath();
-            }
-            this._moveOnPath();
-            this.position.x = this.position2D.x;
-            this.position.z = this.position2D.y;
-            this.rotation.y = -this.rotation2D;
-        };
-        this._moveOnPath = () => {
-            if (this.currentPath && this.currentPath.length > 0) {
-                let next = this.currentPath[0];
-                let distanceToNext = Math2D.Distance(this.position2D, next);
-                if (distanceToNext <= 0.05) {
-                    this.currentPath.splice(0, 1);
-                    return this._moveOnPath();
-                }
-                let stepToNext = next.subtract(this.position2D).normalize();
-                let rotationToNext = Math2D.AngleFromTo(new BABYLON.Vector2(0, 1), stepToNext);
-                stepToNext.scaleInPlace(Math.min(distanceToNext, 0.02));
-                this.position2D.addInPlace(stepToNext);
-                if (isFinite(rotationToNext)) {
-                    this.rotation2D = Math2D.StepFromToCirular(this.rotation2D, rotationToNext, Math.PI / 60);
-                }
-            }
-        };
-        this.getScene().onBeforeRenderObservable.add(this._update);
-    }
-    async instantiate() {
-        this._timeout = 0;
-    }
-    async _generateNewFongi() {
-        let newFongi = new BABYLON.Mesh("fongi");
-        newFongi.position.copyFrom(this.position);
-        newFongi.position.x += Math.random() * 2 - 1;
-        newFongi.position.y = -0.1;
-        newFongi.position.z += Math.random() * 2 - 1;
-        newFongi.rotation.x = Math.random() - 0.5 * Math.PI * 0.25;
-        newFongi.rotation.y = Math.random() * 2 * Math.PI;
-        newFongi.rotation.z = Math.random() - 0.5 * Math.PI * 0.25;
-        newFongi.scaling.copyFromFloats(0.01, 0.01, 0.01);
-        let color = BABYLON.Color3.FromHexString("#38bad1");
-        color.r += Math.random() * 0.2 - 0.1;
-        color.g += Math.random() * 0.2 - 0.1;
-        color.b += Math.random() * 0.2 - 0.1;
-        let colorBase = new BABYLON.Color3(color.r * 0.4 + 0.6, color.g * 0.4 + 0.6, color.b * 0.4 + 0.6);
-        let model = Math.floor(Math.random() * 3);
-        let data = await VertexDataLoader.instance.getColorized("fongus-" + model, colorBase.toHexString(), "", color.toHexString());
-        data.applyToMesh(newFongi);
-        newFongi.material = Main.cellShadingMaterial;
-        let top = BABYLON.Vector3.Zero();
-        let positions = data.positions;
-        for (let i = 0; i < positions.length / 3; i++) {
-            if (top.y < positions[3 * i + 1]) {
-                top.copyFromFloats(positions[3 * i], positions[3 * i + 1], positions[3 * i + 2]);
-            }
-        }
-        let speed = Math.round(100 + Math.random() * 200);
-        let k = 0;
-        let size = 0.5 + Math.random();
-        // SPS creation
-        let particleMaterial = new BABYLON.StandardMaterial(name + "-material", this.getScene());
-        particleMaterial.specularColor.copyFromFloats(0, 0, 0);
-        particleMaterial.emissiveColor = BABYLON.Color3.Gray();
-        var plane = BABYLON.Mesh.CreatePlane("plane", 0.2, this.getScene());
-        let earthParticle = new BABYLON.SolidParticleSystem('SPS', this.getScene());
-        earthParticle.addShape(plane, 15);
-        var mesh = earthParticle.buildMesh();
-        mesh.material = particleMaterial;
-        var particleSpeed = 0.05;
-        var gravity = -0.003;
-        earthParticle.initParticles = () => {
-            for (var p = 0; p < earthParticle.nbParticles; p++) {
-                earthParticle.recycleParticle(earthParticle.particles[p]);
-            }
-        };
-        earthParticle.recycleParticle = (particle) => {
-            particle.position.x = 0;
-            particle.position.y = 0;
-            particle.position.z = 0;
-            particle.velocity.x = (Math.random() - 0.5) * particleSpeed;
-            particle.velocity.y = Math.random() * particleSpeed;
-            particle.velocity.z = (Math.random() - 0.5) * particleSpeed;
-            particle.rotation.x = Math.random() * 3.5;
-            particle.rotation.y = Math.random() * 3.5;
-            particle.rotation.z = Math.random() * 3.5;
-            let color = Math.random() * 0.4 + 0.3;
-            particle.color.r = color;
-            particle.color.g = color;
-            particle.color.b = color;
-            particle.color.a = 1;
-            return particle;
-        };
-        earthParticle.updateParticle = (particle) => {
-            if (particle.position.y < 0) {
-                earthParticle.recycleParticle(particle);
-            }
-            particle.velocity.y += gravity;
-            (particle.position).addInPlace(particle.velocity);
-            particle.position.y += particleSpeed / 2;
-            particle.scale.scaleInPlace(0.95);
-            return particle;
-        };
-        // init all particle values and set them once to apply textures, colors, etc
-        earthParticle.initParticles();
-        earthParticle.setParticles();
-        earthParticle.billboard = true;
-        earthParticle.computeParticleRotation = false;
-        earthParticle.computeParticleColor = false;
-        earthParticle.computeParticleTexture = false;
-        earthParticle.mesh.position.copyFrom(newFongi.position);
-        let rSpeed = 0.8 * Math.random() - 0.4;
-        let newFongiAnim = () => {
-            rSpeed *= 0.95;
-            newFongi.rotation.y += rSpeed;
-            k++;
-            if (k < speed) {
-                let scale = SpaceMath.easeOutElastic(k / speed) * size;
-                earthParticle.setParticles();
-                newFongi.scaling.copyFromFloats(scale, scale, scale);
-            }
-            else {
-                newFongi.scaling.copyFromFloats(size, size, size);
-                earthParticle.dispose();
-            }
-        };
-        this.animsCleanUp.set(newFongi, () => {
-            this.getScene().onBeforeRenderObservable.removeCallback(newFongiAnim);
-            earthParticle.dispose();
-        });
-        this.getScene().onBeforeRenderObservable.add(newFongiAnim);
-        this.fongis.push(newFongi);
-        if (this.fongis.length > 20) {
-            let speed = Math.round(5 + Math.random() * 15);
-            let index = Math.floor(Math.random() * 3);
-            let oldFongi = this.fongis.splice(index, 1)[0];
-            let animCleanUp = this.animsCleanUp.get(oldFongi);
-            if (animCleanUp) {
-                animCleanUp();
-                this.animsCleanUp.delete(oldFongi);
-            }
-            let k = 0;
-            let size = oldFongi.scaling.x;
-            let oldFongiAnim = () => {
-                k++;
-                let scale = (1 - k / speed * k / speed) * size;
-                if (k < speed) {
-                    oldFongi.scaling.copyFromFloats(scale, scale, scale);
-                }
-                else {
-                    oldFongi.dispose();
-                    this.getScene().onBeforeRenderObservable.removeCallback(oldFongiAnim);
-                }
-            };
-            this.getScene().onBeforeRenderObservable.add(oldFongiAnim);
-        }
-    }
-    findRandomDestination(radius = 10) {
-        let attempts = 0;
-        while (attempts++ < 10) {
-            let random = new BABYLON.Vector2(Math.random() * 2 * radius - radius, Math.random() * 2 * radius - radius);
-            random.addInPlace(this.position2D);
-            let graph = NavGraphManager.GetForRadius(1);
-            for (let i = 0; i < graph.obstacles.length; i++) {
-                let o = graph.obstacles[i];
-                if (o.contains(random, 1)) {
-                    random = undefined;
-                    break;
-                }
-            }
-            if (random) {
-                return random;
-            }
-        }
-        return undefined;
-    }
-    _findPath() {
-        let dest = this.findRandomDestination();
-        if (dest) {
-            let navGraph = NavGraphManager.GetForRadius(1);
-            navGraph.update();
-            navGraph.computePathFromTo(this.position2D, dest);
-            this.currentPath = navGraph.path;
-        }
-    }
-}
 class SpaceshipControler {
     constructor(spaceship) {
         this.spaceship = spaceship;
@@ -1086,6 +820,970 @@ class SceneEditor {
         Main.Canvas.removeEventListener("pointerdown", this.pointerDown);
         Main.Canvas.removeEventListener("pointermove", this.pointerMove);
         Main.Canvas.removeEventListener("pointerup", this.pointerUp);
+    }
+}
+class Selectionable extends BABYLON.Mesh {
+}
+/// <reference path="Selectionable.ts"/>
+class Draggable extends Selectionable {
+    constructor() {
+        super(...arguments);
+        this._rotation2D = 0;
+        this._forward2D = new BABYLON.Vector2(0, 1);
+    }
+    get rotation2D() {
+        return this._rotation2D;
+    }
+    set rotation2D(v) {
+        if (v !== this.rotation2D && isFinite(v)) {
+            this._rotation2D = v;
+            this._forward2D.x = -Math.sin(this._rotation2D);
+            this._forward2D.y = Math.cos(this._rotation2D);
+        }
+    }
+    get forward2D() {
+        return this._forward2D;
+    }
+}
+/// <reference path="../Draggable.ts"/>
+class Character extends Draggable {
+    constructor(name = "") {
+        super(name);
+        this.stamina = 20;
+        this.currentHitPoint = 20;
+        this.alive = true;
+    }
+    wound(amount = 1) {
+        if (this.alive) {
+            this.currentHitPoint -= amount;
+            if (this.currentHitPoint <= 0) {
+                this.currentHitPoint = 0;
+                this.kill();
+            }
+        }
+    }
+    kill() {
+        this.alive = false;
+    }
+}
+class DroneWorker extends Character {
+    constructor() {
+        super("droneWorker");
+        this._update = () => {
+            if (!this.currentPath || this.currentPath.length === 0) {
+                this._findPath();
+            }
+            this._moveOnPath();
+            this.position.x = this.position2D.x;
+            this.position.z = this.position2D.y;
+            this.rotation.y = -this.rotation2D;
+        };
+        this._moveOnPath = () => {
+            if (this.currentPath && this.currentPath.length > 0) {
+                let next = this.currentPath[0];
+                let distanceToNext = Math2D.Distance(this.position2D, next);
+                if (distanceToNext <= 0.05) {
+                    this.currentPath.splice(0, 1);
+                    return this._moveOnPath();
+                }
+                let stepToNext = next.subtract(this.position2D).normalize();
+                let rotationToNext = Math2D.AngleFromTo(new BABYLON.Vector2(0, 1), stepToNext);
+                stepToNext.scaleInPlace(Math.min(distanceToNext, 0.05));
+                this.position2D.addInPlace(stepToNext);
+                if (isFinite(rotationToNext)) {
+                    this.rotation2D = Math2D.StepFromToCirular(this.rotation2D, rotationToNext, Math.PI / 60);
+                }
+            }
+        };
+        this.getScene().onBeforeRenderObservable.add(this._update);
+    }
+    async instantiate() {
+        let data = await VertexDataLoader.instance.getColorized("worker", "#ce7633", "#383838", "#6d6d6d", "#c94022", "#1c1c1c");
+        data.applyToMesh(this);
+        this.material = Main.cellShadingMaterial;
+    }
+    kill() {
+        super.kill();
+        this.dispose();
+    }
+    findRandomDestination(radius = 10) {
+        let attempts = 0;
+        while (attempts++ < 10) {
+            let random = new BABYLON.Vector2(Math.random() * 2 * radius - radius, Math.random() * 2 * radius - radius);
+            random.addInPlace(this.position2D);
+            let graph = NavGraphManager.GetForRadius(1);
+            for (let i = 0; i < graph.obstacles.length; i++) {
+                let o = graph.obstacles[i];
+                if (o.contains(random, 1)) {
+                    random = undefined;
+                    break;
+                }
+            }
+            if (random) {
+                return random;
+            }
+        }
+        return undefined;
+    }
+    _findPath() {
+        let dest = this.findRandomDestination();
+        if (dest) {
+            let navGraph = NavGraphManager.GetForRadius(1);
+            navGraph.update();
+            navGraph.computePathFromTo(this.position2D, dest);
+            this.currentPath = navGraph.path;
+        }
+    }
+}
+class Fongus extends Character {
+    constructor() {
+        super("fongus");
+        this.fongis = [];
+        this.animsCleanUp = new Map();
+        this._timeout = Infinity;
+        this._update = () => {
+            this._timeout--;
+            if (this._timeout <= 0) {
+                this._generateNewFongi();
+                this._timeout = Math.round(5 + Math.random() * 10);
+            }
+            if (!this.currentPath || this.currentPath.length === 0) {
+                this._findPath();
+            }
+            this._moveOnPath();
+            this.position.x = this.position2D.x;
+            this.position.z = this.position2D.y;
+            this.rotation.y = -this.rotation2D;
+            if (this.fongis.length > this.currentHitPoint) {
+                let speed = Math.round(5 + Math.random() * 15);
+                let index = Math.floor(Math.random() * 3);
+                index = Math.min(index, this.fongis.length - 1);
+                console.log(index + " " + this.fongis.length);
+                let oldFongi = this.fongis.splice(index, 1)[0];
+                let animCleanUp = this.animsCleanUp.get(oldFongi);
+                if (animCleanUp) {
+                    animCleanUp();
+                    this.animsCleanUp.delete(oldFongi);
+                }
+                let k = 0;
+                let size = oldFongi.scaling.x;
+                let oldFongiAnim = () => {
+                    k++;
+                    let scale = (1 - k / speed * k / speed) * size;
+                    if (k < speed) {
+                        oldFongi.scaling.copyFromFloats(scale, scale, scale);
+                    }
+                    else {
+                        oldFongi.dispose();
+                        this.getScene().onBeforeRenderObservable.removeCallback(oldFongiAnim);
+                    }
+                };
+                this.getScene().onBeforeRenderObservable.add(oldFongiAnim);
+            }
+        };
+        this._moveOnPath = () => {
+            if (this.currentPath && this.currentPath.length > 0) {
+                let next = this.currentPath[0];
+                let distanceToNext = Math2D.Distance(this.position2D, next);
+                if (distanceToNext <= 0.05) {
+                    this.currentPath.splice(0, 1);
+                    return this._moveOnPath();
+                }
+                let stepToNext = next.subtract(this.position2D).normalize();
+                let rotationToNext = Math2D.AngleFromTo(new BABYLON.Vector2(0, 1), stepToNext);
+                stepToNext.scaleInPlace(Math.min(distanceToNext, 0.02));
+                this.position2D.addInPlace(stepToNext);
+                if (isFinite(rotationToNext)) {
+                    this.rotation2D = Math2D.StepFromToCirular(this.rotation2D, rotationToNext, Math.PI / 60);
+                }
+            }
+        };
+        this.getScene().onBeforeRenderObservable.add(this._update);
+    }
+    async instantiate() {
+        this._timeout = 0;
+    }
+    dispose(doNotRecurse, disposeMaterialAndTextures) {
+        this.animsCleanUp.forEach((cleanUp) => {
+            cleanUp();
+        });
+        this.getScene().onBeforeRenderObservable.add(this._update);
+        super.dispose(doNotRecurse, disposeMaterialAndTextures);
+    }
+    kill() {
+        super.kill();
+        this.dispose();
+    }
+    async _generateNewFongi() {
+        if (!this.alive) {
+            return;
+        }
+        let newFongi = new BABYLON.Mesh("fongi");
+        newFongi.position.copyFrom(this.position);
+        newFongi.position.x += Math.random() * 2 - 1;
+        newFongi.position.y = -0.1;
+        newFongi.position.z += Math.random() * 2 - 1;
+        newFongi.rotation.x = Math.random() - 0.5 * Math.PI * 0.25;
+        newFongi.rotation.y = Math.random() * 2 * Math.PI;
+        newFongi.rotation.z = Math.random() - 0.5 * Math.PI * 0.25;
+        newFongi.scaling.copyFromFloats(0.01, 0.01, 0.01);
+        let color = BABYLON.Color3.FromHexString("#38bad1");
+        color.r += Math.random() * 0.2 - 0.1;
+        color.g += Math.random() * 0.2 - 0.1;
+        color.b += Math.random() * 0.2 - 0.1;
+        let colorBase = new BABYLON.Color3(color.r * 0.4 + 0.6, color.g * 0.4 + 0.6, color.b * 0.4 + 0.6);
+        let model = Math.floor(Math.random() * 3);
+        let data = await VertexDataLoader.instance.getColorized("fongus-" + model, colorBase.toHexString(), "", color.toHexString());
+        data.applyToMesh(newFongi);
+        newFongi.material = Main.cellShadingMaterial;
+        let top = BABYLON.Vector3.Zero();
+        let positions = data.positions;
+        for (let i = 0; i < positions.length / 3; i++) {
+            if (top.y < positions[3 * i + 1]) {
+                top.copyFromFloats(positions[3 * i], positions[3 * i + 1], positions[3 * i + 2]);
+            }
+        }
+        let speed = Math.round(100 + Math.random() * 200);
+        let k = 0;
+        let size = 0.5 + Math.random();
+        // SPS creation
+        let particleMaterial = new BABYLON.StandardMaterial(name + "-material", this.getScene());
+        particleMaterial.specularColor.copyFromFloats(0, 0, 0);
+        particleMaterial.emissiveColor = BABYLON.Color3.Gray();
+        var plane = BABYLON.Mesh.CreatePlane("plane", 0.2, this.getScene());
+        let earthParticle = new BABYLON.SolidParticleSystem('SPS', this.getScene());
+        earthParticle.addShape(plane, 15);
+        var mesh = earthParticle.buildMesh();
+        mesh.material = particleMaterial;
+        var particleSpeed = 0.05;
+        var gravity = -0.003;
+        earthParticle.initParticles = () => {
+            for (var p = 0; p < earthParticle.nbParticles; p++) {
+                earthParticle.recycleParticle(earthParticle.particles[p]);
+            }
+        };
+        earthParticle.recycleParticle = (particle) => {
+            particle.position.x = 0;
+            particle.position.y = 0;
+            particle.position.z = 0;
+            particle.velocity.x = (Math.random() - 0.5) * particleSpeed;
+            particle.velocity.y = Math.random() * particleSpeed;
+            particle.velocity.z = (Math.random() - 0.5) * particleSpeed;
+            particle.rotation.x = Math.random() * 3.5;
+            particle.rotation.y = Math.random() * 3.5;
+            particle.rotation.z = Math.random() * 3.5;
+            let color = Math.random() * 0.4 + 0.3;
+            particle.color.r = color;
+            particle.color.g = color;
+            particle.color.b = color;
+            particle.color.a = 1;
+            return particle;
+        };
+        earthParticle.updateParticle = (particle) => {
+            if (particle.position.y < 0) {
+                earthParticle.recycleParticle(particle);
+            }
+            particle.velocity.y += gravity;
+            (particle.position).addInPlace(particle.velocity);
+            particle.position.y += particleSpeed / 2;
+            particle.scale.scaleInPlace(0.95);
+            return particle;
+        };
+        // init all particle values and set them once to apply textures, colors, etc
+        earthParticle.initParticles();
+        earthParticle.setParticles();
+        earthParticle.billboard = true;
+        earthParticle.computeParticleRotation = false;
+        earthParticle.computeParticleColor = false;
+        earthParticle.computeParticleTexture = false;
+        earthParticle.mesh.position.copyFrom(newFongi.position);
+        let rSpeed = 0.8 * Math.random() - 0.4;
+        let newFongiAnim = () => {
+            rSpeed *= 0.95;
+            newFongi.rotation.y += rSpeed;
+            k++;
+            if (k < speed) {
+                let scale = SpaceMath.easeOutElastic(k / speed) * size;
+                earthParticle.setParticles();
+                newFongi.scaling.copyFromFloats(scale, scale, scale);
+            }
+            else {
+                newFongi.scaling.copyFromFloats(size, size, size);
+                earthParticle.dispose();
+            }
+        };
+        this.animsCleanUp.set(newFongi, () => {
+            this.getScene().onBeforeRenderObservable.removeCallback(newFongiAnim);
+            earthParticle.dispose();
+        });
+        this.getScene().onBeforeRenderObservable.add(newFongiAnim);
+        this.fongis.push(newFongi);
+    }
+    findRandomDestination(radius = 10) {
+        let attempts = 0;
+        while (attempts++ < 10) {
+            let random = new BABYLON.Vector2(Math.random() * 2 * radius - radius, Math.random() * 2 * radius - radius);
+            random.addInPlace(this.position2D);
+            let graph = NavGraphManager.GetForRadius(1);
+            for (let i = 0; i < graph.obstacles.length; i++) {
+                let o = graph.obstacles[i];
+                if (o.contains(random, 1)) {
+                    random = undefined;
+                    break;
+                }
+            }
+            if (random) {
+                return random;
+            }
+        }
+        return undefined;
+    }
+    _findPath() {
+        let dest = this.findRandomDestination();
+        if (dest) {
+            let navGraph = NavGraphManager.GetForRadius(1);
+            navGraph.update();
+            navGraph.computePathFromTo(this.position2D, dest);
+            this.currentPath = navGraph.path;
+        }
+    }
+}
+/// <reference path="../Draggable.ts"/>
+class PropData {
+}
+class Prop extends Draggable {
+    constructor(name, position2D, rotation2D) {
+        super(name);
+        this._updatePosition = () => {
+            this.position.x = this.position2D.x;
+            this.position.z = this.position2D.y;
+            this.rotation.y = -this.rotation2D;
+        };
+        this.position2D = position2D;
+        this.rotation2D = rotation2D;
+        this.getScene().onBeforeRenderObservable.add(this._updatePosition);
+    }
+    dispose(doNotRecurse, disposeMaterialAndTextures) {
+        this.getScene().onBeforeRenderObservable.removeCallback(this._updatePosition);
+        super.dispose(doNotRecurse, disposeMaterialAndTextures);
+    }
+    addToScene() {
+        NavGraphManager.AddObstacle(this.obstacle);
+    }
+    serialize() {
+        let data = new PropData();
+        data.elementName = this.elementName();
+        data.name = this.name;
+        data.position2D = this.position2D;
+        data.rotation2D = this.rotation2D;
+        return data;
+    }
+    static Deserialize(data) {
+        if (data.elementName === "Container") {
+            return new Container(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
+        }
+        if (data.elementName === "Tank") {
+            return new Tank(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
+        }
+        if (data.elementName === "Turret") {
+            return new Turret(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
+        }
+        return undefined;
+    }
+    elementName() {
+        return "Prop";
+    }
+}
+/// <reference path="./Prop.ts"/>
+class Container extends Prop {
+    constructor(name, position2D, rotation2D) {
+        super(name, position2D, rotation2D);
+        if (this.name === "") {
+            let containerCount = this.getScene().meshes.filter((m) => { return m instanceof Container; }).length;
+            this.name = "container-" + containerCount;
+        }
+        this.obstacle = Obstacle.CreateRectWithPosRotSource(this, 2, 4);
+        this.obstacle.name = name + "-obstacle";
+    }
+    async instantiate() {
+        let vertexData = await VertexDataLoader.instance.getColorized("container", "#ce7633", "#383838", "#6d6d6d");
+        let min = Infinity;
+        let max = -Infinity;
+        this.height = -Infinity;
+        for (let i = 0; i < vertexData.positions.length / 3; i++) {
+            let x = vertexData.positions[3 * i];
+            let y = vertexData.positions[3 * i + 1];
+            let z = vertexData.positions[3 * i + 2];
+            min = Math.min(min, x, z);
+            max = Math.max(max, x, z);
+            this.height = Math.max(this.height, y);
+        }
+        this.groundWidth = max - min;
+        vertexData.applyToMesh(this);
+        this.material = Main.cellShadingMaterial;
+    }
+    elementName() {
+        return "Container";
+    }
+}
+class PropEditor {
+    static Select(prop) {
+    }
+    static CreatePanel(prop, onDisposeCallback, onCloneCallback) {
+        let panel = SpacePanel.CreateSpacePanel();
+        panel.setTarget(prop);
+        panel.addTitle1(prop.elementName().toLocaleUpperCase());
+        panel.addTitle2(prop.name.toLocaleUpperCase());
+        panel.addNumberInput("POS X", prop.position2D.x, (v) => {
+            prop.position2D.x = v;
+        });
+        panel.addNumberInput("POS Y", prop.position2D.y, (v) => {
+            prop.position2D.y = v;
+        });
+        panel.addNumberInput("ROTATION", prop.rotation2D, (v) => {
+            prop.rotation2D = v / 180 * Math.PI;
+        });
+        panel.addMediumButtons("CLONE", () => {
+            let data = prop.serialize();
+            let splitName = data.name.split("-");
+            if (splitName.length === 2) {
+                let counter = parseInt(splitName[1]);
+                if (isFinite(counter)) {
+                    data.name = splitName[0] + "-" + (counter + 1);
+                }
+            }
+            let clone = Prop.Deserialize(data);
+            if (onCloneCallback) {
+                onCloneCallback(clone);
+            }
+        }, "DELETE", () => {
+            prop.dispose();
+            if (onDisposeCallback) {
+                onDisposeCallback();
+            }
+        });
+        return panel;
+    }
+    static Unselect(prop) {
+    }
+}
+class Tank extends Prop {
+    constructor(name, position2D, rotation2D) {
+        super(name, position2D, rotation2D);
+        if (this.name === "") {
+            let tankCount = this.getScene().meshes.filter((m) => { return m instanceof Tank; }).length;
+            this.name = "tank-" + tankCount;
+        }
+        this.obstacle = Obstacle.CreateHexagonWithPosRotSource(this, 1.5);
+        this.obstacle.name = name + "-obstacle";
+    }
+    async instantiate() {
+        let vertexData = await VertexDataLoader.instance.getColorized("tank", "#ce7633", "#383838", "#6d6d6d");
+        let min = Infinity;
+        let max = -Infinity;
+        this.height = -Infinity;
+        for (let i = 0; i < vertexData.positions.length / 3; i++) {
+            let x = vertexData.positions[3 * i];
+            let y = vertexData.positions[3 * i + 1];
+            let z = vertexData.positions[3 * i + 2];
+            min = Math.min(min, x, z);
+            max = Math.max(max, x, z);
+            this.height = Math.max(this.height, y);
+        }
+        this.groundWidth = max - min;
+        vertexData.applyToMesh(this);
+        this.material = Main.cellShadingMaterial;
+    }
+    elementName() {
+        return "Tank";
+    }
+}
+class Turret extends Prop {
+    constructor(name, position2D, rotation2D) {
+        super(name, position2D, rotation2D);
+        this._dirForward = BABYLON.Vector2.Zero();
+        this._dirToTarget = BABYLON.Vector2.Zero();
+        this._update = () => {
+            if (this.target && this.target.alive) {
+                if (Math.random() < 1 / 120) {
+                    this.fire();
+                }
+                this._dirForward.copyFrom(this.forward2D);
+                this._dirToTarget.copyFrom(this.target.position2D);
+                this._dirToTarget.subtractInPlace(this.position2D);
+                let azimut = Math2D.AngleFromTo(this._dirForward, this._dirToTarget);
+                this._headBase.rotation.y = -azimut;
+                let tanElevation = 2.8 / this._dirToTarget.length();
+                let elevation = Math.atan(tanElevation);
+                this._canon.rotation.x = elevation;
+            }
+            else {
+                let mesh = this.getScene().meshes.find((m) => { return (m instanceof Character) && m.alive; });
+                if (mesh instanceof Character) {
+                    this.target = mesh;
+                }
+            }
+        };
+        if (this.name === "") {
+            let turretCount = this.getScene().meshes.filter((m) => { return m instanceof Turret; }).length;
+            this.name = "turret-" + turretCount;
+        }
+        this.obstacle = Obstacle.CreateRectWithPosRotSource(this, 2, 2);
+        this.obstacle.name = name + "-obstacle";
+        this.getScene().onBeforeRenderObservable.add(this._update);
+    }
+    async instantiate() {
+        let data = await VertexDataLoader.instance.getColorized("turret-base", "#ce7633", "#383838", "#6d6d6d", "#d0d0d0", "#ce7633");
+        data.applyToMesh(this);
+        this.material = Main.cellShadingMaterial;
+        this._headBase = new BABYLON.Mesh("turret-canonBase");
+        this._headBase.parent = this;
+        this._headBase.position.copyFromFloats(0, 2.1, 0);
+        this._head = new BABYLON.Mesh("turret-head");
+        let headData = await VertexDataLoader.instance.getColorized("turret-head", "#ce7633", "#383838", "#6d6d6d");
+        headData.applyToMesh(this._head);
+        this._head.material = Main.cellShadingMaterial;
+        this._head.parent = this._headBase;
+        this._head.position.copyFromFloats(0, 0, 0);
+        this._canon = new BABYLON.Mesh("turret-canon");
+        let canonData = await VertexDataLoader.instance.getColorized("turret-canon", "#ce7633", "#383838", "#6d6d6d");
+        canonData.applyToMesh(this._canon);
+        this._canon.material = Main.cellShadingMaterial;
+        this._canon.parent = this._head;
+        this._canon.position.copyFromFloats(0, 0.7, 0);
+        this.groundWidth = 2;
+        this.height = 3;
+    }
+    async fire() {
+        let bullet = new BABYLON.Mesh("bullet");
+        bullet.layerMask = 0x10000000;
+        let data = await VertexDataLoader.instance.getColorized("turret-ammo", "#101010", "", "#d0d0d0");
+        data.applyToMesh(bullet);
+        bullet.rotation.y = this._headBase.rotation.y;
+        bullet.rotation.x = this._canon.rotation.x;
+        bullet.position.copyFrom(this.position);
+        bullet.position.y += 2.8;
+        let k = 0;
+        let dir = this._canon.getDirection(BABYLON.Axis.Z).scaleInPlace(1);
+        let ammoUpdate = () => {
+            bullet.position.addInPlace(dir);
+            k++;
+            if (k < 30) {
+                let t = k / 30;
+                this._head.position.z = -0.25 * ((1 - t) - Math.pow(1 - t, 16));
+            }
+            else {
+                this._head.position.z = 0;
+                if (k > 1000 || bullet.position.y < 0) {
+                    this.target.wound();
+                    bullet.getScene().onBeforeRenderObservable.removeCallback(ammoUpdate);
+                    bullet.dispose();
+                }
+            }
+        };
+        bullet.getScene().onBeforeRenderObservable.add(ammoUpdate);
+    }
+    elementName() {
+        return "Turret";
+    }
+}
+class WallNode extends Draggable {
+    constructor(position2D, wallSystem) {
+        super("wallnode");
+        this.position2D = position2D;
+        this.wallSystem = wallSystem;
+        this.dirs = [];
+        this.walls = [];
+        this.position2D = position2D;
+        this.wallSystem.nodes.push(this);
+    }
+    dispose(doNotRecurse, disposeMaterialAndTextures) {
+        while (this.walls.length > 0) {
+            this.walls[0].dispose(doNotRecurse, disposeMaterialAndTextures);
+        }
+        let index = this.wallSystem.nodes.indexOf(this);
+        if (index > -1) {
+            this.wallSystem.nodes.splice(index, 1);
+        }
+        super.dispose(doNotRecurse, disposeMaterialAndTextures);
+    }
+    async instantiate() {
+        this.position.x = this.position2D.x;
+        this.position.z = this.position2D.y;
+        this.updateDirs();
+        if (this.dirs.length >= 1) {
+            let dirs = [];
+            for (let i = 0; i < this.dirs.length; i++) {
+                dirs.push(this.dirs[i].dir);
+            }
+            let vertexData = WallNode.BuildVertexData(1, ...dirs);
+            let min = Infinity;
+            let max = -Infinity;
+            this.height = -Infinity;
+            for (let i = 0; i < vertexData.positions.length / 3; i++) {
+                let x = vertexData.positions[3 * i];
+                let y = vertexData.positions[3 * i + 1];
+                let z = vertexData.positions[3 * i + 2];
+                min = Math.min(min, x, z);
+                max = Math.max(max, x, z);
+                this.height = Math.max(this.height, y);
+            }
+            this.groundWidth = max - min;
+            vertexData.applyToMesh(this);
+            this.material = Main.cellShadingMaterial;
+        }
+    }
+    updateDirs() {
+        this.dirs = [];
+        for (let i = 0; i < this.walls.length; i++) {
+            let other = this.walls[i].otherNode(this);
+            if (other) {
+                let d = other.position2D.subtract(this.position2D);
+                let dir = Math2D.AngleFromTo(new BABYLON.Vector2(1, 0), d, true);
+                this.dirs.push({ dir: dir, length: d.length() });
+            }
+            else {
+                console.warn("Oups...");
+            }
+        }
+        this.dirs = this.dirs.sort((a, b) => { return a.dir - b.dir; });
+    }
+    updateObstacle() {
+        let points = [];
+        if (!this.dirs || this.dirs.length !== this.walls.length) {
+            this.updateDirs();
+        }
+        if (this.walls.length === 1) {
+            let d = this.dirs[0].dir;
+            points = [
+                new BABYLON.Vector2(Math.cos(d - Math.PI / 2), Math.sin(d - Math.PI / 2)),
+                this.walls[0].otherNode(this).position2D.subtract(this.position2D),
+                new BABYLON.Vector2(Math.cos(d + Math.PI / 2), Math.sin(d + Math.PI / 2))
+            ];
+        }
+        else if (this.walls.length >= 2) {
+            for (let i = 0; i < this.walls.length; i++) {
+                let d = this.dirs[i].dir;
+                let l = this.dirs[i].length;
+                let dNext = this.dirs[(i + 1) % this.dirs.length].dir;
+                points.push(new BABYLON.Vector2(Math.cos(d) * (l - 1), Math.sin(d) * (l - 1)));
+                points.push(new BABYLON.Vector2(Math.cos(Math2D.LerpFromToCircular(d, dNext, 0.5)), Math.sin(Math2D.LerpFromToCircular(d, dNext, 0.5))));
+            }
+        }
+        /*
+        for (let i = 0; i < points.length; i++) {
+            BABYLON.MeshBuilder.CreateSphere(
+                "p",
+                { diameter: 0.2 },
+                Main.Scene)
+                .position.copyFromFloats(
+                    points[i].x + this.position2D.x,
+                    - 0.2,
+                    points[i].y + this.position2D.y
+                );
+        }
+        */
+        /*
+        let shape = points;
+        let points3D: BABYLON.Vector3[] = [];
+        let colors: BABYLON.Color4[] = [];
+        let r = Math.random();
+        let g = Math.random();
+        let b = Math.random();
+        for (let i = 0; i < shape.length; i++) {
+            let p = shape[i];
+            points3D.push(new BABYLON.Vector3(p.x + this.position2D.x, 0.1, p.y + this.position2D.y));
+            colors.push(new BABYLON.Color4(1, 0, 0, 1));
+        }
+        points3D.push(new BABYLON.Vector3(shape[0].x + this.position2D.x, 0.1, shape[0].y + this.position2D.y));
+        colors.push(new BABYLON.Color4(1, 0, 0, 1));
+        BABYLON.MeshBuilder.CreateLines("shape", { points: points3D, colors: colors }, Main.Scene);
+        */
+        this.obstacle = Obstacle.CreatePolygon(this.position2D.x, this.position2D.y, points);
+    }
+    static BuildVertexData(radius = 1, ...directions) {
+        let data = new BABYLON.VertexData();
+        let positions = [];
+        let indices = [];
+        let baseShape = [
+            new BABYLON.Vector3(radius, 0, 0.6),
+            new BABYLON.Vector3(radius, 0.2, 0.6),
+            new BABYLON.Vector3(radius, 1, 0.35),
+            new BABYLON.Vector3(radius, 1.1, 0.35),
+            new BABYLON.Vector3(radius, 2, 0.2),
+            new BABYLON.Vector3(radius, 2.35, 0.2),
+            new BABYLON.Vector3(radius, 2.4, 0.15)
+        ];
+        let bspc = baseShape.length;
+        if (directions.length === 1) {
+            let oppositeDir = directions[0] + Math.PI;
+            if (oppositeDir > 2 * Math.PI) {
+                oppositeDir -= 2 * Math.PI;
+            }
+            directions.push(oppositeDir);
+        }
+        for (let i = 0; i < directions.length; i++) {
+            let dir = directions[i];
+            let cosDir = Math.cos(dir);
+            let sinDir = Math.sin(dir);
+            let n = new BABYLON.Vector2(-cosDir, -sinDir);
+            let dirNext = directions[(i + 1) % directions.length];
+            let cosDirNext = Math.cos(dirNext);
+            let sinDirNext = Math.sin(dirNext);
+            let nNext = new BABYLON.Vector2(-cosDirNext, -sinDirNext);
+            for (let j = 0; j < bspc; j++) {
+                let baseP = baseShape[j];
+                positions.push(cosDir * baseP.x - sinDir * baseP.z);
+                positions.push(baseP.y);
+                positions.push(sinDir * baseP.x + cosDir * baseP.z);
+            }
+            for (let j = 0; j < bspc; j++) {
+                let baseP = baseShape[j];
+                let p = new BABYLON.Vector2(cosDir * baseP.x - sinDir * baseP.z, sinDir * baseP.x + cosDir * baseP.z);
+                let pNext = new BABYLON.Vector2(cosDirNext * baseP.x + sinDirNext * baseP.z, sinDirNext * baseP.x - cosDirNext * baseP.z);
+                let intersection;
+                if (Math.abs(Math.abs(dir - dirNext) - Math.PI) < Math.PI / 128) {
+                    intersection = p.add(pNext).scaleInPlace(0.5);
+                }
+                else {
+                    intersection = Math2D.RayRayIntersection(p, n, pNext, nNext);
+                }
+                if (intersection) {
+                    positions.push(intersection.x, baseP.y, intersection.y);
+                }
+                else {
+                    positions.push(p.x, baseP.y, p.y);
+                }
+            }
+            for (let j = 0; j < bspc; j++) {
+                let baseP = baseShape[j];
+                positions.push(cosDirNext * baseP.x + sinDirNext * baseP.z);
+                positions.push(baseP.y);
+                positions.push(sinDirNext * baseP.x - cosDirNext * baseP.z);
+            }
+        }
+        let cCount = 3 * directions.length;
+        for (let j = 0; j < cCount; j++) {
+            for (let i = 0; i < bspc - 1; i++) {
+                indices.push(i + j * bspc, i + ((j + 1) % cCount) * bspc, i + 1 + ((j + 1) % cCount) * bspc);
+                indices.push(i + 1 + ((j + 1) % cCount) * bspc, i + 1 + j * bspc, i + j * bspc);
+            }
+        }
+        for (let i = 0; i < directions.length; i++) {
+            indices.push(bspc - 1 + ((3 * i + 1) % cCount) * bspc, bspc - 1 + ((3 * i + 2) % cCount) * bspc, bspc - 1 + ((3 * i + 3) % cCount) * bspc);
+            indices.push(bspc - 1 + ((3 * i + 1) % cCount) * bspc, bspc - 1 + ((3 * i + 3) % cCount) * bspc, bspc - 1 + ((3 * i + 4) % cCount) * bspc);
+        }
+        if (directions.length === 3) {
+            indices.push(bspc - 1 + 1 * bspc, bspc - 1 + 4 * bspc, bspc - 1 + 7 * bspc);
+        }
+        data.positions = positions;
+        data.indices = indices;
+        let normals = [];
+        BABYLON.VertexData.ComputeNormals(data.positions, data.indices, normals);
+        data.normals = normals;
+        let color = BABYLON.Color3.FromHexString("#383838");
+        let colors = [];
+        for (let i = 0; i < positions.length / 3; i++) {
+            colors.push(color.r, color.g, color.b, 1);
+        }
+        data.colors = colors;
+        return data;
+    }
+}
+class Wall extends Selectionable {
+    constructor(node1, node2) {
+        super("wall");
+        this.node1 = node1;
+        this.node2 = node2;
+        node1.walls.push(this);
+        node2.walls.push(this);
+        this.wallSystem = node1.wallSystem;
+        this.wallSystem.walls.push(this);
+    }
+    dispose(doNotRecurse, disposeMaterialAndTextures) {
+        let indexWallSystem = this.wallSystem.walls.indexOf(this);
+        if (indexWallSystem > -1) {
+            this.wallSystem.walls.splice(indexWallSystem, 1);
+        }
+        let indexNode1 = this.node1.walls.indexOf(this);
+        if (indexNode1 > -1) {
+            this.node1.walls.splice(indexNode1, 1);
+        }
+        if (this.node1.walls.length === 0) {
+            this.node1.dispose(doNotRecurse, disposeMaterialAndTextures);
+        }
+        let indexNode2 = this.node2.walls.indexOf(this);
+        if (indexNode2 > -1) {
+            this.node2.walls.splice(indexNode2, 1);
+        }
+        if (this.node2.walls.length === 0) {
+            this.node2.dispose(doNotRecurse, disposeMaterialAndTextures);
+        }
+        super.dispose(doNotRecurse, disposeMaterialAndTextures);
+    }
+    otherNode(refNode) {
+        if (this.node1 === refNode) {
+            return this.node2;
+        }
+        if (this.node2 === refNode) {
+            return this.node1;
+        }
+        return undefined;
+    }
+    async instantiate() {
+        let vertexData = await VertexDataLoader.instance.getColorized("wall", "#6d6d6d", "#383838", "#ce7633");
+        vertexData = VertexDataLoader.clone(vertexData);
+        let d = this.node1.position2D.subtract(this.node2.position2D);
+        let l = d.length() - 2;
+        d.scaleInPlace(1 / l);
+        let dir = Math2D.AngleFromTo(new BABYLON.Vector2(1, 0), d, true);
+        let cosDir = Math.cos(dir);
+        let sinDir = Math.sin(dir);
+        for (let i = 0; i < vertexData.positions.length / 3; i++) {
+            let x = vertexData.positions[3 * i] * l;
+            let z = vertexData.positions[3 * i + 2];
+            vertexData.positions[3 * i] = cosDir * x - sinDir * z;
+            vertexData.positions[3 * i + 2] = sinDir * x + cosDir * z;
+        }
+        this.groundWidth = 2;
+        this.height = -Infinity;
+        for (let i = 0; i < vertexData.positions.length / 3; i++) {
+            let y = vertexData.positions[3 * i + 1];
+            this.height = Math.max(this.height, y);
+        }
+        vertexData.applyToMesh(this);
+        this.material = Main.cellShadingMaterial;
+        this.position.x = (this.node1.position2D.x + this.node2.position2D.x) * 0.5;
+        this.position.z = (this.node1.position2D.y + this.node2.position2D.y) * 0.5;
+    }
+}
+class WallData {
+    constructor(node1Index, node2Index) {
+        this.node1Index = node1Index;
+        this.node2Index = node2Index;
+    }
+}
+class WallNodeData {
+    constructor(position2D) {
+        this.position2D = position2D;
+    }
+}
+class WallSystemData {
+    constructor() {
+        this.nodesData = [];
+        this.wallsData = [];
+    }
+}
+class WallSystem extends BABYLON.TransformNode {
+    constructor() {
+        super("wall-system");
+        this.nodes = [];
+        this.walls = [];
+    }
+    serialize() {
+        let data = new WallSystemData();
+        for (let i = 0; i < this.nodes.length; i++) {
+            data.nodesData.push(new WallNodeData(this.nodes[i].position2D));
+        }
+        for (let i = 0; i < this.walls.length; i++) {
+            let wall = this.walls[i];
+            data.wallsData.push(new WallData(this.nodes.indexOf(wall.node1), this.nodes.indexOf(wall.node2)));
+        }
+        console.log("Serialize.");
+        console.log("NodesCount = " + data.nodesData.length);
+        console.log("WallsCount = " + data.wallsData.length);
+        console.log(data);
+        return data;
+    }
+    deserialize(data) {
+        while (this.nodes.length > 0) {
+            this.nodes.pop().dispose();
+        }
+        while (this.walls.length > 0) {
+            this.walls.pop().dispose();
+        }
+        for (let i = 0; i < data.nodesData.length; i++) {
+            new WallNode(new BABYLON.Vector2(data.nodesData[i].position2D.x, data.nodesData[i].position2D.y), this);
+        }
+        for (let i = 0; i < data.wallsData.length; i++) {
+            let wallData = data.wallsData[i];
+            new Wall(this.nodes[wallData.node1Index], this.nodes[wallData.node2Index]);
+        }
+        console.log("Deserialize.");
+        console.log("NodesCount = " + data.nodesData.length);
+        console.log("WallsCount = " + data.wallsData.length);
+    }
+    async instantiate() {
+        for (let i = 0; i < this.nodes.length; i++) {
+            await this.nodes[i].instantiate();
+        }
+        for (let i = 0; i < this.walls.length; i++) {
+            await this.walls[i].instantiate();
+        }
+    }
+    addToScene() {
+        for (let i = 0; i < this.nodes.length; i++) {
+            this.nodes[i].updateObstacle();
+            /*
+            let shape = this.nodes[i].obstacle.getPath(0.5, true);
+            let r = Math.random();
+            let g = Math.random();
+            let b = Math.random();
+            let points: BABYLON.Vector3[] = [];
+            let colors: BABYLON.Color4[] = [];
+            for (let i = 0; i < shape.length; i++) {
+                let p = shape[i];
+                points.push(new BABYLON.Vector3(p.x, - 0.5 * i, p.y));
+                colors.push(new BABYLON.Color4(r, g, b, 1));
+            }
+            points.push(new BABYLON.Vector3(shape[0].x, - 0.5 * shape.length, shape[0].y));
+            colors.push(new BABYLON.Color4(r, g, b, 1));
+            BABYLON.MeshBuilder.CreateLines("shape", { points: points, colors: colors }, Main.Scene);
+            */
+            NavGraphManager.AddObstacle(this.nodes[i].obstacle);
+        }
+    }
+}
+class WallEditor {
+    static Select(wall) {
+    }
+    static CreatePanel(wall, onDisposeCallback) {
+        let panel = SpacePanel.CreateSpacePanel();
+        panel.setTarget(wall);
+        panel.addTitle1("WALL");
+        panel.addMediumButtons("DELETE", () => {
+            wall.dispose();
+            wall.wallSystem.instantiate();
+            onDisposeCallback();
+        });
+        return panel;
+    }
+    static Unselect(wall) {
+    }
+}
+class WallNodeEditor {
+    static Select(node) {
+    }
+    static CreatePanel(node, onDisposeCallback) {
+        let panel = SpacePanel.CreateSpacePanel();
+        panel.setTarget(node);
+        panel.addTitle1("WALLNODE");
+        panel.addNumberInput("POS X", node.position2D.x, (v) => {
+            node.position2D.x = v;
+            node.wallSystem.instantiate();
+        });
+        panel.addNumberInput("POS Y", node.position2D.y, (v) => {
+            node.position2D.y = v;
+            node.wallSystem.instantiate();
+        });
+        panel.addMediumButtons("DELETE", () => {
+            node.dispose();
+            node.wallSystem.instantiate();
+            onDisposeCallback();
+        });
+        return panel;
+    }
+    static Unselect(node) {
     }
 }
 class VertexDataLoader {
@@ -1843,649 +2541,6 @@ class Polygon extends Shape {
             this._path[i].addInPlace(this.position2D);
         }
         return this._path;
-    }
-}
-class Selectionable extends BABYLON.Mesh {
-}
-/// <reference path="Selectionable.ts"/>
-class Draggable extends Selectionable {
-}
-/// <reference path="Draggable.ts"/>
-class PropData {
-}
-class Prop extends Draggable {
-    constructor(name, position2D, rotation2D) {
-        super(name);
-        this.rotation2D = 0;
-        this._updatePosition = () => {
-            this.position.x = this.position2D.x;
-            this.position.z = this.position2D.y;
-            this.rotation.y = -this.rotation2D;
-        };
-        this.position2D = position2D;
-        this.rotation2D = rotation2D;
-        this.getScene().onBeforeRenderObservable.add(this._updatePosition);
-    }
-    dispose(doNotRecurse, disposeMaterialAndTextures) {
-        this.getScene().onBeforeRenderObservable.removeCallback(this._updatePosition);
-        super.dispose(doNotRecurse, disposeMaterialAndTextures);
-    }
-    addToScene() {
-        NavGraphManager.AddObstacle(this.obstacle);
-    }
-    serialize() {
-        let data = new PropData();
-        data.elementName = this.elementName();
-        data.name = this.name;
-        data.position2D = this.position2D;
-        data.rotation2D = this.rotation2D;
-        return data;
-    }
-    static Deserialize(data) {
-        if (data.elementName === "Container") {
-            return new Container(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
-        }
-        if (data.elementName === "Tank") {
-            return new Tank(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
-        }
-        if (data.elementName === "Turret") {
-            return new Turret(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
-        }
-        return undefined;
-    }
-    elementName() {
-        return "Prop";
-    }
-}
-/// <reference path="./Prop.ts"/>
-class Container extends Prop {
-    constructor(name, position2D, rotation2D) {
-        super(name, position2D, rotation2D);
-        if (this.name === "") {
-            let containerCount = this.getScene().meshes.filter((m) => { return m instanceof Container; }).length;
-            this.name = "container-" + containerCount;
-        }
-        this.obstacle = Obstacle.CreateRectWithPosRotSource(this, 2, 4);
-        this.obstacle.name = name + "-obstacle";
-    }
-    async instantiate() {
-        let vertexData = await VertexDataLoader.instance.getColorized("container", "#ce7633", "#383838", "#6d6d6d");
-        let min = Infinity;
-        let max = -Infinity;
-        this.height = -Infinity;
-        for (let i = 0; i < vertexData.positions.length / 3; i++) {
-            let x = vertexData.positions[3 * i];
-            let y = vertexData.positions[3 * i + 1];
-            let z = vertexData.positions[3 * i + 2];
-            min = Math.min(min, x, z);
-            max = Math.max(max, x, z);
-            this.height = Math.max(this.height, y);
-        }
-        this.groundWidth = max - min;
-        vertexData.applyToMesh(this);
-        this.material = Main.cellShadingMaterial;
-    }
-    elementName() {
-        return "Container";
-    }
-}
-class PropEditor {
-    static Select(prop) {
-    }
-    static CreatePanel(prop, onDisposeCallback, onCloneCallback) {
-        let panel = SpacePanel.CreateSpacePanel();
-        panel.setTarget(prop);
-        panel.addTitle1(prop.elementName().toLocaleUpperCase());
-        panel.addTitle2(prop.name.toLocaleUpperCase());
-        panel.addNumberInput("POS X", prop.position2D.x, (v) => {
-            prop.position2D.x = v;
-        });
-        panel.addNumberInput("POS Y", prop.position2D.y, (v) => {
-            prop.position2D.y = v;
-        });
-        panel.addNumberInput("ROTATION", prop.rotation2D, (v) => {
-            prop.rotation2D = v / 180 * Math.PI;
-        });
-        panel.addMediumButtons("CLONE", () => {
-            let data = prop.serialize();
-            let splitName = data.name.split("-");
-            if (splitName.length === 2) {
-                let counter = parseInt(splitName[1]);
-                if (isFinite(counter)) {
-                    data.name = splitName[0] + "-" + (counter + 1);
-                }
-            }
-            let clone = Prop.Deserialize(data);
-            if (onCloneCallback) {
-                onCloneCallback(clone);
-            }
-        }, "DELETE", () => {
-            prop.dispose();
-            if (onDisposeCallback) {
-                onDisposeCallback();
-            }
-        });
-        return panel;
-    }
-    static Unselect(prop) {
-    }
-}
-class Tank extends Prop {
-    constructor(name, position2D, rotation2D) {
-        super(name, position2D, rotation2D);
-        if (this.name === "") {
-            let tankCount = this.getScene().meshes.filter((m) => { return m instanceof Tank; }).length;
-            this.name = "tank-" + tankCount;
-        }
-        this.obstacle = Obstacle.CreateHexagonWithPosRotSource(this, 1.5);
-        this.obstacle.name = name + "-obstacle";
-    }
-    async instantiate() {
-        let vertexData = await VertexDataLoader.instance.getColorized("tank", "#ce7633", "#383838", "#6d6d6d");
-        let min = Infinity;
-        let max = -Infinity;
-        this.height = -Infinity;
-        for (let i = 0; i < vertexData.positions.length / 3; i++) {
-            let x = vertexData.positions[3 * i];
-            let y = vertexData.positions[3 * i + 1];
-            let z = vertexData.positions[3 * i + 2];
-            min = Math.min(min, x, z);
-            max = Math.max(max, x, z);
-            this.height = Math.max(this.height, y);
-        }
-        this.groundWidth = max - min;
-        vertexData.applyToMesh(this);
-        this.material = Main.cellShadingMaterial;
-    }
-    elementName() {
-        return "Tank";
-    }
-}
-class Turret extends Prop {
-    constructor(name, position2D, rotation2D) {
-        super(name, position2D, rotation2D);
-        this._dirForward = BABYLON.Vector2.Zero();
-        this._dirToTarget = BABYLON.Vector2.Zero();
-        this._update = () => {
-            if (Math.random() < 1 / 30) {
-                this.fire();
-            }
-            if (this.target) {
-                this._dirForward.copyFromFloats(0, 1);
-                this._dirToTarget.copyFrom(this.target.position2D);
-                this._dirToTarget.subtractInPlace(this.position2D);
-                let azimut = Math2D.AngleFromTo(this._dirForward, this._dirToTarget);
-                this._headBase.rotation.y = -azimut;
-                let tanElevation = 2.8 / this._dirToTarget.length();
-                let elevation = Math.atan(tanElevation);
-                this._canon.rotation.x = elevation;
-            }
-            else {
-                let meshes = this.getScene().meshes.find((m) => { return m instanceof Fongus; });
-                if (meshes instanceof Fongus) {
-                    this.target = meshes;
-                }
-            }
-        };
-        if (this.name === "") {
-            let turretCount = this.getScene().meshes.filter((m) => { return m instanceof Turret; }).length;
-            this.name = "turret-" + turretCount;
-        }
-        this.obstacle = Obstacle.CreateRectWithPosRotSource(this, 2, 2);
-        this.obstacle.name = name + "-obstacle";
-        this.getScene().onBeforeRenderObservable.add(this._update);
-    }
-    async instantiate() {
-        let data = await VertexDataLoader.instance.getColorized("turret-base", "#ce7633", "#383838", "#6d6d6d", "#d0d0d0", "#ce7633");
-        data.applyToMesh(this);
-        this.material = Main.cellShadingMaterial;
-        this._headBase = new BABYLON.Mesh("turret-canonBase");
-        this._headBase.parent = this;
-        this._headBase.position.copyFromFloats(0, 2.1, 0);
-        this._head = new BABYLON.Mesh("turret-head");
-        let headData = await VertexDataLoader.instance.getColorized("turret-head", "#ce7633", "#383838", "#6d6d6d");
-        headData.applyToMesh(this._head);
-        this._head.material = Main.cellShadingMaterial;
-        this._head.parent = this._headBase;
-        this._head.position.copyFromFloats(0, 0, 0);
-        this._canon = new BABYLON.Mesh("turret-canon");
-        let canonData = await VertexDataLoader.instance.getColorized("turret-canon", "#ce7633", "#383838", "#6d6d6d");
-        canonData.applyToMesh(this._canon);
-        this._canon.material = Main.cellShadingMaterial;
-        this._canon.parent = this._head;
-        this._canon.position.copyFromFloats(0, 0.7, 0);
-        this.groundWidth = 2;
-        this.height = 3;
-    }
-    async fire() {
-        let bullet = new BABYLON.Mesh("bullet");
-        bullet.layerMask = 0x10000000;
-        let data = await VertexDataLoader.instance.getColorized("turret-ammo", "#101010", "", "#d0d0d0");
-        data.applyToMesh(bullet);
-        bullet.rotation.y = this._headBase.rotation.y;
-        bullet.rotation.x = this._canon.rotation.x;
-        bullet.position.copyFrom(this.position);
-        bullet.position.y += 2.8;
-        let k = 0;
-        let dir = this._canon.getDirection(BABYLON.Axis.Z).scaleInPlace(1);
-        let ammoUpdate = () => {
-            k++;
-            bullet.position.addInPlace(dir);
-            if (k < 30) {
-                let t = k / 30;
-                this._head.position.z = -0.25 * ((1 - t) - Math.pow(1 - t, 16));
-            }
-            else {
-                this._head.position.z = 0;
-                if (k > 1000 || bullet.position.y < 0) {
-                    bullet.getScene().onBeforeRenderObservable.removeCallback(ammoUpdate);
-                    bullet.dispose();
-                }
-            }
-        };
-        bullet.getScene().onBeforeRenderObservable.add(ammoUpdate);
-    }
-    elementName() {
-        return "Turret";
-    }
-}
-class WallNode extends Draggable {
-    constructor(position2D, wallSystem) {
-        super("wallnode");
-        this.position2D = position2D;
-        this.wallSystem = wallSystem;
-        this.dirs = [];
-        this.walls = [];
-        this.position2D = position2D;
-        this.wallSystem.nodes.push(this);
-    }
-    dispose(doNotRecurse, disposeMaterialAndTextures) {
-        while (this.walls.length > 0) {
-            this.walls[0].dispose(doNotRecurse, disposeMaterialAndTextures);
-        }
-        let index = this.wallSystem.nodes.indexOf(this);
-        if (index > -1) {
-            this.wallSystem.nodes.splice(index, 1);
-        }
-        super.dispose(doNotRecurse, disposeMaterialAndTextures);
-    }
-    async instantiate() {
-        this.position.x = this.position2D.x;
-        this.position.z = this.position2D.y;
-        this.updateDirs();
-        if (this.dirs.length >= 1) {
-            let dirs = [];
-            for (let i = 0; i < this.dirs.length; i++) {
-                dirs.push(this.dirs[i].dir);
-            }
-            let vertexData = WallNode.BuildVertexData(1, ...dirs);
-            let min = Infinity;
-            let max = -Infinity;
-            this.height = -Infinity;
-            for (let i = 0; i < vertexData.positions.length / 3; i++) {
-                let x = vertexData.positions[3 * i];
-                let y = vertexData.positions[3 * i + 1];
-                let z = vertexData.positions[3 * i + 2];
-                min = Math.min(min, x, z);
-                max = Math.max(max, x, z);
-                this.height = Math.max(this.height, y);
-            }
-            this.groundWidth = max - min;
-            vertexData.applyToMesh(this);
-            this.material = Main.cellShadingMaterial;
-        }
-    }
-    updateDirs() {
-        this.dirs = [];
-        for (let i = 0; i < this.walls.length; i++) {
-            let other = this.walls[i].otherNode(this);
-            if (other) {
-                let d = other.position2D.subtract(this.position2D);
-                let dir = Math2D.AngleFromTo(new BABYLON.Vector2(1, 0), d, true);
-                this.dirs.push({ dir: dir, length: d.length() });
-            }
-            else {
-                console.warn("Oups...");
-            }
-        }
-        this.dirs = this.dirs.sort((a, b) => { return a.dir - b.dir; });
-    }
-    updateObstacle() {
-        let points = [];
-        if (!this.dirs || this.dirs.length !== this.walls.length) {
-            this.updateDirs();
-        }
-        if (this.walls.length === 1) {
-            let d = this.dirs[0].dir;
-            points = [
-                new BABYLON.Vector2(Math.cos(d - Math.PI / 2), Math.sin(d - Math.PI / 2)),
-                this.walls[0].otherNode(this).position2D.subtract(this.position2D),
-                new BABYLON.Vector2(Math.cos(d + Math.PI / 2), Math.sin(d + Math.PI / 2))
-            ];
-        }
-        else if (this.walls.length >= 2) {
-            for (let i = 0; i < this.walls.length; i++) {
-                let d = this.dirs[i].dir;
-                let l = this.dirs[i].length;
-                let dNext = this.dirs[(i + 1) % this.dirs.length].dir;
-                points.push(new BABYLON.Vector2(Math.cos(d) * (l - 1), Math.sin(d) * (l - 1)));
-                points.push(new BABYLON.Vector2(Math.cos(Math2D.LerpFromToCircular(d, dNext, 0.5)), Math.sin(Math2D.LerpFromToCircular(d, dNext, 0.5))));
-            }
-        }
-        /*
-        for (let i = 0; i < points.length; i++) {
-            BABYLON.MeshBuilder.CreateSphere(
-                "p",
-                { diameter: 0.2 },
-                Main.Scene)
-                .position.copyFromFloats(
-                    points[i].x + this.position2D.x,
-                    - 0.2,
-                    points[i].y + this.position2D.y
-                );
-        }
-        */
-        /*
-        let shape = points;
-        let points3D: BABYLON.Vector3[] = [];
-        let colors: BABYLON.Color4[] = [];
-        let r = Math.random();
-        let g = Math.random();
-        let b = Math.random();
-        for (let i = 0; i < shape.length; i++) {
-            let p = shape[i];
-            points3D.push(new BABYLON.Vector3(p.x + this.position2D.x, 0.1, p.y + this.position2D.y));
-            colors.push(new BABYLON.Color4(1, 0, 0, 1));
-        }
-        points3D.push(new BABYLON.Vector3(shape[0].x + this.position2D.x, 0.1, shape[0].y + this.position2D.y));
-        colors.push(new BABYLON.Color4(1, 0, 0, 1));
-        BABYLON.MeshBuilder.CreateLines("shape", { points: points3D, colors: colors }, Main.Scene);
-        */
-        this.obstacle = Obstacle.CreatePolygon(this.position2D.x, this.position2D.y, points);
-    }
-    static BuildVertexData(radius = 1, ...directions) {
-        let data = new BABYLON.VertexData();
-        let positions = [];
-        let indices = [];
-        let baseShape = [
-            new BABYLON.Vector3(radius, 0, 0.6),
-            new BABYLON.Vector3(radius, 0.2, 0.6),
-            new BABYLON.Vector3(radius, 1, 0.35),
-            new BABYLON.Vector3(radius, 1.1, 0.35),
-            new BABYLON.Vector3(radius, 2, 0.2),
-            new BABYLON.Vector3(radius, 2.35, 0.2),
-            new BABYLON.Vector3(radius, 2.4, 0.15)
-        ];
-        let bspc = baseShape.length;
-        if (directions.length === 1) {
-            let oppositeDir = directions[0] + Math.PI;
-            if (oppositeDir > 2 * Math.PI) {
-                oppositeDir -= 2 * Math.PI;
-            }
-            directions.push(oppositeDir);
-        }
-        for (let i = 0; i < directions.length; i++) {
-            let dir = directions[i];
-            let cosDir = Math.cos(dir);
-            let sinDir = Math.sin(dir);
-            let n = new BABYLON.Vector2(-cosDir, -sinDir);
-            let dirNext = directions[(i + 1) % directions.length];
-            let cosDirNext = Math.cos(dirNext);
-            let sinDirNext = Math.sin(dirNext);
-            let nNext = new BABYLON.Vector2(-cosDirNext, -sinDirNext);
-            for (let j = 0; j < bspc; j++) {
-                let baseP = baseShape[j];
-                positions.push(cosDir * baseP.x - sinDir * baseP.z);
-                positions.push(baseP.y);
-                positions.push(sinDir * baseP.x + cosDir * baseP.z);
-            }
-            for (let j = 0; j < bspc; j++) {
-                let baseP = baseShape[j];
-                let p = new BABYLON.Vector2(cosDir * baseP.x - sinDir * baseP.z, sinDir * baseP.x + cosDir * baseP.z);
-                let pNext = new BABYLON.Vector2(cosDirNext * baseP.x + sinDirNext * baseP.z, sinDirNext * baseP.x - cosDirNext * baseP.z);
-                let intersection;
-                if (Math.abs(Math.abs(dir - dirNext) - Math.PI) < Math.PI / 128) {
-                    intersection = p.add(pNext).scaleInPlace(0.5);
-                }
-                else {
-                    intersection = Math2D.RayRayIntersection(p, n, pNext, nNext);
-                }
-                if (intersection) {
-                    positions.push(intersection.x, baseP.y, intersection.y);
-                }
-                else {
-                    positions.push(p.x, baseP.y, p.y);
-                }
-            }
-            for (let j = 0; j < bspc; j++) {
-                let baseP = baseShape[j];
-                positions.push(cosDirNext * baseP.x + sinDirNext * baseP.z);
-                positions.push(baseP.y);
-                positions.push(sinDirNext * baseP.x - cosDirNext * baseP.z);
-            }
-        }
-        let cCount = 3 * directions.length;
-        for (let j = 0; j < cCount; j++) {
-            for (let i = 0; i < bspc - 1; i++) {
-                indices.push(i + j * bspc, i + ((j + 1) % cCount) * bspc, i + 1 + ((j + 1) % cCount) * bspc);
-                indices.push(i + 1 + ((j + 1) % cCount) * bspc, i + 1 + j * bspc, i + j * bspc);
-            }
-        }
-        for (let i = 0; i < directions.length; i++) {
-            indices.push(bspc - 1 + ((3 * i + 1) % cCount) * bspc, bspc - 1 + ((3 * i + 2) % cCount) * bspc, bspc - 1 + ((3 * i + 3) % cCount) * bspc);
-            indices.push(bspc - 1 + ((3 * i + 1) % cCount) * bspc, bspc - 1 + ((3 * i + 3) % cCount) * bspc, bspc - 1 + ((3 * i + 4) % cCount) * bspc);
-        }
-        if (directions.length === 3) {
-            indices.push(bspc - 1 + 1 * bspc, bspc - 1 + 4 * bspc, bspc - 1 + 7 * bspc);
-        }
-        data.positions = positions;
-        data.indices = indices;
-        let normals = [];
-        BABYLON.VertexData.ComputeNormals(data.positions, data.indices, normals);
-        data.normals = normals;
-        let color = BABYLON.Color3.FromHexString("#383838");
-        let colors = [];
-        for (let i = 0; i < positions.length / 3; i++) {
-            colors.push(color.r, color.g, color.b, 1);
-        }
-        data.colors = colors;
-        return data;
-    }
-}
-class Wall extends Selectionable {
-    constructor(node1, node2) {
-        super("wall");
-        this.node1 = node1;
-        this.node2 = node2;
-        node1.walls.push(this);
-        node2.walls.push(this);
-        this.wallSystem = node1.wallSystem;
-        this.wallSystem.walls.push(this);
-    }
-    dispose(doNotRecurse, disposeMaterialAndTextures) {
-        let indexWallSystem = this.wallSystem.walls.indexOf(this);
-        if (indexWallSystem > -1) {
-            this.wallSystem.walls.splice(indexWallSystem, 1);
-        }
-        let indexNode1 = this.node1.walls.indexOf(this);
-        if (indexNode1 > -1) {
-            this.node1.walls.splice(indexNode1, 1);
-        }
-        if (this.node1.walls.length === 0) {
-            this.node1.dispose(doNotRecurse, disposeMaterialAndTextures);
-        }
-        let indexNode2 = this.node2.walls.indexOf(this);
-        if (indexNode2 > -1) {
-            this.node2.walls.splice(indexNode2, 1);
-        }
-        if (this.node2.walls.length === 0) {
-            this.node2.dispose(doNotRecurse, disposeMaterialAndTextures);
-        }
-        super.dispose(doNotRecurse, disposeMaterialAndTextures);
-    }
-    otherNode(refNode) {
-        if (this.node1 === refNode) {
-            return this.node2;
-        }
-        if (this.node2 === refNode) {
-            return this.node1;
-        }
-        return undefined;
-    }
-    async instantiate() {
-        let vertexData = await VertexDataLoader.instance.getColorized("wall", "#6d6d6d", "#383838", "#ce7633");
-        vertexData = VertexDataLoader.clone(vertexData);
-        let d = this.node1.position2D.subtract(this.node2.position2D);
-        let l = d.length() - 2;
-        d.scaleInPlace(1 / l);
-        let dir = Math2D.AngleFromTo(new BABYLON.Vector2(1, 0), d, true);
-        let cosDir = Math.cos(dir);
-        let sinDir = Math.sin(dir);
-        for (let i = 0; i < vertexData.positions.length / 3; i++) {
-            let x = vertexData.positions[3 * i] * l;
-            let z = vertexData.positions[3 * i + 2];
-            vertexData.positions[3 * i] = cosDir * x - sinDir * z;
-            vertexData.positions[3 * i + 2] = sinDir * x + cosDir * z;
-        }
-        this.groundWidth = 2;
-        this.height = -Infinity;
-        for (let i = 0; i < vertexData.positions.length / 3; i++) {
-            let y = vertexData.positions[3 * i + 1];
-            this.height = Math.max(this.height, y);
-        }
-        vertexData.applyToMesh(this);
-        this.material = Main.cellShadingMaterial;
-        this.position.x = (this.node1.position2D.x + this.node2.position2D.x) * 0.5;
-        this.position.z = (this.node1.position2D.y + this.node2.position2D.y) * 0.5;
-    }
-}
-class WallData {
-    constructor(node1Index, node2Index) {
-        this.node1Index = node1Index;
-        this.node2Index = node2Index;
-    }
-}
-class WallNodeData {
-    constructor(position2D) {
-        this.position2D = position2D;
-    }
-}
-class WallSystemData {
-    constructor() {
-        this.nodesData = [];
-        this.wallsData = [];
-    }
-}
-class WallSystem extends BABYLON.TransformNode {
-    constructor() {
-        super("wall-system");
-        this.nodes = [];
-        this.walls = [];
-    }
-    serialize() {
-        let data = new WallSystemData();
-        for (let i = 0; i < this.nodes.length; i++) {
-            data.nodesData.push(new WallNodeData(this.nodes[i].position2D));
-        }
-        for (let i = 0; i < this.walls.length; i++) {
-            let wall = this.walls[i];
-            data.wallsData.push(new WallData(this.nodes.indexOf(wall.node1), this.nodes.indexOf(wall.node2)));
-        }
-        console.log("Serialize.");
-        console.log("NodesCount = " + data.nodesData.length);
-        console.log("WallsCount = " + data.wallsData.length);
-        console.log(data);
-        return data;
-    }
-    deserialize(data) {
-        while (this.nodes.length > 0) {
-            this.nodes.pop().dispose();
-        }
-        while (this.walls.length > 0) {
-            this.walls.pop().dispose();
-        }
-        for (let i = 0; i < data.nodesData.length; i++) {
-            new WallNode(new BABYLON.Vector2(data.nodesData[i].position2D.x, data.nodesData[i].position2D.y), this);
-        }
-        for (let i = 0; i < data.wallsData.length; i++) {
-            let wallData = data.wallsData[i];
-            new Wall(this.nodes[wallData.node1Index], this.nodes[wallData.node2Index]);
-        }
-        console.log("Deserialize.");
-        console.log("NodesCount = " + data.nodesData.length);
-        console.log("WallsCount = " + data.wallsData.length);
-    }
-    async instantiate() {
-        for (let i = 0; i < this.nodes.length; i++) {
-            await this.nodes[i].instantiate();
-        }
-        for (let i = 0; i < this.walls.length; i++) {
-            await this.walls[i].instantiate();
-        }
-    }
-    addToScene() {
-        for (let i = 0; i < this.nodes.length; i++) {
-            this.nodes[i].updateObstacle();
-            /*
-            let shape = this.nodes[i].obstacle.getPath(0.5, true);
-            let r = Math.random();
-            let g = Math.random();
-            let b = Math.random();
-            let points: BABYLON.Vector3[] = [];
-            let colors: BABYLON.Color4[] = [];
-            for (let i = 0; i < shape.length; i++) {
-                let p = shape[i];
-                points.push(new BABYLON.Vector3(p.x, - 0.5 * i, p.y));
-                colors.push(new BABYLON.Color4(r, g, b, 1));
-            }
-            points.push(new BABYLON.Vector3(shape[0].x, - 0.5 * shape.length, shape[0].y));
-            colors.push(new BABYLON.Color4(r, g, b, 1));
-            BABYLON.MeshBuilder.CreateLines("shape", { points: points, colors: colors }, Main.Scene);
-            */
-            NavGraphManager.AddObstacle(this.nodes[i].obstacle);
-        }
-    }
-}
-class WallEditor {
-    static Select(wall) {
-    }
-    static CreatePanel(wall, onDisposeCallback) {
-        let panel = SpacePanel.CreateSpacePanel();
-        panel.setTarget(wall);
-        panel.addTitle1("WALL");
-        panel.addMediumButtons("DELETE", () => {
-            wall.dispose();
-            wall.wallSystem.instantiate();
-            onDisposeCallback();
-        });
-        return panel;
-    }
-    static Unselect(wall) {
-    }
-}
-class WallNodeEditor {
-    static Select(node) {
-    }
-    static CreatePanel(node, onDisposeCallback) {
-        let panel = SpacePanel.CreateSpacePanel();
-        panel.setTarget(node);
-        panel.addTitle1("WALLNODE");
-        panel.addNumberInput("POS X", node.position2D.x, (v) => {
-            node.position2D.x = v;
-            node.wallSystem.instantiate();
-        });
-        panel.addNumberInput("POS Y", node.position2D.y, (v) => {
-            node.position2D.y = v;
-            node.wallSystem.instantiate();
-        });
-        panel.addMediumButtons("DELETE", () => {
-            node.dispose();
-            node.wallSystem.instantiate();
-            onDisposeCallback();
-        });
-        return panel;
-    }
-    static Unselect(node) {
     }
 }
 class Spaceship extends BABYLON.TransformNode {

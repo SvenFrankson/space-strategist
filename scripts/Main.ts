@@ -39,7 +39,7 @@ class Main {
 
         Main.Camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 1, new BABYLON.Vector3(0, 0, 0), Main.Scene);
         Main.Camera.setPosition(new BABYLON.Vector3(0, 5, - 10));
-        Main.Camera.attachControl(Main.Canvas, true);
+		Main.Camera.attachControl(Main.Canvas, true);
 
         BABYLON.Effect.ShadersStore["EdgeFragmentShader"] = `
 			#ifdef GL_ES
@@ -83,14 +83,14 @@ class Main {
         `;
         
         let depthMap = Main.Scene.enableDepthRenderer(Main.Camera).getDepthMap();
-		var postProcess = new BABYLON.PostProcess("Edge", "Edge", ["width", "height"], ["depthSampler"], 1, Main.Camera);
+		let postProcess = new BABYLON.PostProcess("Edge", "Edge", ["width", "height"], ["depthSampler"], 1, Main.Camera);
 		postProcess.onApply = (effect) => {
 			effect.setTexture("depthSampler", depthMap);
 			effect.setFloat("width", Main.Engine.getRenderWidth());
 			effect.setFloat("height", Main.Engine.getRenderHeight());
 		};
 		
-		var noPostProcessCamera = new BABYLON.FreeCamera("no-post-process-camera", BABYLON.Vector3.Zero(), Main.Scene);
+		let noPostProcessCamera = new BABYLON.FreeCamera("no-post-process-camera", BABYLON.Vector3.Zero(), Main.Scene);
 		noPostProcessCamera.parent = Main.Camera;
 		noPostProcessCamera.layerMask = 0x10000000;
 		
