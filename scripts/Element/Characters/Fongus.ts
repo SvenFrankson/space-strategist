@@ -1,7 +1,4 @@
-class Fongus extends BABYLON.Mesh {
-
-    public position2D: BABYLON.Vector2 = BABYLON.Vector2.Zero();
-    public rotation2D: number = 0;
+class Fongus extends Character {
 
     public currentPath: BABYLON.Vector2[];
 
@@ -15,6 +12,21 @@ class Fongus extends BABYLON.Mesh {
 
     public async instantiate(): Promise<void> {
         this._timeout = 0;
+    }
+
+    public dispose(doNotRecurse?: boolean, disposeMaterialAndTextures?: boolean): void {
+        this.animsCleanUp.forEach(
+            (cleanUp) => {
+                cleanUp();
+            }
+        )
+        this.getScene().onBeforeRenderObservable.add(this._update);
+        super.dispose(doNotRecurse, disposeMaterialAndTextures);
+    }
+
+    public kill(): void {
+        super.kill();
+        this.dispose();
     }
 
     private _timeout: number = Infinity;
@@ -32,9 +44,39 @@ class Fongus extends BABYLON.Mesh {
         this.position.x = this.position2D.x;
         this.position.z = this.position2D.y;
         this.rotation.y = - this.rotation2D;
+
+        if (this.fongis.length > this.currentHitPoint) {
+            let speed = Math.round(5 + Math.random() * 15);
+            let index = Math.floor(Math.random() * 3)
+            index = Math.min(index, this.fongis.length - 1);
+            console.log(index + " " + this.fongis.length);
+            let oldFongi = this.fongis.splice(index, 1)[0];
+            let animCleanUp = this.animsCleanUp.get(oldFongi);
+            if (animCleanUp) {
+                animCleanUp();
+                this.animsCleanUp.delete(oldFongi);
+            }
+            let k = 0;
+            let size = oldFongi.scaling.x;
+            let oldFongiAnim = () => {
+                k++;
+                let scale = (1 - k / speed * k / speed) * size;
+                if (k < speed) {
+                    oldFongi.scaling.copyFromFloats(scale, scale, scale);
+                }
+                else {
+                    oldFongi.dispose();
+                    this.getScene().onBeforeRenderObservable.removeCallback(oldFongiAnim);
+                }
+            }
+            this.getScene().onBeforeRenderObservable.add(oldFongiAnim);
+        }
     }
 
     private async _generateNewFongi(): Promise<void> {
+        if (!this.alive) {
+            return;
+        }
         let newFongi = new BABYLON.Mesh("fongi");
         newFongi.position.copyFrom(this.position);
         newFongi.position.x += Math.random() * 2 - 1;
@@ -158,31 +200,6 @@ class Fongus extends BABYLON.Mesh {
         );
         this.getScene().onBeforeRenderObservable.add(newFongiAnim);
         this.fongis.push(newFongi);
-
-        if (this.fongis.length > 20) {
-            let speed = Math.round(5 + Math.random() * 15);
-            let index = Math.floor(Math.random() * 3)
-            let oldFongi = this.fongis.splice(index, 1)[0];
-            let animCleanUp = this.animsCleanUp.get(oldFongi);
-            if (animCleanUp) {
-                animCleanUp();
-                this.animsCleanUp.delete(oldFongi);
-            }
-            let k = 0;
-            let size = oldFongi.scaling.x;
-            let oldFongiAnim = () => {
-                k++;
-                let scale = (1 - k / speed * k / speed) * size;
-                if (k < speed) {
-                    oldFongi.scaling.copyFromFloats(scale, scale, scale);
-                }
-                else {
-                    oldFongi.dispose();
-                    this.getScene().onBeforeRenderObservable.removeCallback(oldFongiAnim);
-                }
-            }
-            this.getScene().onBeforeRenderObservable.add(oldFongiAnim);
-        }
     }
 
     public findRandomDestination(radius: number = 10): BABYLON.Vector2 {

@@ -1,7 +1,4 @@
-class DroneWorker extends BABYLON.Mesh {
-
-    public position2D: BABYLON.Vector2 = BABYLON.Vector2.Zero();
-    public rotation2D: number = 0;
+class DroneWorker extends Character {
 
     public currentPath: BABYLON.Vector2[];
 
@@ -14,6 +11,11 @@ class DroneWorker extends BABYLON.Mesh {
         let data = await VertexDataLoader.instance.getColorized("worker", "#ce7633", "#383838", "#6d6d6d", "#c94022", "#1c1c1c");
         data.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
+    }
+
+    public kill(): void {
+        super.kill();
+        this.dispose();
     }
 
     private _update = () => {
