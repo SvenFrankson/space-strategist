@@ -104,7 +104,7 @@ class SpacePanel extends HTMLElement {
         this._innerBorder.appendChild(e);
     }
 
-    public addNumberInput(label: string, value: number, onInputCallback: (v: number) => void, precision: number = 1): HTMLInputElement {
+    public addNumberInput(label: string, value: number, onInputCallback?: (v: number) => void, precision: number = 1): HTMLInputElement {
         let lineElement = document.createElement("div");
         lineElement.classList.add("space-panel-line");
         let labelElement = document.createElement("space-panel-label");

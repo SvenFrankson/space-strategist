@@ -116,6 +116,9 @@ class Main {
         let navGraphConsole = new NavGraphConsole(Main.Scene);
         navGraphConsole.enable();
 
+        let performanceConsole = new PerformanceConsole(Main.Scene);
+        performanceConsole.enable();
+
         let worker = new Fongus();
         worker.position2D = start;
         worker.instantiate();

@@ -91,6 +91,8 @@ class Main {
         sceneEditor.enable();
         let navGraphConsole = new NavGraphConsole(Main.Scene);
         navGraphConsole.enable();
+        let performanceConsole = new PerformanceConsole(Main.Scene);
+        performanceConsole.enable();
         let worker = new Fongus();
         worker.position2D = start;
         worker.instantiate();
@@ -460,6 +462,56 @@ class Math2D {
             minimalSquaredDistance = Math.min(minimalSquaredDistance, distSquared);
         }
         return minimalSquaredDistance;
+    }
+}
+class PerformanceConsole {
+    constructor(scene) {
+        this.scene = scene;
+        this._fps = 30;
+        this._maxFrame = 30;
+        this._maxFrameLast5s = 30;
+        this._meshesCount = 0;
+        this._timer5s = 0;
+        this._lastT = NaN;
+        this._update = () => {
+            let fps = this.scene.getEngine().getFps();
+            this._fps *= 0.9;
+            this._fps += fps * 0.1;
+            this._fpsInput.value = this._fps.toFixed(0);
+            if (isNaN(this._lastT)) {
+                this._lastT = performance.now();
+            }
+            let currentFrameDuration = performance.now() - this._lastT;
+            this._lastT = performance.now();
+            this._maxFrame = Math.max(this._maxFrame, currentFrameDuration);
+            this._maxFrameInput.value = this._maxFrame.toFixed(2);
+            this._timer5s += currentFrameDuration;
+            this._maxFrameLast5s = Math.max(this._maxFrameLast5s, currentFrameDuration);
+            if (this._timer5s > 5000) {
+                this._maxFrameLast5sInput.value = this._maxFrameLast5s.toFixed(2);
+                this._maxFrameLast5s = 0;
+                this._timer5s = 0;
+            }
+            this._meshesCount = this.scene.meshes.length;
+            this._meshesCountInput.value = this._meshesCount.toFixed(0);
+        };
+    }
+    enable() {
+        this._panel = SpacePanel.CreateSpacePanel();
+        this._panel.addTitle1("PERFS");
+        this._panel.addTitle2("GLOBAL");
+        this._fpsInput = this._panel.addNumberInput("FPS", this._fps);
+        this._maxFrameInput = this._panel.addNumberInput("MAX ALL TIME", this._maxFrame);
+        this._maxFrameLast5sInput = this._panel.addNumberInput("MAX LAST 5s", this._maxFrameLast5s);
+        this._panel.addTitle2("SCENE");
+        this._meshesCountInput = this._panel.addNumberInput("MESHES", this._meshesCount);
+        this._panel.style.right = "10px";
+        this._panel.style.top = "10px";
+        this.scene.onBeforeRenderObservable.add(this._update);
+    }
+    disable() {
+        this._panel.dispose();
+        this.scene.onBeforeRenderObservable.removeCallback(this._update);
     }
 }
 class SceneData {
