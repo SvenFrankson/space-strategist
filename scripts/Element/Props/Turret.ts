@@ -1,5 +1,9 @@
 class Turret extends Prop {
 
+    public fireRate: number = 30; // Rounds per minute.
+    public range: number = 30;
+    public rotationSpeed: number = Math.PI; // Radian per second.
+
     private _headBase: BABYLON.Mesh;
     private _head: BABYLON.Mesh;
     private _canon: BABYLON.Mesh;
