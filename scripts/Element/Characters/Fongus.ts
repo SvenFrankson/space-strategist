@@ -125,6 +125,7 @@ class Fongus extends Character {
         var plane = BABYLON.Mesh.CreatePlane("plane", 0.2, this.getScene());
         let earthParticle = new BABYLON.SolidParticleSystem('SPS', this.getScene());
         earthParticle.addShape(plane, 15);
+        plane.dispose();
         var mesh = earthParticle.buildMesh();
         mesh.material = particleMaterial;
         var particleSpeed = 0.05;
