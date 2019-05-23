@@ -10,6 +10,10 @@ class PerformanceConsole {
     private _maxFrameLast5s: number = 30;
     private _meshesCountInput: HTMLInputElement;
     private _meshesCount: number = 0;
+    private _turretsCountInput: HTMLInputElement;
+    private _turretsCount: number = 0;
+    private _fongisCountInput: HTMLInputElement;
+    private _fongisCount: number = 0;
 
     constructor(public scene: BABYLON.Scene) {
         
@@ -24,6 +28,12 @@ class PerformanceConsole {
         this._maxFrameLast5sInput = this._panel.addNumberInput("MAX LAST 5s", this._maxFrameLast5s);
         this._panel.addTitle2("SCENE");
         this._meshesCountInput = this._panel.addNumberInput("MESHES", this._meshesCount);
+        this._panel.style.right = "10px";
+        this._panel.style.top = "10px";
+        this._turretsCountInput = this._panel.addNumberInput("TURRETS", this._turretsCount);
+        this._panel.style.right = "10px";
+        this._panel.style.top = "10px";
+        this._fongisCountInput = this._panel.addNumberInput("FONGIS", this._fongisCount);
         this._panel.style.right = "10px";
         this._panel.style.top = "10px";
 
@@ -62,5 +72,11 @@ class PerformanceConsole {
 
         this._meshesCount = this.scene.meshes.length;
         this._meshesCountInput.value = this._meshesCount.toFixed(0);
+
+        this._turretsCount = Turret.Instances.length;
+        this._turretsCountInput.value = this._turretsCount.toFixed(0);
+
+        this._fongisCount = Fongus.Instances.length;
+        this._fongisCountInput.value = this._fongisCount.toFixed(0);
     }
 }

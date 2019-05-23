@@ -1,5 +1,7 @@
 class Turret extends Prop {
 
+    public static Instances: Turret[] = [];
+
     public fireRate: number = 30; // Rounds per minute.
     private get _fireCooldownMax(): number { // In Seconds
         return 60 / this.fireRate;
@@ -41,6 +43,16 @@ class Turret extends Prop {
         this.obstacle = Obstacle.CreateRectWithPosRotSource(this, 2, 2);
         this.obstacle.name = name + "-obstacle";
         this.getScene().onBeforeRenderObservable.add(this._update);
+
+        Turret.Instances.push(this);
+    }
+
+    public dispose(doNotRecurse?: boolean, disposeMaterialAndTextures?: boolean): void {
+        let index = Turret.Instances.indexOf(this);
+        if (index !== -1) {
+            Turret.Instances.splice(index, 1);
+        }
+        super.dispose(doNotRecurse, disposeMaterialAndTextures);
     }
 
     public async instantiate(): Promise<void> {

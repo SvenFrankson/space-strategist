@@ -1,5 +1,7 @@
 class Fongus extends Character {
 
+    public static Instances: Fongus[] = [];
+
     public currentPath: BABYLON.Vector2[];
 
     public fongis: BABYLON.Mesh[] = [];
@@ -8,6 +10,7 @@ class Fongus extends Character {
     constructor() {
         super("fongus");
         this.getScene().onBeforeRenderObservable.add(this._update);
+        Fongus.Instances.push(this);
     }
 
     public async instantiate(): Promise<void> {
@@ -15,6 +18,11 @@ class Fongus extends Character {
     }
 
     public dispose(doNotRecurse?: boolean, disposeMaterialAndTextures?: boolean): void {
+        let index = Fongus.Instances.indexOf(this);
+        if (index !== -1) {
+            Fongus.Instances.splice(index, 1);
+        }
+        super.dispose(doNotRecurse, disposeMaterialAndTextures);
         this.animsCleanUp.forEach(
             (cleanUp) => {
                 cleanUp();

@@ -482,6 +482,8 @@ class PerformanceConsole {
         this._maxFrame = 30;
         this._maxFrameLast5s = 30;
         this._meshesCount = 0;
+        this._turretsCount = 0;
+        this._fongisCount = 0;
         this._timer5s = 0;
         this._lastT = NaN;
         this._update = () => {
@@ -505,6 +507,10 @@ class PerformanceConsole {
             }
             this._meshesCount = this.scene.meshes.length;
             this._meshesCountInput.value = this._meshesCount.toFixed(0);
+            this._turretsCount = Turret.Instances.length;
+            this._turretsCountInput.value = this._turretsCount.toFixed(0);
+            this._fongisCount = Fongus.Instances.length;
+            this._fongisCountInput.value = this._fongisCount.toFixed(0);
         };
     }
     enable() {
@@ -516,6 +522,12 @@ class PerformanceConsole {
         this._maxFrameLast5sInput = this._panel.addNumberInput("MAX LAST 5s", this._maxFrameLast5s);
         this._panel.addTitle2("SCENE");
         this._meshesCountInput = this._panel.addNumberInput("MESHES", this._meshesCount);
+        this._panel.style.right = "10px";
+        this._panel.style.top = "10px";
+        this._turretsCountInput = this._panel.addNumberInput("TURRETS", this._turretsCount);
+        this._panel.style.right = "10px";
+        this._panel.style.top = "10px";
+        this._fongisCountInput = this._panel.addNumberInput("FONGIS", this._fongisCount);
         this._panel.style.right = "10px";
         this._panel.style.top = "10px";
         this.scene.onBeforeRenderObservable.add(this._update);
@@ -1062,11 +1074,17 @@ class Fongus extends Character {
             }
         };
         this.getScene().onBeforeRenderObservable.add(this._update);
+        Fongus.Instances.push(this);
     }
     async instantiate() {
         this._timeout = 0;
     }
     dispose(doNotRecurse, disposeMaterialAndTextures) {
+        let index = Fongus.Instances.indexOf(this);
+        if (index !== -1) {
+            Fongus.Instances.splice(index, 1);
+        }
+        super.dispose(doNotRecurse, disposeMaterialAndTextures);
         this.animsCleanUp.forEach((cleanUp) => {
             cleanUp();
         });
@@ -1212,6 +1230,7 @@ class Fongus extends Character {
         }
     }
 }
+Fongus.Instances = [];
 /// <reference path="../Draggable.ts"/>
 class PropData {
 }
@@ -1422,12 +1441,20 @@ class Turret extends Prop {
         this.obstacle = Obstacle.CreateRectWithPosRotSource(this, 2, 2);
         this.obstacle.name = name + "-obstacle";
         this.getScene().onBeforeRenderObservable.add(this._update);
+        Turret.Instances.push(this);
     }
     get _fireCooldownMax() {
         return 60 / this.fireRate;
     }
     get rangeSquared() {
         return this.range * this.range;
+    }
+    dispose(doNotRecurse, disposeMaterialAndTextures) {
+        let index = Turret.Instances.indexOf(this);
+        if (index !== -1) {
+            Turret.Instances.splice(index, 1);
+        }
+        super.dispose(doNotRecurse, disposeMaterialAndTextures);
     }
     async instantiate() {
         let data = await VertexDataLoader.instance.getColorized("turret-base", "#ce7633", "#383838", "#6d6d6d", "#d0d0d0", "#ce7633");
@@ -1480,6 +1507,7 @@ class Turret extends Prop {
         return "Turret";
     }
 }
+Turret.Instances = [];
 class WallNode extends Draggable {
     constructor(position2D, wallSystem) {
         super("wallnode");
