@@ -1,6 +1,22 @@
 class Math2D {
 
-    public static StepFromToCirular(from: number, to: number, step: number = Math.PI / 30): number {
+    public static AreEqualsCircular(a1: number, a2: number, epsilon: number = Math.PI / 60): boolean {
+        while (a1 < 0) {
+            a1 += 2 * Math.PI;
+        }
+        while (a1 >= 2 * Math.PI) {
+            a1 -= 2 * Math.PI;
+        }
+        while (a2 < 0) {
+            a2 += 2 * Math.PI;
+        }
+        while (a2 >= 2 * Math.PI) {
+            a2 -= 2 * Math.PI;
+        }
+        return Math.abs(a1 - a2) < epsilon;
+    }
+
+    public static StepFromToCirular(from: number, to: number, step: number = Math.PI / 60): number {
         while (from < 0) {
             from += 2 * Math.PI;
         }

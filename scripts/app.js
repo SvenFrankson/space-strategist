@@ -108,7 +108,22 @@ window.addEventListener("DOMContentLoaded", () => {
     game.animate();
 });
 class Math2D {
-    static StepFromToCirular(from, to, step = Math.PI / 30) {
+    static AreEqualsCircular(a1, a2, epsilon = Math.PI / 60) {
+        while (a1 < 0) {
+            a1 += 2 * Math.PI;
+        }
+        while (a1 >= 2 * Math.PI) {
+            a1 -= 2 * Math.PI;
+        }
+        while (a2 < 0) {
+            a2 += 2 * Math.PI;
+        }
+        while (a2 >= 2 * Math.PI) {
+            a2 -= 2 * Math.PI;
+        }
+        return Math.abs(a1 - a2) < epsilon;
+    }
+    static StepFromToCirular(from, to, step = Math.PI / 60) {
         while (from < 0) {
             from += 2 * Math.PI;
         }
@@ -1101,6 +1116,7 @@ class Fongus extends Character {
         var plane = BABYLON.Mesh.CreatePlane("plane", 0.2, this.getScene());
         let earthParticle = new BABYLON.SolidParticleSystem('SPS', this.getScene());
         earthParticle.addShape(plane, 15);
+        plane.dispose();
         var mesh = earthParticle.buildMesh();
         mesh.material = particleMaterial;
         var particleSpeed = 0.05;
@@ -1349,26 +1365,44 @@ class Tank extends Prop {
 class Turret extends Prop {
     constructor(name, position2D, rotation2D) {
         super(name, position2D, rotation2D);
+        this.fireRate = 30; // Rounds per minute.
+        this._fireCooldown = 0;
+        this.range = 30;
+        this.rotationSpeed = Math.PI / 2; // Radian per second.
+        this._targetAzimut = 0;
+        this._targetElevation = 0;
         this._dirForward = BABYLON.Vector2.Zero();
         this._dirToTarget = BABYLON.Vector2.Zero();
         this._update = () => {
+            let dt = this.getScene().getEngine().getDeltaTime() / 1000;
+            this._headBase.rotation.y = Math2D.StepFromToCirular(this._headBase.rotation.y, this._targetAzimut, this.rotationSpeed * dt);
+            this._canon.rotation.x = Math2D.StepFromToCirular(this._canon.rotation.x, this._targetElevation, this.rotationSpeed * dt);
             if (this.target && this.target.alive) {
-                if (Math.random() < 1 / 120) {
-                    this.fire();
+                let distSquared = this.position2D.subtract(this.target.position2D).lengthSquared();
+                if (distSquared < this.rangeSquared) {
+                    if (Math2D.AreEqualsCircular(this._headBase.rotation.y, this._targetAzimut)) {
+                        if (Math2D.AreEqualsCircular(this._canon.rotation.x, this._targetElevation)) {
+                            this._fire();
+                        }
+                    }
                 }
                 this._dirForward.copyFrom(this.forward2D);
                 this._dirToTarget.copyFrom(this.target.position2D);
                 this._dirToTarget.subtractInPlace(this.position2D);
                 let azimut = Math2D.AngleFromTo(this._dirForward, this._dirToTarget);
-                this._headBase.rotation.y = -azimut;
+                this._targetAzimut = -azimut;
                 let tanElevation = 2.8 / this._dirToTarget.length();
                 let elevation = Math.atan(tanElevation);
-                this._canon.rotation.x = elevation;
+                this._targetElevation = elevation;
             }
             else {
                 let mesh = this.getScene().meshes.find((m) => { return (m instanceof Character) && m.alive; });
                 if (mesh instanceof Character) {
                     this.target = mesh;
+                }
+                else {
+                    this._targetAzimut = 0;
+                    this._targetElevation = 0;
                 }
             }
         };
@@ -1376,33 +1410,44 @@ class Turret extends Prop {
             let turretCount = this.getScene().meshes.filter((m) => { return m instanceof Turret; }).length;
             this.name = "turret-" + turretCount;
         }
+        this._headBase = new BABYLON.Mesh("turret-canonBase");
+        this._headBase.parent = this;
+        this._headBase.position.copyFromFloats(0, 2.1, 0);
+        this._head = new BABYLON.Mesh("turret-head");
+        this._head.parent = this._headBase;
+        this._head.position.copyFromFloats(0, 0, 0);
+        this._canon = new BABYLON.Mesh("turret-canon");
+        this._canon.parent = this._head;
+        this._canon.position.copyFromFloats(0, 0.7, 0);
         this.obstacle = Obstacle.CreateRectWithPosRotSource(this, 2, 2);
         this.obstacle.name = name + "-obstacle";
         this.getScene().onBeforeRenderObservable.add(this._update);
+    }
+    get _fireCooldownMax() {
+        return 60 / this.fireRate;
+    }
+    get rangeSquared() {
+        return this.range * this.range;
     }
     async instantiate() {
         let data = await VertexDataLoader.instance.getColorized("turret-base", "#ce7633", "#383838", "#6d6d6d", "#d0d0d0", "#ce7633");
         data.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
-        this._headBase = new BABYLON.Mesh("turret-canonBase");
-        this._headBase.parent = this;
-        this._headBase.position.copyFromFloats(0, 2.1, 0);
-        this._head = new BABYLON.Mesh("turret-head");
         let headData = await VertexDataLoader.instance.getColorized("turret-head", "#ce7633", "#383838", "#6d6d6d");
         headData.applyToMesh(this._head);
         this._head.material = Main.cellShadingMaterial;
-        this._head.parent = this._headBase;
-        this._head.position.copyFromFloats(0, 0, 0);
-        this._canon = new BABYLON.Mesh("turret-canon");
         let canonData = await VertexDataLoader.instance.getColorized("turret-canon", "#ce7633", "#383838", "#6d6d6d");
         canonData.applyToMesh(this._canon);
         this._canon.material = Main.cellShadingMaterial;
-        this._canon.parent = this._head;
-        this._canon.position.copyFromFloats(0, 0.7, 0);
         this.groundWidth = 2;
         this.height = 3;
     }
-    async fire() {
+    async _fire() {
+        this._fireCooldown -= this.getScene().getEngine().getDeltaTime() / 1000;
+        if (this._fireCooldown > 0) {
+            return;
+        }
+        this._fireCooldown = this._fireCooldownMax;
         let bullet = new BABYLON.Mesh("bullet");
         bullet.layerMask = 0x10000000;
         let data = await VertexDataLoader.instance.getColorized("turret-ammo", "#101010", "", "#d0d0d0");
