@@ -1390,7 +1390,6 @@ class Turret extends Prop {
         this.rotationSpeed = Math.PI / 2; // Radian per second.
         this._targetAzimut = 0;
         this._targetElevation = 0;
-        this._dirForward = BABYLON.Vector2.Zero();
         this._dirToTarget = BABYLON.Vector2.Zero();
         this._update = () => {
             let dt = this.getScene().getEngine().getDeltaTime() / 1000;
@@ -1405,10 +1404,9 @@ class Turret extends Prop {
                         }
                     }
                 }
-                this._dirForward.copyFrom(this.forward2D);
                 this._dirToTarget.copyFrom(this.target.position2D);
                 this._dirToTarget.subtractInPlace(this.position2D);
-                let azimut = Math2D.AngleFromTo(this._dirForward, this._dirToTarget);
+                let azimut = Math2D.AngleFromTo(this.forward2D, this._dirToTarget);
                 this._targetAzimut = -azimut;
                 let tanElevation = 2.8 / this._dirToTarget.length();
                 let elevation = Math.atan(tanElevation);
