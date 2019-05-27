@@ -709,6 +709,11 @@ class SceneEditor {
             this._newProp = new Tank("", BABYLON.Vector2.Zero(), 0);
             this._newProp.instantiate();
         };
+        this.createCristal = () => {
+            this.selectedElement = undefined;
+            this._newProp = new Cristal("", BABYLON.Vector2.Zero(), 0);
+            this._newProp.instantiate();
+        };
         this.createTurret = () => {
             this.selectedElement = undefined;
             this._newProp = new Turret("", BABYLON.Vector2.Zero(), 0);
@@ -866,6 +871,7 @@ class SceneEditor {
         this._panel.addLargeButton("CONTAINER", this.createContainer);
         this._panel.addLargeButton("TANK", this.createTank);
         this._panel.addLargeButton("TURRET", this.createTurret);
+        this._panel.addLargeButton("CRISTAL", this.createCristal);
         this._panel.addLargeButton("WALL", this.createNode);
         this._panel.addTitle2("DATA");
         this._panel.addMediumButtons("SAVE", () => {
@@ -1268,6 +1274,9 @@ class Prop extends Draggable {
         if (data.elementName === "Tank") {
             return new Tank(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
         }
+        if (data.elementName === "Cristal") {
+            return new Cristal(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
+        }
         if (data.elementName === "Turret") {
             return new Turret(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
         }
@@ -1307,6 +1316,37 @@ class Container extends Prop {
     }
     elementName() {
         return "Container";
+    }
+}
+class Cristal extends Prop {
+    constructor(name, position2D, rotation2D) {
+        super(name, position2D, rotation2D);
+        if (this.name === "") {
+            let CristalCount = this.getScene().meshes.filter((m) => { return m instanceof Cristal; }).length;
+            this.name = "cristal-" + CristalCount;
+        }
+        this.obstacle = Obstacle.CreateHexagonWithPosRotSource(this, 1.5);
+        this.obstacle.name = name + "-obstacle";
+    }
+    async instantiate() {
+        let vertexData = await VertexDataLoader.instance.getColorized("cristal-1", "#b0b0b0", "#d0d0d0", "#9ef442");
+        let min = Infinity;
+        let max = -Infinity;
+        this.height = -Infinity;
+        for (let i = 0; i < vertexData.positions.length / 3; i++) {
+            let x = vertexData.positions[3 * i];
+            let y = vertexData.positions[3 * i + 1];
+            let z = vertexData.positions[3 * i + 2];
+            min = Math.min(min, x, z);
+            max = Math.max(max, x, z);
+            this.height = Math.max(this.height, y);
+        }
+        this.groundWidth = max - min;
+        vertexData.applyToMesh(this);
+        this.material = Main.cellShadingMaterial;
+    }
+    elementName() {
+        return "Cristal";
     }
 }
 class PropEditor {
