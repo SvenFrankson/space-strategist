@@ -20,7 +20,7 @@ class DroneWorker extends Character {
 
     private _update = () => {
         if (!this.currentPath || this.currentPath.length === 0) {
-            this._findPath();
+            this._findPathToCristal();
         }
         this._moveOnPath();
 
@@ -55,6 +55,16 @@ class DroneWorker extends Character {
             let navGraph = NavGraphManager.GetForRadius(1);
             navGraph.update();
             navGraph.computePathFromTo(this.position2D, dest);
+            this.currentPath = navGraph.path;
+        }
+    }
+
+    private _findPathToCristal(): void {
+        let dest = this.getScene().meshes.find((m) => { return m instanceof Cristal; }) as Cristal;
+        if (dest) {
+            let navGraph = NavGraphManager.GetForRadius(1);
+            navGraph.update();
+            navGraph.computePathFromTo(this.position2D, dest.obstacle);
             this.currentPath = navGraph.path;
         }
     }

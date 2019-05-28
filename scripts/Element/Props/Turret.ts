@@ -95,8 +95,8 @@ class Turret extends Prop {
             this._targetElevation = elevation;
         }
         else {
-            let mesh = this.getScene().meshes.find((m) => { return (m instanceof Character) && m.alive; });
-            if (mesh instanceof Character) {
+            let mesh = this.getScene().meshes.find((m) => { return (m instanceof Fongus) && m.alive; });
+            if (mesh instanceof Fongus) {
                 this.target = mesh;
             }
             else {

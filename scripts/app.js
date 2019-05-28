@@ -89,7 +89,10 @@ class Main {
         navGraphConsole.enable();
         let performanceConsole = new PerformanceConsole(Main.Scene);
         performanceConsole.enable();
-        let worker = new Fongus();
+        let fongus = new Fongus();
+        fongus.position2D = new BABYLON.Vector2(0, -10);
+        fongus.instantiate();
+        let worker = new DroneWorker();
         worker.position2D = new BABYLON.Vector2(0, -10);
         worker.instantiate();
     }
@@ -952,7 +955,7 @@ class DroneWorker extends Character {
         super("droneWorker");
         this._update = () => {
             if (!this.currentPath || this.currentPath.length === 0) {
-                this._findPath();
+                this._findPathToCristal();
             }
             this._moveOnPath();
             this.position.x = this.position2D.x;
@@ -1015,6 +1018,15 @@ class DroneWorker extends Character {
             this.currentPath = navGraph.path;
         }
     }
+    _findPathToCristal() {
+        let dest = this.getScene().meshes.find((m) => { return m instanceof Cristal; });
+        if (dest) {
+            let navGraph = NavGraphManager.GetForRadius(1);
+            navGraph.update();
+            navGraph.computePathFromTo(this.position2D, dest.obstacle);
+            this.currentPath = navGraph.path;
+        }
+    }
 }
 class Fongus extends Character {
     constructor() {
@@ -1039,7 +1051,6 @@ class Fongus extends Character {
                 let speed = Math.round(5 + Math.random() * 15);
                 let index = Math.floor(Math.random() * 3);
                 index = Math.min(index, this.fongis.length - 1);
-                console.log(index + " " + this.fongis.length);
                 let oldFongi = this.fongis.splice(index, 1)[0];
                 let animCleanUp = this.animsCleanUp.get(oldFongi);
                 if (animCleanUp) {
@@ -1453,8 +1464,8 @@ class Turret extends Prop {
                 this._targetElevation = elevation;
             }
             else {
-                let mesh = this.getScene().meshes.find((m) => { return (m instanceof Character) && m.alive; });
-                if (mesh instanceof Character) {
+                let mesh = this.getScene().meshes.find((m) => { return (m instanceof Fongus) && m.alive; });
+                if (mesh instanceof Fongus) {
                     this.target = mesh;
                 }
                 else {
@@ -2210,12 +2221,15 @@ class NavGraph {
         }
     }
     computePathFromTo(from, to) {
-        let linkSum = 0;
-        for (let i = 0; i < this.points.length; i++) {
-            linkSum += this.points[i].links.length;
-        }
+        let toObstacle = undefined;
         this.setStart(from);
-        this.setEnd(to);
+        if (to instanceof BABYLON.Vector2) {
+            this.setEnd(to);
+        }
+        else if (to instanceof Obstacle) {
+            this.setEnd(to.position2D);
+            toObstacle = to;
+        }
         for (let i = 0; i < this.points.length; i++) {
             this.points[i].distanceToEnd = Infinity;
         }
@@ -2260,7 +2274,7 @@ class NavGraph {
                             for (let i = 0; i < this.obstacles.length; i++) {
                                 let o = this.obstacles[i];
                                 let path = o.getPath(this.offset);
-                                if (o !== p1.obstacle && o !== p2.obstacle) {
+                                if (o !== toObstacle && o !== p1.obstacle && o !== p2.obstacle) {
                                     for (let j = 0; j < path.length; j++) {
                                         let s1 = path[j];
                                         let s2 = path[(j + 1) % path.length];

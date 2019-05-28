@@ -57,7 +57,6 @@ class Fongus extends Character {
             let speed = Math.round(5 + Math.random() * 15);
             let index = Math.floor(Math.random() * 3)
             index = Math.min(index, this.fongis.length - 1);
-            console.log(index + " " + this.fongis.length);
             let oldFongi = this.fongis.splice(index, 1)[0];
             let animCleanUp = this.animsCleanUp.get(oldFongi);
             if (animCleanUp) {

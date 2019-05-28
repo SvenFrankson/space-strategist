@@ -132,13 +132,18 @@ class NavGraph {
         }
     }
 
-    public computePathFromTo(from: BABYLON.Vector2, to: BABYLON.Vector2): BABYLON.Vector2[] {
-        let linkSum = 0;
-        for (let i = 0; i < this.points.length; i++) {
-            linkSum += this.points[i].links.length;
-        }
+    public computePathFromTo(from: BABYLON.Vector2, to: BABYLON.Vector2): BABYLON.Vector2[]
+    public computePathFromTo(from: BABYLON.Vector2, to: Obstacle): BABYLON.Vector2[];
+    public computePathFromTo(from: BABYLON.Vector2, to: any): BABYLON.Vector2[] {
+        let toObstacle: Obstacle = undefined;
         this.setStart(from);
-        this.setEnd(to);
+        if (to instanceof BABYLON.Vector2) {
+            this.setEnd(to);
+        }
+        else if (to instanceof Obstacle) {
+            this.setEnd(to.position2D);
+            toObstacle = to;
+        }
         for (let i = 0; i < this.points.length; i++) {
             this.points[i].distanceToEnd = Infinity;
         }        
@@ -184,7 +189,7 @@ class NavGraph {
                             for (let i = 0; i < this.obstacles.length; i++) {
                                 let o = this.obstacles[i];
                                 let path = o.getPath(this.offset);
-                                if (o !== p1.obstacle && o !== p2.obstacle) {
+                                if (o !== toObstacle && o !== p1.obstacle && o !== p2.obstacle) {
                                     for (let j = 0; j < path.length; j++) {
                                         let s1 = path[j];
                                         let s2 = path[(j + 1) % path.length];

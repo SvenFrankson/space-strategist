@@ -114,7 +114,11 @@ class Main {
         let performanceConsole = new PerformanceConsole(Main.Scene);
         performanceConsole.enable();
 
-        let worker = new Fongus();
+        let fongus = new Fongus();
+        fongus.position2D = new BABYLON.Vector2(0, -10);
+        fongus.instantiate();
+
+        let worker = new DroneWorker();
         worker.position2D = new BABYLON.Vector2(0, -10);
         worker.instantiate();
     }
