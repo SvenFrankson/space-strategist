@@ -24,10 +24,15 @@ abstract class Prop extends Draggable {
     }
 
     private _updatePosition = () => {
-        this.position.x = this.position2D.x;
-        this.position.z = this.position2D.y;
-        this.rotation.y = - this.rotation2D;
+        if (this.position.x !== this.position2D.x || this.position.z !== this.position2D.y || this.rotation.y !== - this.rotation2D) {
+            this.position.x = this.position2D.x;
+            this.position.z = this.position2D.y;
+            this.rotation.y = - this.rotation2D;
+            this.onPositionChanged();
+        }
     }
+
+    protected onPositionChanged(): void {}
 
     public addToScene(): void {
         NavGraphManager.AddObstacle(this.obstacle);

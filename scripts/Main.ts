@@ -7,6 +7,7 @@ class Main {
     public static Scene: BABYLON.Scene;
 	public static Light: BABYLON.Light;
 	public static Camera: BABYLON.ArcRotateCamera;
+	public static Ground: Ground;
 
     public static _cellShadingMaterial: BABYLON.CellMaterial;
 	public static get cellShadingMaterial(): BABYLON.CellMaterial {
@@ -95,6 +96,10 @@ class Main {
 		noPostProcessCamera.layerMask = 0x10000000;
 		
 		Main.Scene.activeCameras.push(Main.Camera, noPostProcessCamera);
+
+        Main.Ground = new Ground(50, 50);
+        Main.Ground.instantiate();
+        Main.Ground.material = Main.groundMaterial;
 
         new VertexDataLoader(Main.Scene);
         new NavGraphManager();

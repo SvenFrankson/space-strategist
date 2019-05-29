@@ -76,6 +76,9 @@ class Main {
         noPostProcessCamera.parent = Main.Camera;
         noPostProcessCamera.layerMask = 0x10000000;
         Main.Scene.activeCameras.push(Main.Camera, noPostProcessCamera);
+        Main.Ground = new Ground(50, 50);
+        Main.Ground.instantiate();
+        Main.Ground.material = Main.groundMaterial;
         new VertexDataLoader(Main.Scene);
         new NavGraphManager();
         let wallSystem = new WallSystem();
@@ -745,7 +748,7 @@ class SceneEditor {
         this.pointerMove = () => {
             if (this._draggedElement || this._newProp) {
                 let pick = this.scene.pick(this.scene.pointerX, this.scene.pointerY, (m) => {
-                    return m === this.ground;
+                    return m === this._zero;
                 });
                 if (this._draggedElement) {
                     if (pick.hit) {
@@ -789,7 +792,7 @@ class SceneEditor {
         };
         this.pointerUpFirst = () => {
             let pick = this.scene.pick(this.scene.pointerX, this.scene.pointerY, (m) => {
-                return m === this.ground;
+                return m === this._zero;
             });
             if (pick.hit) {
                 for (let i = 0; i < this.wallSystem.nodes.length; i++) {
@@ -807,7 +810,7 @@ class SceneEditor {
         };
         this.pointerUpSecond = () => {
             let pick = this.scene.pick(this.scene.pointerX, this.scene.pointerY, (m) => {
-                return m === this.ground;
+                return m === this._zero;
             });
             if (pick.hit) {
                 let otherNode;
@@ -827,9 +830,9 @@ class SceneEditor {
                 this.wallSystem.instantiate();
             }
         };
-        this.ground = new Ground(50, 50);
-        this.ground.instantiate();
-        this.ground.material = Main.groundMaterial;
+        this._zero = BABYLON.MeshBuilder.CreateGround("zero", { width: 100, height: 100 }, scene);
+        this._zero.isVisible = false;
+        this._zero.isPickable = true;
         this.enable();
     }
     get selectedElement() {
@@ -867,7 +870,6 @@ class SceneEditor {
         }
     }
     enable() {
-        this.ground.isVisible = true;
         this._panel = SpacePanel.CreateSpacePanel();
         this._panel.addTitle1("EDITOR");
         this._panel.addTitle2("PROPS");
@@ -890,7 +892,6 @@ class SceneEditor {
         this._panel.style.top = "10px";
     }
     disable() {
-        this.ground.isVisible = false;
         this.removeEventListenerDrag();
         this._panel.dispose();
     }
@@ -1255,9 +1256,12 @@ class Prop extends Draggable {
     constructor(name, position2D, rotation2D) {
         super(name);
         this._updatePosition = () => {
-            this.position.x = this.position2D.x;
-            this.position.z = this.position2D.y;
-            this.rotation.y = -this.rotation2D;
+            if (this.position.x !== this.position2D.x || this.position.z !== this.position2D.y || this.rotation.y !== -this.rotation2D) {
+                this.position.x = this.position2D.x;
+                this.position.z = this.position2D.y;
+                this.rotation.y = -this.rotation2D;
+                this.onPositionChanged();
+            }
         };
         this.position2D = position2D;
         this.rotation2D = rotation2D;
@@ -1267,6 +1271,7 @@ class Prop extends Draggable {
         this.getScene().onBeforeRenderObservable.removeCallback(this._updatePosition);
         super.dispose(doNotRecurse, disposeMaterialAndTextures);
     }
+    onPositionChanged() { }
     addToScene() {
         NavGraphManager.AddObstacle(this.obstacle);
     }
@@ -1336,11 +1341,38 @@ class Cristal extends Prop {
             let CristalCount = this.getScene().meshes.filter((m) => { return m instanceof Cristal; }).length;
             this.name = "cristal-" + CristalCount;
         }
-        this.obstacle = Obstacle.CreateHexagonWithPosRotSource(this, 1.5);
+        this.obstacle = Obstacle.CreateHexagonWithPosRotSource(this, 2);
         this.obstacle.name = name + "-obstacle";
     }
     async instantiate() {
         let vertexData = await VertexDataLoader.instance.getColorized("cristal-2", "#b0b0b0", "#d0d0d0", "#9ef442");
+        for (let i = 0; i < vertexData.positions.length; i++) {
+            vertexData.positions[i] *= 0.5;
+        }
+        let iHole0 = Math.round(this.position2D.x / 5) - Main.Ground.stepZeroW;
+        let jHole0 = Math.round(this.position2D.y / 5) - Main.Ground.stepZeroH;
+        let iHole1 = iHole0 - 1;
+        let jHole1 = jHole0 - 1;
+        let seamXMin = (Main.Ground.stepZeroW + iHole1) * 5;
+        let seamXMax = (Main.Ground.stepZeroW + iHole0 + 1) * 5;
+        let seamZMin = (Main.Ground.stepZeroH + jHole1) * 5;
+        let seamZMax = (Main.Ground.stepZeroH + jHole0 + 1) * 5;
+        for (let i = 0; i < vertexData.positions.length / 3; i++) {
+            let x = vertexData.positions[3 * i];
+            if (x === 2.5) {
+                vertexData.positions[3 * i] = seamXMax - this.position2D.x;
+            }
+            if (x === -2.5) {
+                vertexData.positions[3 * i] = seamXMin - this.position2D.x;
+            }
+            let z = vertexData.positions[3 * i + 2];
+            if (z === 2.5) {
+                vertexData.positions[3 * i + 2] = seamZMax - this.position2D.y;
+            }
+            if (z === -2.5) {
+                vertexData.positions[3 * i + 2] = seamZMin - this.position2D.y;
+            }
+        }
         let min = Infinity;
         let max = -Infinity;
         this.height = -Infinity;
@@ -1352,9 +1384,13 @@ class Cristal extends Prop {
             max = Math.max(max, x, z);
             this.height = Math.max(this.height, y);
         }
-        this.groundWidth = max - min;
+        this.groundWidth = 4;
         vertexData.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
+    }
+    onPositionChanged() {
+        this.instantiate();
+        Main.Ground.instantiate();
     }
     elementName() {
         return "Cristal";
@@ -2005,8 +2041,8 @@ class VertexDataLoader {
         });
     }
     async getColorized(name, baseColorHex = "#FFFFFF", frameColorHex = "", color1Hex = "", // Replace red
-        color2Hex = "", // Replace green
-        color3Hex = "" // Replace blue
+    color2Hex = "", // Replace green
+    color3Hex = "" // Replace blue
     ) {
         let baseColor;
         if (baseColorHex !== "") {
@@ -2765,31 +2801,46 @@ class Ground extends BABYLON.Mesh {
         super("ground");
         this.width = width;
         this.height = height;
+        this.stepCountW = 1;
+        this.stepZeroW = 1;
+        this.stepCountH = 1;
+        this.stepZeroH = 1;
+        this.stepCountW = Math.ceil(this.width / 5) + 1;
+        this.stepZeroW = Math.ceil(-this.stepCountW / 2);
+        this.stepCountH = Math.ceil(this.height / 5) + 1;
+        this.stepZeroH = Math.ceil(-this.stepCountH / 2);
     }
     instantiate() {
+        let cristals = this.getScene().meshes.filter((m) => { return m instanceof Cristal; });
         let data = new BABYLON.VertexData();
         let positions = [];
         let indices = [];
         let colors = [];
         let uvs = [];
         let normals = [];
-        let stepCountW = Math.ceil(this.width / 5) + 1;
-        let stepZeroW = Math.ceil(-stepCountW / 2);
-        let stepCountH = Math.ceil(this.height / 5) + 1;
-        let stepZeroH = Math.ceil(-stepCountH / 2);
-        for (let j = 0; j < stepCountH; j++) {
-            for (let i = 0; i < stepCountW; i++) {
-                let x = (stepZeroW + i) * 5;
-                let y = (stepZeroH + j) * 5;
+        let holes = [];
+        for (let i = 0; i < cristals.length; i++) {
+            let iHole0 = Math.round(cristals[i].position2D.x / 5) - this.stepZeroW;
+            let jHole0 = Math.round(cristals[i].position2D.y / 5) - this.stepZeroH;
+            let iHole1 = iHole0 - 1;
+            let jHole1 = jHole0 - 1;
+            holes.push(new BABYLON.Vector2(iHole0, jHole0), new BABYLON.Vector2(iHole0, jHole1), new BABYLON.Vector2(iHole1, jHole0), new BABYLON.Vector2(iHole1, jHole1));
+        }
+        for (let j = 0; j < this.stepCountH; j++) {
+            for (let i = 0; i < this.stepCountW; i++) {
+                let x = (this.stepZeroW + i) * 5;
+                let y = (this.stepZeroH + j) * 5;
                 positions.push(x, 0, y);
-                let c = Math.random() * 0.5 + 0.5;
+                let c = (Math.cos(i * 43 + j * 3201) + 1) * 0.25 + 0.5;
                 colors.push(c, c, c, 1);
                 uvs.push(i, j);
                 normals.push(0, 1, 0);
-                if (i + 1 < stepCountW && j + 1 < stepCountH) {
-                    let index = i + j * stepCountW;
-                    indices.push(index, index + 1, index + 1 + stepCountW);
-                    indices.push(index, index + 1 + stepCountW, index + stepCountW);
+                if (i + 1 < this.stepCountW && j + 1 < this.stepCountH) {
+                    if (!holes.find(h => { return h.x === i && h.y === j; })) {
+                        let index = i + j * this.stepCountW;
+                        indices.push(index, index + 1, index + 1 + this.stepCountW);
+                        indices.push(index, index + 1 + this.stepCountW, index + this.stepCountW);
+                    }
                 }
             }
         }

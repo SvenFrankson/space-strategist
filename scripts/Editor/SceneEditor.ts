@@ -50,21 +50,19 @@ class SceneEditor {
     }
 
     private _panel: SpacePanel;
-    private ground: Ground;
+    private _zero: BABYLON.Mesh;
 
     constructor(
         public wallSystem: WallSystem,
         public scene: BABYLON.Scene
     ) {
-        this.ground = new Ground(50, 50);
-        this.ground.instantiate();
-        this.ground.material = Main.groundMaterial;
+        this._zero = BABYLON.MeshBuilder.CreateGround("zero", { width: 100, height: 100}, scene);
+        this._zero.isVisible = false;
+        this._zero.isPickable = true;
         this.enable();
     }
 
     public enable() {
-        this.ground.isVisible = true;
-        
         this._panel = SpacePanel.CreateSpacePanel();
         this._panel.addTitle1("EDITOR");
         this._panel.addTitle2("PROPS");
@@ -96,8 +94,6 @@ class SceneEditor {
     }
 
     public disable() {
-        this.ground.isVisible = false;
-
         this.removeEventListenerDrag();
 
         this._panel.dispose();
@@ -172,7 +168,7 @@ class SceneEditor {
                 this.scene.pointerX,
                 this.scene.pointerY,
                 (m) => {
-                    return m === this.ground;
+                    return m === this._zero;
                 }
             );
             if (this._draggedElement) {
@@ -226,7 +222,7 @@ class SceneEditor {
             this.scene.pointerX,
             this.scene.pointerY,
             (m) => {
-                return m === this.ground;
+                return m === this._zero;
             }
         );
         if (pick.hit) {
@@ -249,7 +245,7 @@ class SceneEditor {
             this.scene.pointerX,
             this.scene.pointerY,
             (m) => {
-                return m === this.ground;
+                return m === this._zero;
             }
         );
         if (pick.hit) {
