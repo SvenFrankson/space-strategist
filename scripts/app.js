@@ -1340,7 +1340,7 @@ class Cristal extends Prop {
         this.obstacle.name = name + "-obstacle";
     }
     async instantiate() {
-        let vertexData = await VertexDataLoader.instance.getColorized("cristal-1", "#b0b0b0", "#d0d0d0", "#9ef442");
+        let vertexData = await VertexDataLoader.instance.getColorized("cristal-2", "#b0b0b0", "#d0d0d0", "#9ef442");
         let min = Infinity;
         let max = -Infinity;
         this.height = -Infinity;
