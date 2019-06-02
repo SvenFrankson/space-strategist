@@ -98,6 +98,10 @@ class Main {
         let worker = new DroneWorker();
         worker.position2D = new BABYLON.Vector2(0, -10);
         worker.instantiate();
+        let cristal = Main.Scene.meshes.find(m => { return m instanceof Cristal; });
+        if (cristal) {
+            worker.currentTask = new HarvestTask(worker, cristal);
+        }
     }
     animate() {
         Main.Engine.runRenderLoop(() => {
@@ -951,34 +955,69 @@ class Character extends Draggable {
         this.alive = false;
     }
 }
+class Task {
+    constructor(worker) {
+        this.worker = worker;
+    }
+}
+class HarvestTask extends Task {
+    constructor(worker, target) {
+        super(worker);
+        this.target = target;
+        this.hasPathToTarget = false;
+        this.hasPathToDepot = false;
+    }
+    update() {
+        if (this.worker.inventory < 10) {
+            if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth) {
+                this.worker.inventory += 1;
+                this.hasPathToTarget = false;
+                return;
+            }
+            if (!this.hasPathToTarget) {
+                let navGraph = NavGraphManager.GetForRadius(1);
+                navGraph.update();
+                navGraph.computePathFromTo(this.worker.position2D, this.target.obstacle);
+                this.worker.currentPath = navGraph.path;
+                this.hasPathToTarget = this.worker.currentPath !== undefined;
+            }
+            if (this.hasPathToTarget) {
+                this.worker.moveOnPath();
+            }
+        }
+        else {
+            if (!this.depot) {
+                this.depot = this.worker.getScene().meshes.find((m) => { return m instanceof Container; });
+            }
+            if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth) {
+                this.worker.inventory = 0;
+                this.hasPathToDepot = false;
+                return;
+            }
+            if (!this.hasPathToDepot) {
+                let navGraph = NavGraphManager.GetForRadius(1);
+                navGraph.update();
+                navGraph.computePathFromTo(this.worker.position2D, this.depot.obstacle);
+                this.worker.currentPath = navGraph.path;
+                this.hasPathToDepot = this.worker.currentPath !== undefined;
+            }
+            if (this.hasPathToDepot) {
+                this.worker.moveOnPath();
+            }
+        }
+    }
+}
 class DroneWorker extends Character {
     constructor() {
         super("droneWorker");
+        this.inventory = 0;
         this._update = () => {
-            if (!this.currentPath || this.currentPath.length === 0) {
-                this._findPathToCristal();
+            if (this.currentTask) {
+                this.currentTask.update();
             }
-            this._moveOnPath();
             this.position.x = this.position2D.x;
             this.position.z = this.position2D.y;
             this.rotation.y = -this.rotation2D;
-        };
-        this._moveOnPath = () => {
-            if (this.currentPath && this.currentPath.length > 0) {
-                let next = this.currentPath[0];
-                let distanceToNext = Math2D.Distance(this.position2D, next);
-                if (distanceToNext <= 0.05) {
-                    this.currentPath.splice(0, 1);
-                    return this._moveOnPath();
-                }
-                let stepToNext = next.subtract(this.position2D).normalize();
-                let rotationToNext = Math2D.AngleFromTo(new BABYLON.Vector2(0, 1), stepToNext);
-                stepToNext.scaleInPlace(Math.min(distanceToNext, 0.05));
-                this.position2D.addInPlace(stepToNext);
-                if (isFinite(rotationToNext)) {
-                    this.rotation2D = Math2D.StepFromToCirular(this.rotation2D, rotationToNext, Math.PI / 60);
-                }
-            }
         };
         this.getScene().onBeforeRenderObservable.add(this._update);
     }
@@ -991,41 +1030,21 @@ class DroneWorker extends Character {
         super.kill();
         this.dispose();
     }
-    findRandomDestination(radius = 10) {
-        let attempts = 0;
-        while (attempts++ < 10) {
-            let random = new BABYLON.Vector2(Math.random() * 2 * radius - radius, Math.random() * 2 * radius - radius);
-            random.addInPlace(this.position2D);
-            let graph = NavGraphManager.GetForRadius(1);
-            for (let i = 0; i < graph.obstacles.length; i++) {
-                let o = graph.obstacles[i];
-                if (o.contains(random, 1)) {
-                    random = undefined;
-                    break;
-                }
+    moveOnPath() {
+        if (this.currentPath && this.currentPath.length > 0) {
+            let next = this.currentPath[0];
+            let distanceToNext = Math2D.Distance(this.position2D, next);
+            if (distanceToNext <= 0.05) {
+                this.currentPath.splice(0, 1);
+                return this.moveOnPath();
             }
-            if (random) {
-                return random;
+            let stepToNext = next.subtract(this.position2D).normalize();
+            let rotationToNext = Math2D.AngleFromTo(new BABYLON.Vector2(0, 1), stepToNext);
+            stepToNext.scaleInPlace(Math.min(distanceToNext, 0.05));
+            this.position2D.addInPlace(stepToNext);
+            if (isFinite(rotationToNext)) {
+                this.rotation2D = Math2D.StepFromToCirular(this.rotation2D, rotationToNext, Math.PI / 60);
             }
-        }
-        return undefined;
-    }
-    _findPath() {
-        let dest = this.findRandomDestination();
-        if (dest) {
-            let navGraph = NavGraphManager.GetForRadius(1);
-            navGraph.update();
-            navGraph.computePathFromTo(this.position2D, dest);
-            this.currentPath = navGraph.path;
-        }
-    }
-    _findPathToCristal() {
-        let dest = this.getScene().meshes.find((m) => { return m instanceof Cristal; });
-        if (dest) {
-            let navGraph = NavGraphManager.GetForRadius(1);
-            navGraph.update();
-            navGraph.computePathFromTo(this.position2D, dest.obstacle);
-            this.currentPath = navGraph.path;
         }
     }
 }
@@ -2041,8 +2060,8 @@ class VertexDataLoader {
         });
     }
     async getColorized(name, baseColorHex = "#FFFFFF", frameColorHex = "", color1Hex = "", // Replace red
-    color2Hex = "", // Replace green
-    color3Hex = "" // Replace blue
+        color2Hex = "", // Replace green
+        color3Hex = "" // Replace blue
     ) {
         let baseColor;
         if (baseColorHex !== "") {
@@ -2275,55 +2294,25 @@ class NavGraph {
             let p1 = newPoints[i];
             for (let j = 0; j < this.points.length; j++) {
                 let p2 = this.points[j];
-                if (p1 !== p2 && (p1.path !== p2.path || (!p1.path && !p2.path))) {
-                    let d = p2.position.subtract(p1.position);
-                    // Check if segment intersects p1.shape
-                    let p1ShapeSelfIntersect = true;
-                    if (p1.path) {
-                        let index = p1.path.indexOf(p1.position);
-                        let sNext = p1.path[(index + 1) % p1.path.length].subtract(p1.position);
-                        let sPrev = p1.path[(index - 1 + p1.path.length) % p1.path.length].subtract(p1.position);
-                        if (Math2D.AngleFromTo(sPrev, d, true) <= Math2D.AngleFromTo(sPrev, sNext, true)) {
-                            p1ShapeSelfIntersect = false;
-                        }
-                    }
-                    else {
-                        p1ShapeSelfIntersect = false;
-                    }
-                    if (!p1ShapeSelfIntersect) {
-                        // Check if segment intersects p2.shape
-                        d.scaleInPlace(-1);
-                        let p2ShapeSelfIntersect = true;
-                        if (p2.path) {
-                            let index = p2.path.indexOf(p2.position);
-                            let sNext = p2.path[(index + 1) % p2.path.length].subtract(p2.position);
-                            let sPrev = p2.path[(index - 1 + p2.path.length) % p2.path.length].subtract(p2.position);
-                            if (Math2D.AngleFromTo(sPrev, d, true) <= Math2D.AngleFromTo(sPrev, sNext, true)) {
-                                p2ShapeSelfIntersect = false;
-                            }
-                        }
-                        else {
-                            p2ShapeSelfIntersect = false;
-                        }
-                        if (!p2ShapeSelfIntersect) {
-                            let crossOtherShape = false;
-                            for (let i = 0; i < this.obstacles.length; i++) {
-                                let o = this.obstacles[i];
-                                let path = o.getPath(this.offset);
-                                if (o !== toObstacle && o !== p1.obstacle && o !== p2.obstacle) {
-                                    for (let j = 0; j < path.length; j++) {
-                                        let s1 = path[j];
-                                        let s2 = path[(j + 1) % path.length];
-                                        if (Math2D.SegmentSegmentIntersection(p1.position, p2.position, s1, s2)) {
-                                            crossOtherShape = true;
-                                        }
+                if (p1 !== p2) {
+                    let crossOtherShape = false;
+                    for (let k = 0; k < this.obstacles.length; k++) {
+                        let o = this.obstacles[k];
+                        let path = o.getPath(this.offset);
+                        if (!Math2D.IsPointInPath(p1.position, path)) {
+                            if (o !== toObstacle && o !== p2.obstacle) {
+                                for (let j = 0; j < path.length; j++) {
+                                    let s1 = path[j];
+                                    let s2 = path[(j + 1) % path.length];
+                                    if (Math2D.SegmentSegmentIntersection(p1.position, p2.position, s1, s2)) {
+                                        crossOtherShape = true;
                                     }
                                 }
                             }
-                            if (!crossOtherShape) {
-                                NavGraphPoint.Connect(p1, p2);
-                            }
                         }
+                    }
+                    if (!crossOtherShape) {
+                        NavGraphPoint.Connect(p1, p2);
                     }
                 }
             }

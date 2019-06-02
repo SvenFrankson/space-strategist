@@ -125,7 +125,12 @@ class Main {
 
         let worker = new DroneWorker();
         worker.position2D = new BABYLON.Vector2(0, -10);
-        worker.instantiate();
+		worker.instantiate();
+		
+		let cristal = Main.Scene.meshes.find(m => { return m instanceof Cristal; }) as Cristal;
+		if (cristal) {
+			worker.currentTask = new HarvestTask(worker, cristal);
+		}
     }
 
     public animate(): void {

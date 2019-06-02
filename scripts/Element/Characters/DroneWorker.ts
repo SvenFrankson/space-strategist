@@ -1,5 +1,73 @@
+abstract class Task {
+
+    constructor(
+        public worker: DroneWorker
+    ) {
+
+    }
+
+    public abstract update(): void;
+}
+
+class HarvestTask extends Task {
+
+    public hasPathToTarget: boolean = false;
+    public depot: Prop;
+    public hasPathToDepot: boolean = false;
+
+    constructor(
+        worker: DroneWorker,
+        public target: Prop
+    ) {
+        super(worker);
+    }
+
+    public update(): void {
+        if (this.worker.inventory < 10) {
+            if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth) {
+                this.worker.inventory += 1;
+                this.hasPathToTarget = false;
+                return;
+            }
+            if (!this.hasPathToTarget) {
+                let navGraph = NavGraphManager.GetForRadius(1);
+                navGraph.update();
+                navGraph.computePathFromTo(this.worker.position2D, this.target.obstacle);
+                this.worker.currentPath = navGraph.path;
+                this.hasPathToTarget = this.worker.currentPath !== undefined;
+            }
+            if (this.hasPathToTarget) {
+                this.worker.moveOnPath();
+            }
+        }
+        else {
+            if (!this.depot) {
+                this.depot = this.worker.getScene().meshes.find((m) => { return m instanceof Container; }) as Container;
+            }
+            if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth) {
+                this.worker.inventory = 0;
+                this.hasPathToDepot = false;
+                return;
+            }
+            if (!this.hasPathToDepot) {
+                let navGraph = NavGraphManager.GetForRadius(1);
+                navGraph.update();
+                navGraph.computePathFromTo(this.worker.position2D, this.depot.obstacle);
+                this.worker.currentPath = navGraph.path;
+                this.hasPathToDepot = this.worker.currentPath !== undefined;
+            }
+            if (this.hasPathToDepot) {
+                this.worker.moveOnPath();
+            }
+        }
+    }
+}
+
 class DroneWorker extends Character {
 
+    public currentTask: Task;
+
+    public inventory: number = 0;
     public currentPath: BABYLON.Vector2[];
 
     constructor() {
@@ -19,63 +87,22 @@ class DroneWorker extends Character {
     }
 
     private _update = () => {
-        if (!this.currentPath || this.currentPath.length === 0) {
-            this._findPathToCristal();
+        if (this.currentTask) {
+            this.currentTask.update();
         }
-        this._moveOnPath();
 
         this.position.x = this.position2D.x;
         this.position.z = this.position2D.y;
         this.rotation.y = - this.rotation2D;
     }
 
-    public findRandomDestination(radius: number = 10): BABYLON.Vector2 {
-        let attempts: number = 0;
-        while (attempts++ < 10) {
-            let random = new BABYLON.Vector2(Math.random() * 2 * radius - radius, Math.random() * 2 * radius - radius);
-            random.addInPlace(this.position2D);
-            let graph = NavGraphManager.GetForRadius(1);
-            for (let i = 0; i < graph.obstacles.length; i++) {
-                let o = graph.obstacles[i];
-                if (o.contains(random, 1)) {
-                    random = undefined;
-                    break;
-                }
-            }
-            if (random) {
-                return random;
-            }
-        }
-        return undefined;
-    }
-
-    private _findPath(): void {
-        let dest = this.findRandomDestination();
-        if (dest) {
-            let navGraph = NavGraphManager.GetForRadius(1);
-            navGraph.update();
-            navGraph.computePathFromTo(this.position2D, dest);
-            this.currentPath = navGraph.path;
-        }
-    }
-
-    private _findPathToCristal(): void {
-        let dest = this.getScene().meshes.find((m) => { return m instanceof Cristal; }) as Cristal;
-        if (dest) {
-            let navGraph = NavGraphManager.GetForRadius(1);
-            navGraph.update();
-            navGraph.computePathFromTo(this.position2D, dest.obstacle);
-            this.currentPath = navGraph.path;
-        }
-    }
-
-    private _moveOnPath = () => {
+    public moveOnPath(): void {
         if (this.currentPath && this.currentPath.length > 0) {
             let next = this.currentPath[0];
             let distanceToNext = Math2D.Distance(this.position2D, next);
             if (distanceToNext <= 0.05) {
                 this.currentPath.splice(0, 1);
-                return this._moveOnPath();
+                return this.moveOnPath();
             }
             let stepToNext = next.subtract(this.position2D).normalize();
             let rotationToNext = Math2D.AngleFromTo(new BABYLON.Vector2(0, 1), stepToNext);
