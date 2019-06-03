@@ -134,7 +134,7 @@ class SpacePanel extends HTMLElement {
         return inputElement;
     }
 
-    public addTextInput(label: string, text: string, onInputCallback: (t: string) => void): HTMLInputElement {
+    public addTextInput(label: string, text: string, onInputCallback?: (t: string) => void): HTMLInputElement {
         let lineElement = document.createElement("div");
         lineElement.classList.add("space-panel-line");
         let labelElement = document.createElement("space-panel-label");
@@ -148,7 +148,9 @@ class SpacePanel extends HTMLElement {
             "input",
             (ev) => {
                 if (ev.srcElement instanceof HTMLInputElement) {
-                    onInputCallback(ev.srcElement.value);
+                    if (onInputCallback) {
+                        onInputCallback(ev.srcElement.value);
+                    }
                 }
             }
         );

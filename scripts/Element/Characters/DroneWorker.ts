@@ -31,9 +31,11 @@ class GoToTask extends Task {
             navGraph.computePathFromTo(this.worker.position2D, this.target);
             this.worker.currentPath = navGraph.path;
             this.hasPathToTarget = this.worker.currentPath !== undefined;
+            this.worker.currentAction = "Going to " + this.target.x.toFixed(1) + " " + this.target.y.toFixed(1);
         }
         if (this.hasPathToTarget) {
             this.worker.moveOnPath();
+            this.worker.currentAction = "Going to " + this.target.x.toFixed(1) + " " + this.target.y.toFixed(1);
         }
     }
 }
@@ -54,8 +56,9 @@ class HarvestTask extends Task {
     public update(): void {
         if (this.worker.inventory < 10) {
             if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth) {
-                this.worker.inventory += 1;
+                this.worker.inventory += 2 * Main.Engine.getDeltaTime() / 1000;
                 this.hasPathToTarget = false;
+                this.worker.currentAction = "Harvesting resource";
                 return;
             }
             if (!this.hasPathToTarget) {
@@ -64,9 +67,11 @@ class HarvestTask extends Task {
                 navGraph.computePathFromTo(this.worker.position2D, this.target.obstacle);
                 this.worker.currentPath = navGraph.path;
                 this.hasPathToTarget = this.worker.currentPath !== undefined;
+                this.worker.currentAction = "Going to resource";
             }
             if (this.hasPathToTarget) {
                 this.worker.moveOnPath();
+                this.worker.currentAction = "Going to resource";
             }
         }
         else {
@@ -76,6 +81,7 @@ class HarvestTask extends Task {
             if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth) {
                 this.worker.inventory = 0;
                 this.hasPathToDepot = false;
+                this.worker.currentAction = "Droping in depot";
                 return;
             }
             if (!this.hasPathToDepot) {
@@ -84,9 +90,11 @@ class HarvestTask extends Task {
                 navGraph.computePathFromTo(this.worker.position2D, this.depot.obstacle);
                 this.worker.currentPath = navGraph.path;
                 this.hasPathToDepot = this.worker.currentPath !== undefined;
+                this.worker.currentAction = "Going to depot";
             }
             if (this.hasPathToDepot) {
                 this.worker.moveOnPath();
+                this.worker.currentAction = "Going to depot";
             }
         }
     }
@@ -96,10 +104,25 @@ class DroneWorker extends Character {
 
     public currentTask: Task;
 
-    public inventory: number = 0;
+    private _inventory: number = 0;
+    public get inventory(): number {
+        return this._inventory;
+    }
+    public set inventory(n: number) {
+        this._inventory = n;
+        this.ui.update();
+    }
     public currentPath: BABYLON.Vector2[];
 
     public ui: DroneWorkerUI;
+    private _currentAction: string = "Doing nothing";
+    public get currentAction(): string {
+        return this._currentAction;
+    }
+    public set currentAction(s: string) {
+        this._currentAction = s;
+        this.ui.update();
+    }
 
     constructor() {
         super("droneWorker");
@@ -135,6 +158,9 @@ class DroneWorker extends Character {
     private _update = () => {
         if (this.currentTask) {
             this.currentTask.update();
+        }
+        else {
+            this.currentAction = "Doing nothing";
         }
 
         this.position.x = this.position2D.x;

@@ -1059,9 +1059,11 @@ class GoToTask extends Task {
             navGraph.computePathFromTo(this.worker.position2D, this.target);
             this.worker.currentPath = navGraph.path;
             this.hasPathToTarget = this.worker.currentPath !== undefined;
+            this.worker.currentAction = "Going to " + this.target.x.toFixed(1) + " " + this.target.y.toFixed(1);
         }
         if (this.hasPathToTarget) {
             this.worker.moveOnPath();
+            this.worker.currentAction = "Going to " + this.target.x.toFixed(1) + " " + this.target.y.toFixed(1);
         }
     }
 }
@@ -1075,8 +1077,9 @@ class HarvestTask extends Task {
     update() {
         if (this.worker.inventory < 10) {
             if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth) {
-                this.worker.inventory += 1;
+                this.worker.inventory += 2 * Main.Engine.getDeltaTime() / 1000;
                 this.hasPathToTarget = false;
+                this.worker.currentAction = "Harvesting resource";
                 return;
             }
             if (!this.hasPathToTarget) {
@@ -1085,9 +1088,11 @@ class HarvestTask extends Task {
                 navGraph.computePathFromTo(this.worker.position2D, this.target.obstacle);
                 this.worker.currentPath = navGraph.path;
                 this.hasPathToTarget = this.worker.currentPath !== undefined;
+                this.worker.currentAction = "Going to resource";
             }
             if (this.hasPathToTarget) {
                 this.worker.moveOnPath();
+                this.worker.currentAction = "Going to resource";
             }
         }
         else {
@@ -1097,6 +1102,7 @@ class HarvestTask extends Task {
             if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth) {
                 this.worker.inventory = 0;
                 this.hasPathToDepot = false;
+                this.worker.currentAction = "Droping in depot";
                 return;
             }
             if (!this.hasPathToDepot) {
@@ -1105,9 +1111,11 @@ class HarvestTask extends Task {
                 navGraph.computePathFromTo(this.worker.position2D, this.depot.obstacle);
                 this.worker.currentPath = navGraph.path;
                 this.hasPathToDepot = this.worker.currentPath !== undefined;
+                this.worker.currentAction = "Going to depot";
             }
             if (this.hasPathToDepot) {
                 this.worker.moveOnPath();
+                this.worker.currentAction = "Going to depot";
             }
         }
     }
@@ -1115,10 +1123,14 @@ class HarvestTask extends Task {
 class DroneWorker extends Character {
     constructor() {
         super("droneWorker");
-        this.inventory = 0;
+        this._inventory = 0;
+        this._currentAction = "Doing nothing";
         this._update = () => {
             if (this.currentTask) {
                 this.currentTask.update();
+            }
+            else {
+                this.currentAction = "Doing nothing";
             }
             this.position.x = this.position2D.x;
             this.position.z = this.position2D.y;
@@ -1126,6 +1138,20 @@ class DroneWorker extends Character {
         };
         this.ui = new DroneWorkerUI(this);
         this.getScene().onBeforeRenderObservable.add(this._update);
+    }
+    get inventory() {
+        return this._inventory;
+    }
+    set inventory(n) {
+        this._inventory = n;
+        this.ui.update();
+    }
+    get currentAction() {
+        return this._currentAction;
+    }
+    set currentAction(s) {
+        this._currentAction = s;
+        this.ui.update();
     }
     async instantiate() {
         let data = await VertexDataLoader.instance.getColorized("worker", "#ce7633", "#383838", "#6d6d6d", "#c94022", "#1c1c1c");
@@ -1389,17 +1415,29 @@ Fongus.Instances = [];
 class DroneWorkerUI {
     constructor(target) {
         this.target = target;
+        this._isEnabled = false;
     }
     enable() {
         this.panel = SpacePanel.CreateSpacePanel();
         this.panel.setTarget(this.target);
         this.panel.addTitle1("WORKER");
         this.panel.addTitle2(this.target.name.toLocaleUpperCase());
+        this._inventoryInput = this.panel.addNumberInput("CRISTAL", this.target.inventory);
+        this._currentActionInput = this.panel.addTextInput("ACTION", this.target.currentAction);
         console.log("Enable DroneWorker Panel");
+        this._isEnabled = true;
     }
     disable() {
         this.panel.dispose();
         console.log("Disable DroneWorker Panel");
+        this._isEnabled = false;
+    }
+    update() {
+        if (!this._isEnabled) {
+            return;
+        }
+        this._inventoryInput.value = this.target.inventory.toFixed(0);
+        this._currentActionInput.value = this.target.currentAction;
     }
     onLeftClick(pickedPoint, pickedTarget) {
         if (pickedTarget instanceof Prop) {
@@ -3113,7 +3151,9 @@ class SpacePanel extends HTMLElement {
         inputElement.value = text;
         inputElement.addEventListener("input", (ev) => {
             if (ev.srcElement instanceof HTMLInputElement) {
-                onInputCallback(ev.srcElement.value);
+                if (onInputCallback) {
+                    onInputCallback(ev.srcElement.value);
+                }
             }
         });
         lineElement.appendChild(inputElement);
