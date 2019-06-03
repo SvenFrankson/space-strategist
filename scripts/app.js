@@ -2880,14 +2880,17 @@ class ShapeDraw {
         let positions = [];
         let indices = [];
         for (let i = 0; i <= 32; i++) {
-            let cosa = Math.cos(i * 2 * Math.PI / 32);
-            let sina = Math.sin(i * 2 * Math.PI / 32);
+            let a = i + Math.random() * 0.5;
+            let cosa = Math.cos(a * 2 * Math.PI / 32);
+            let sina = Math.sin(a * 2 * Math.PI / 32);
             positions.push(cosa * rMin, 0, sina * rMin);
             positions.push(cosa * rMax, 0, sina * rMax);
         }
         for (let i = 0; i < 32; i++) {
-            indices.push(2 * i, 2 * i + 1, 2 * (i + 1) + 1);
-            indices.push(2 * i, 2 * (i + 1) + 1, 2 * (i + 1));
+            if (Math.random() > 0.5) {
+                indices.push(2 * i, 2 * i + 1, 2 * (i + 1) + 1);
+                indices.push(2 * i, 2 * (i + 1) + 1, 2 * (i + 1));
+            }
         }
         data.positions = positions;
         data.indices = indices;
