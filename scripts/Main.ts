@@ -110,8 +110,11 @@ class Main {
             await Serializer.Deserialize(Main.Scene, data);
         }
 
-        let sceneEditor = new SceneEditor(wallSystem, Main.Scene);
-        sceneEditor.enable();
+        //let sceneEditor = new SceneEditor(wallSystem, Main.Scene);
+		//sceneEditor.enable();
+		
+		let playerControl = new PlayerControl(Main.Scene);
+		playerControl.enable();
 
         let navGraphConsole = new NavGraphConsole(Main.Scene);
         navGraphConsole.enable();
@@ -126,11 +129,6 @@ class Main {
         let worker = new DroneWorker();
         worker.position2D = new BABYLON.Vector2(0, -10);
 		worker.instantiate();
-		
-		let cristal = Main.Scene.meshes.find(m => { return m instanceof Cristal; }) as Cristal;
-		if (cristal) {
-			worker.currentTask = new HarvestTask(worker, cristal);
-		}
     }
 
     public animate(): void {

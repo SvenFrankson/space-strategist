@@ -9,6 +9,35 @@ abstract class Task {
     public abstract update(): void;
 }
 
+class GoToTask extends Task {
+    
+    public hasPathToTarget: boolean = false;
+
+    constructor(
+        worker: DroneWorker,
+        public target: BABYLON.Vector2
+    ) {
+        super(worker);
+    }
+
+    public update(): void {
+        if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target) < 0.01) {
+            this.worker.currentTask = undefined;
+            return;
+        }
+        if (!this.hasPathToTarget) {
+            let navGraph = NavGraphManager.GetForRadius(1);
+            navGraph.update();
+            navGraph.computePathFromTo(this.worker.position2D, this.target);
+            this.worker.currentPath = navGraph.path;
+            this.hasPathToTarget = this.worker.currentPath !== undefined;
+        }
+        if (this.hasPathToTarget) {
+            this.worker.moveOnPath();
+        }
+    }
+}
+
 class HarvestTask extends Task {
 
     public hasPathToTarget: boolean = false;
@@ -70,8 +99,11 @@ class DroneWorker extends Character {
     public inventory: number = 0;
     public currentPath: BABYLON.Vector2[];
 
+    public ui: DroneWorkerUI;
+
     constructor() {
         super("droneWorker");
+        this.ui = new DroneWorkerUI(this);
         this.getScene().onBeforeRenderObservable.add(this._update);
     }
 
@@ -79,12 +111,26 @@ class DroneWorker extends Character {
         let data = await VertexDataLoader.instance.getColorized("worker", "#ce7633", "#383838", "#6d6d6d", "#c94022", "#1c1c1c");
         data.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
+        this.groundWidth = 1;
+        this.height = 1;
     }
 
     public kill(): void {
         super.kill();
         this.dispose();
     }
+
+    public onSelected(): void {
+        this.ui.enable();
+    }
+
+    public onUnselected(): void {
+        this.ui.disable();
+    }
+
+    public onLeftClick(pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable): void {
+        this.ui.onLeftClick(pickedPoint, pickedTarget);
+    };
 
     private _update = () => {
         if (this.currentTask) {

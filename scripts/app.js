@@ -86,8 +86,10 @@ class Main {
             let data = JSON.parse(window.localStorage.getItem("scene-data"));
             await Serializer.Deserialize(Main.Scene, data);
         }
-        let sceneEditor = new SceneEditor(wallSystem, Main.Scene);
-        sceneEditor.enable();
+        //let sceneEditor = new SceneEditor(wallSystem, Main.Scene);
+        //sceneEditor.enable();
+        let playerControl = new PlayerControl(Main.Scene);
+        playerControl.enable();
         let navGraphConsole = new NavGraphConsole(Main.Scene);
         navGraphConsole.enable();
         let performanceConsole = new PerformanceConsole(Main.Scene);
@@ -98,10 +100,6 @@ class Main {
         let worker = new DroneWorker();
         worker.position2D = new BABYLON.Vector2(0, -10);
         worker.instantiate();
-        let cristal = Main.Scene.meshes.find(m => { return m instanceof Cristal; });
-        if (cristal) {
-            worker.currentTask = new HarvestTask(worker, cristal);
-        }
     }
     animate() {
         Main.Engine.runRenderLoop(() => {
@@ -547,6 +545,84 @@ class PerformanceConsole {
         this.scene.onBeforeRenderObservable.removeCallback(this._update);
     }
 }
+class PlayerControl {
+    constructor(scene) {
+        this.scene = scene;
+        this._pointerDownX = 0;
+        this._pointerDownY = 0;
+        this.pointerDown = () => {
+            this._pointerDownX = this.scene.pointerX;
+            this._pointerDownY = this.scene.pointerY;
+        };
+        this.pointerMove = () => {
+        };
+        this.pointerUp = (ev) => {
+            if (Math.abs(this.scene.pointerX - this._pointerDownX) < 3 && Math.abs(this.scene.pointerY - this._pointerDownY) < 3) {
+                let pick = this.scene.pick(this.scene.pointerX, this.scene.pointerY, (m) => {
+                    return m instanceof Selectionable || m === this._zero;
+                });
+                if (pick.hit) {
+                    if (pick.pickedMesh instanceof Selectionable) {
+                        if (ev.button === 0) {
+                            this.selectedElement = pick.pickedMesh;
+                            return;
+                        }
+                        else if (ev.button === 2) {
+                            if (this.selectedElement) {
+                                this.selectedElement.onLeftClick(undefined, pick.pickedMesh);
+                            }
+                            return;
+                        }
+                    }
+                    if (pick.pickedMesh === this._zero) {
+                        if (ev.button === 2) {
+                            if (this.selectedElement) {
+                                this.selectedElement.onLeftClick(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z), undefined);
+                            }
+                            return;
+                        }
+                    }
+                }
+                this.selectedElement = undefined;
+            }
+        };
+        this._zero = BABYLON.MeshBuilder.CreateGround("zero", { width: 100, height: 100 }, scene);
+        this._zero.isVisible = false;
+        this._zero.isPickable = true;
+        this.enable();
+    }
+    get selectedElement() {
+        return this._selectedElement;
+    }
+    set selectedElement(selectionable) {
+        if (selectionable === this.selectedElement) {
+            return;
+        }
+        if (this._selectedElementPanel) {
+            this._selectedElementPanel.dispose();
+            this._selectedElementPanel = undefined;
+        }
+        if (this.selectedElement) {
+            this.selectedElement.onUnselected();
+        }
+        this._selectedElement = selectionable;
+        if (this.selectedElement) {
+            this.selectedElement.onSelected();
+        }
+    }
+    enable() {
+        this._selectedElement = undefined;
+        Main.Canvas.addEventListener("pointerdown", this.pointerDown);
+        Main.Canvas.addEventListener("pointermove", this.pointerMove);
+        Main.Canvas.addEventListener("pointerup", this.pointerUp);
+    }
+    disable() {
+        this._selectedElement = undefined;
+        Main.Canvas.removeEventListener("pointerdown", this.pointerDown);
+        Main.Canvas.removeEventListener("pointermove", this.pointerMove);
+        Main.Canvas.removeEventListener("pointerup", this.pointerUp);
+    }
+}
 class SceneData {
     constructor() {
         this.props = [];
@@ -912,6 +988,12 @@ class SceneEditor {
     }
 }
 class Selectionable extends BABYLON.Mesh {
+    onSelected() { }
+    ;
+    onUnselected() { }
+    ;
+    onLeftClick(pickedPoint, pickedTarget) { }
+    ;
 }
 /// <reference path="Selectionable.ts"/>
 class Draggable extends Selectionable {
@@ -958,6 +1040,29 @@ class Character extends Draggable {
 class Task {
     constructor(worker) {
         this.worker = worker;
+    }
+}
+class GoToTask extends Task {
+    constructor(worker, target) {
+        super(worker);
+        this.target = target;
+        this.hasPathToTarget = false;
+    }
+    update() {
+        if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target) < 0.01) {
+            this.worker.currentTask = undefined;
+            return;
+        }
+        if (!this.hasPathToTarget) {
+            let navGraph = NavGraphManager.GetForRadius(1);
+            navGraph.update();
+            navGraph.computePathFromTo(this.worker.position2D, this.target);
+            this.worker.currentPath = navGraph.path;
+            this.hasPathToTarget = this.worker.currentPath !== undefined;
+        }
+        if (this.hasPathToTarget) {
+            this.worker.moveOnPath();
+        }
     }
 }
 class HarvestTask extends Task {
@@ -1019,17 +1124,30 @@ class DroneWorker extends Character {
             this.position.z = this.position2D.y;
             this.rotation.y = -this.rotation2D;
         };
+        this.ui = new DroneWorkerUI(this);
         this.getScene().onBeforeRenderObservable.add(this._update);
     }
     async instantiate() {
         let data = await VertexDataLoader.instance.getColorized("worker", "#ce7633", "#383838", "#6d6d6d", "#c94022", "#1c1c1c");
         data.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
+        this.groundWidth = 1;
+        this.height = 1;
     }
     kill() {
         super.kill();
         this.dispose();
     }
+    onSelected() {
+        this.ui.enable();
+    }
+    onUnselected() {
+        this.ui.disable();
+    }
+    onLeftClick(pickedPoint, pickedTarget) {
+        this.ui.onLeftClick(pickedPoint, pickedTarget);
+    }
+    ;
     moveOnPath() {
         if (this.currentPath && this.currentPath.length > 0) {
             let next = this.currentPath[0];
@@ -1268,6 +1386,31 @@ class Fongus extends Character {
     }
 }
 Fongus.Instances = [];
+class DroneWorkerUI {
+    constructor(target) {
+        this.target = target;
+    }
+    enable() {
+        this.panel = SpacePanel.CreateSpacePanel();
+        this.panel.setTarget(this.target);
+        this.panel.addTitle1("WORKER");
+        this.panel.addTitle2(this.target.name.toLocaleUpperCase());
+        console.log("Enable DroneWorker Panel");
+    }
+    disable() {
+        this.panel.dispose();
+        console.log("Disable DroneWorker Panel");
+    }
+    onLeftClick(pickedPoint, pickedTarget) {
+        if (pickedTarget instanceof Prop) {
+            this.target.currentTask = new HarvestTask(this.target, pickedTarget);
+        }
+        else if (pickedPoint instanceof BABYLON.Vector2) {
+            this.target.currentTask = new GoToTask(this.target, pickedPoint);
+        }
+    }
+    ;
+}
 /// <reference path="../Draggable.ts"/>
 class PropData {
 }
