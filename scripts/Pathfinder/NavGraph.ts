@@ -155,24 +155,39 @@ class NavGraph {
             for (let j = 0; j < this.points.length; j++) {
                 let p2 = this.points[j];
                 if (p1 !== p2) {
-                    let crossOtherShape = false;
-                    for (let k = 0; k < this.obstacles.length; k++) {
-                        let o = this.obstacles[k];
-                        let path = o.getPath(this.offset);
-                        if (!Math2D.IsPointInPath(p1.position, path)) {
-                            if (o !== toObstacle && o !== p2.obstacle) {
-                                for (let j = 0; j < path.length; j++) {
-                                    let s1 = path[j];
-                                    let s2 = path[(j + 1) % path.length];
-                                    if (Math2D.SegmentSegmentIntersection(p1.position, p2.position, s1, s2)) {
-                                        crossOtherShape = true;
+                    let d = p1.position.subtract(p2.position);
+                    let p2ShapeSelfIntersect = true;
+                    if (p2.path) {
+                        let index = p2.path.indexOf(p2.position);
+                        let sNext = p2.path[(index + 1) % p2.path.length].subtract(p2.position);
+                        let sPrev = p2.path[(index - 1 + p2.path.length) % p2.path.length].subtract(p2.position);
+                        if (Math2D.AngleFromTo(sPrev, d, true) <= Math2D.AngleFromTo(sPrev, sNext, true)) {
+                            p2ShapeSelfIntersect = false;
+                        }
+                    }
+                    else {
+                        p2ShapeSelfIntersect = false;
+                    }
+                    if (!p2ShapeSelfIntersect) {
+                        let crossOtherShape = false;
+                        for (let k = 0; k < this.obstacles.length; k++) {
+                            let o = this.obstacles[k];
+                            let path = o.getPath(this.offset);
+                            if (!Math2D.IsPointInPath(p1.position, path)) {
+                                if (o !== toObstacle && o !== p2.obstacle) {
+                                    for (let j = 0; j < path.length; j++) {
+                                        let s1 = path[j];
+                                        let s2 = path[(j + 1) % path.length];
+                                        if (Math2D.SegmentSegmentIntersection(p1.position, p2.position, s1, s2)) {
+                                            crossOtherShape = true;
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                    if (!crossOtherShape) {
-                        NavGraphPoint.Connect(p1, p2);
+                        if (!crossOtherShape) {
+                            NavGraphPoint.Connect(p1, p2);
+                        }
                     }
                 }
             }
