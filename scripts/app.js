@@ -1416,19 +1416,28 @@ class DroneWorkerUI {
     constructor(target) {
         this.target = target;
         this._isEnabled = false;
+        this._update = () => {
+            if (this._selector) {
+                this._selector.position.copyFromFloats(this.target.position2D.x, 0.1, this.target.position2D.y);
+            }
+        };
     }
     enable() {
-        this.panel = SpacePanel.CreateSpacePanel();
-        this.panel.setTarget(this.target);
-        this.panel.addTitle1("WORKER");
-        this.panel.addTitle2(this.target.name.toLocaleUpperCase());
-        this._inventoryInput = this.panel.addNumberInput("CRISTAL", this.target.inventory);
-        this._currentActionInput = this.panel.addTextInput("ACTION", this.target.currentAction);
+        this._panel = SpacePanel.CreateSpacePanel();
+        this._panel.setTarget(this.target);
+        this._panel.addTitle1("WORKER");
+        this._panel.addTitle2(this.target.name.toLocaleUpperCase());
+        this._inventoryInput = this._panel.addNumberInput("CRISTAL", this.target.inventory);
+        this._currentActionInput = this._panel.addTextInput("ACTION", this.target.currentAction);
+        this._selector = ShapeDraw.CreateCircle(1.05, 1.2);
+        this.target.getScene().onBeforeRenderObservable.add(this._update);
         console.log("Enable DroneWorker Panel");
         this._isEnabled = true;
     }
     disable() {
-        this.panel.dispose();
+        this._panel.dispose();
+        this._selector.dispose();
+        this.target.getScene().onBeforeRenderObservable.removeCallback(this._update);
         console.log("Disable DroneWorker Panel");
         this._isEnabled = false;
     }
@@ -2862,6 +2871,28 @@ class Obstacle {
             this._devLineMesh.dispose();
             this._devLineMesh = undefined;
         }
+    }
+}
+class ShapeDraw {
+    static CreateCircle(rMin, rMax, name = "circle") {
+        let mesh = new BABYLON.Mesh(name);
+        let data = new BABYLON.VertexData();
+        let positions = [];
+        let indices = [];
+        for (let i = 0; i <= 32; i++) {
+            let cosa = Math.cos(i * 2 * Math.PI / 32);
+            let sina = Math.sin(i * 2 * Math.PI / 32);
+            positions.push(cosa * rMin, 0, sina * rMin);
+            positions.push(cosa * rMax, 0, sina * rMax);
+        }
+        for (let i = 0; i < 32; i++) {
+            indices.push(2 * i, 2 * i + 1, 2 * (i + 1) + 1);
+            indices.push(2 * i, 2 * (i + 1) + 1, 2 * (i + 1));
+        }
+        data.positions = positions;
+        data.indices = indices;
+        data.applyToMesh(mesh);
+        return mesh;
     }
 }
 class Shape {
