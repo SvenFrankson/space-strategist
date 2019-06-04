@@ -46,6 +46,8 @@ class HarvestTask extends Task {
     public depot: Prop;
     public hasPathToDepot: boolean = false;
 
+    private _isDropping: boolean = false;
+
     constructor(
         worker: DroneWorker,
         public target: Prop
@@ -54,9 +56,9 @@ class HarvestTask extends Task {
     }
 
     public update(): void {
-        if (this.worker.inventory < 10) {
+        if (!this._isDropping && this.worker.inventory < this.worker.carriageCapacity) {
             if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth) {
-                this.worker.inventory += 2 * Main.Engine.getDeltaTime() / 1000;
+                this.worker.inventory += this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
                 this.hasPathToTarget = false;
                 this.worker.currentAction = "Harvesting resource";
                 return;
@@ -79,7 +81,8 @@ class HarvestTask extends Task {
                 this.depot = this.worker.getScene().meshes.find((m) => { return m instanceof Container; }) as Container;
             }
             if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth) {
-                this.worker.inventory = 0;
+                this.worker.inventory -= 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
+                this._isDropping = this.worker.inventory > 0;
                 this.hasPathToDepot = false;
                 this.worker.currentAction = "Droping in depot";
                 return;
@@ -116,12 +119,12 @@ class BuildTask extends Task {
     public update(): void {
         let neededResources = this.target.resourcesRequired - this.target.resourcesAvailable;
         if (neededResources > 0) {
-            if (this.worker.inventory < Math.max(10, neededResources)) {
+            if (this.worker.inventory < Math.max(this.worker.carriageCapacity, neededResources)) {
                 if (!this.depot) {
                     this.depot = this.worker.getScene().meshes.find((m) => { return m instanceof Container; }) as Container;
                 }
                 if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth) {
-                    this.worker.inventory += 5 * Main.Engine.getDeltaTime() / 1000;
+                    this.worker.inventory += 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
                     this.hasPathToDepot = false;
                     this.worker.currentAction = "Fetching from depot";
                     return;
@@ -165,7 +168,7 @@ class BuildTask extends Task {
         
         if (this.target.completion < 10) {
             if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth) {
-                this.target.build(2 * Main.Engine.getDeltaTime() / 1000);
+                this.target.build(this.worker.buildRate * Main.Engine.getDeltaTime() / 1000);
                 this.hasPathToTarget = false;
                 this.worker.currentAction = "Building";
                 return;
@@ -191,16 +194,20 @@ class BuildTask extends Task {
 
 class DroneWorker extends Character {
 
-    public currentTask: Task;
-
+    public harvestRate: number = 2;
+    public buildRate: number = 1;
+    public carriageCapacity: number = 10;
     private _inventory: number = 0;
     public get inventory(): number {
         return this._inventory;
     }
     public set inventory(n: number) {
         this._inventory = n;
+        this._inventory = Math.min(Math.max(this._inventory, 0), this.carriageCapacity);
         this.ui.update();
     }
+
+    public currentTask: Task;
     public currentPath: BABYLON.Vector2[];
 
     public ui: DroneWorkerUI;
@@ -215,6 +222,7 @@ class DroneWorker extends Character {
 
     constructor() {
         super("droneWorker");
+        this.moveSpeed = 3;
         this.ui = new DroneWorkerUI(this);
         this.getScene().onBeforeRenderObservable.add(this._update);
     }
@@ -267,7 +275,7 @@ class DroneWorker extends Character {
             }
             let stepToNext = next.subtract(this.position2D).normalize();
             let rotationToNext = Math2D.AngleFromTo(new BABYLON.Vector2(0, 1), stepToNext);
-            stepToNext.scaleInPlace(Math.min(distanceToNext, 0.05));
+            stepToNext.scaleInPlace(Math.min(distanceToNext, this.moveSpeed * Main.Engine.getDeltaTime() / 1000));
             this.position2D.addInPlace(stepToNext);
             if (isFinite(rotationToNext)) {
                 this.rotation2D = Math2D.StepFromToCirular(this.rotation2D, rotationToNext, Math.PI / 60);

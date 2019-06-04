@@ -1020,6 +1020,7 @@ class Draggable extends Selectionable {
 class Character extends Draggable {
     constructor(name = "") {
         super(name);
+        this.moveSpeed = 1;
         this.stamina = 20;
         this.currentHitPoint = 20;
         this.alive = true;
@@ -1073,11 +1074,12 @@ class HarvestTask extends Task {
         this.target = target;
         this.hasPathToTarget = false;
         this.hasPathToDepot = false;
+        this._isDropping = false;
     }
     update() {
-        if (this.worker.inventory < 10) {
+        if (!this._isDropping && this.worker.inventory < this.worker.carriageCapacity) {
             if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth) {
-                this.worker.inventory += 2 * Main.Engine.getDeltaTime() / 1000;
+                this.worker.inventory += this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
                 this.hasPathToTarget = false;
                 this.worker.currentAction = "Harvesting resource";
                 return;
@@ -1100,7 +1102,8 @@ class HarvestTask extends Task {
                 this.depot = this.worker.getScene().meshes.find((m) => { return m instanceof Container; });
             }
             if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth) {
-                this.worker.inventory = 0;
+                this.worker.inventory -= 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
+                this._isDropping = this.worker.inventory > 0;
                 this.hasPathToDepot = false;
                 this.worker.currentAction = "Droping in depot";
                 return;
@@ -1130,12 +1133,12 @@ class BuildTask extends Task {
     update() {
         let neededResources = this.target.resourcesRequired - this.target.resourcesAvailable;
         if (neededResources > 0) {
-            if (this.worker.inventory < Math.max(10, neededResources)) {
+            if (this.worker.inventory < Math.max(this.worker.carriageCapacity, neededResources)) {
                 if (!this.depot) {
                     this.depot = this.worker.getScene().meshes.find((m) => { return m instanceof Container; });
                 }
                 if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth) {
-                    this.worker.inventory += 5 * Main.Engine.getDeltaTime() / 1000;
+                    this.worker.inventory += 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
                     this.hasPathToDepot = false;
                     this.worker.currentAction = "Fetching from depot";
                     return;
@@ -1178,7 +1181,7 @@ class BuildTask extends Task {
         }
         if (this.target.completion < 10) {
             if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth) {
-                this.target.build(2 * Main.Engine.getDeltaTime() / 1000);
+                this.target.build(this.worker.buildRate * Main.Engine.getDeltaTime() / 1000);
                 this.hasPathToTarget = false;
                 this.worker.currentAction = "Building";
                 return;
@@ -1203,6 +1206,9 @@ class BuildTask extends Task {
 class DroneWorker extends Character {
     constructor() {
         super("droneWorker");
+        this.harvestRate = 2;
+        this.buildRate = 1;
+        this.carriageCapacity = 10;
         this._inventory = 0;
         this._currentAction = "Doing nothing";
         this._update = () => {
@@ -1216,6 +1222,7 @@ class DroneWorker extends Character {
             this.position.z = this.position2D.y;
             this.rotation.y = -this.rotation2D;
         };
+        this.moveSpeed = 3;
         this.ui = new DroneWorkerUI(this);
         this.getScene().onBeforeRenderObservable.add(this._update);
     }
@@ -1224,6 +1231,7 @@ class DroneWorker extends Character {
     }
     set inventory(n) {
         this._inventory = n;
+        this._inventory = Math.min(Math.max(this._inventory, 0), this.carriageCapacity);
         this.ui.update();
     }
     get currentAction() {
@@ -1264,7 +1272,7 @@ class DroneWorker extends Character {
             }
             let stepToNext = next.subtract(this.position2D).normalize();
             let rotationToNext = Math2D.AngleFromTo(new BABYLON.Vector2(0, 1), stepToNext);
-            stepToNext.scaleInPlace(Math.min(distanceToNext, 0.05));
+            stepToNext.scaleInPlace(Math.min(distanceToNext, this.moveSpeed * Main.Engine.getDeltaTime() / 1000));
             this.position2D.addInPlace(stepToNext);
             if (isFinite(rotationToNext)) {
                 this.rotation2D = Math2D.StepFromToCirular(this.rotation2D, rotationToNext, Math.PI / 60);
@@ -1507,7 +1515,7 @@ class DroneWorkerUI {
         this._panel.setTarget(this.target);
         this._panel.addTitle1("WORKER");
         this._panel.addTitle2(this.target.name.toLocaleUpperCase());
-        this._inventoryInput = this._panel.addNumberInput("CRISTAL", this.target.inventory);
+        this._inventoryInput = this._panel.addTextInput("CRISTAL", this.target.inventory.toFixed(0) + "/" + this.target.carriageCapacity.toFixed(0));
         this._currentActionInput = this._panel.addTextInput("ACTION", this.target.currentAction);
         this._panel.addLargeButton("BUILD CONTAINER", () => {
             this._onLeftClickOverride = (pickedPoint, pickedTarget) => {
@@ -1532,7 +1540,7 @@ class DroneWorkerUI {
         if (!this._isEnabled) {
             return;
         }
-        this._inventoryInput.value = this.target.inventory.toFixed(0);
+        this._inventoryInput.value = this.target.inventory.toFixed(0) + " / " + this.target.carriageCapacity.toFixed(0);
         this._currentActionInput.value = this.target.currentAction;
     }
     onLeftClick(pickedPoint, pickedTarget) {
@@ -2369,8 +2377,8 @@ class VertexDataLoader {
         });
     }
     async getColorized(name, baseColorHex = "#FFFFFF", frameColorHex = "", color1Hex = "", // Replace red
-        color2Hex = "", // Replace green
-        color3Hex = "" // Replace blue
+    color2Hex = "", // Replace green
+    color3Hex = "" // Replace blue
     ) {
         let baseColor;
         if (baseColorHex !== "") {

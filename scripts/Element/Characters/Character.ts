@@ -2,6 +2,7 @@
 
 class Character extends Draggable {
 
+    public moveSpeed: number = 1;
     public stamina: number = 20;
     public currentHitPoint: number = 20;
     public alive: boolean = true;

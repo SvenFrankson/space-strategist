@@ -20,7 +20,7 @@ class DroneWorkerUI {
         this._panel.setTarget(this.target);
         this._panel.addTitle1("WORKER");
         this._panel.addTitle2(this.target.name.toLocaleUpperCase());
-        this._inventoryInput = this._panel.addNumberInput("CRISTAL", this.target.inventory);
+        this._inventoryInput = this._panel.addTextInput("CRISTAL", this.target.inventory.toFixed(0) + "/" + this.target.carriageCapacity.toFixed(0));
         this._currentActionInput = this._panel.addTextInput("ACTION", this.target.currentAction);
         this._panel.addLargeButton("BUILD CONTAINER", () => {
             this._onLeftClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
@@ -48,7 +48,7 @@ class DroneWorkerUI {
         if (!this._isEnabled) {
             return;
         }
-        this._inventoryInput.value = this.target.inventory.toFixed(0);
+        this._inventoryInput.value = this.target.inventory.toFixed(0) + " / " + this.target.carriageCapacity.toFixed(0);
         this._currentActionInput.value = this.target.currentAction;
     }
 
