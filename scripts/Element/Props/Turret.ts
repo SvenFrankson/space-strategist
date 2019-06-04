@@ -1,8 +1,8 @@
-class Turret extends Prop {
+class Turret extends Building {
 
     public static Instances: Turret[] = [];
 
-    public fireRate: number = 30; // Rounds per minute.
+    public fireRate: number = 15; // Rounds per minute.
     private get _fireCooldownMax(): number { // In Seconds
         return 60 / this.fireRate;
     }
@@ -27,6 +27,9 @@ class Turret extends Prop {
             let turretCount = this.getScene().meshes.filter((m) => { return m instanceof Turret; }).length;
             this.name = "turret-" + turretCount;
         }
+
+        this.resourcesRequired = 15;
+        this.completionRequired = 30;
 
         this._headBase = new BABYLON.Mesh("turret-canonBase");
         this._headBase.parent = this;

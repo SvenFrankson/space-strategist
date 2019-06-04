@@ -8,6 +8,9 @@ class Container extends Building {
             let containerCount = this.getScene().meshes.filter((m) => { return m instanceof Container; }).length;
             this.name = "container-" + containerCount;
         }
+
+        this.completionRequired = 10;
+
         this.obstacle = Obstacle.CreateRectWithPosRotSource(this, 2, 4);
         this.obstacle.name = name + "-obstacle";
     }

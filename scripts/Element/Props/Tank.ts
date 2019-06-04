@@ -6,6 +6,9 @@ class Tank extends Building {
             let tankCount = this.getScene().meshes.filter((m) => { return m instanceof Tank; }).length;
             this.name = "tank-" + tankCount;
         }
+
+        this.completionRequired = 10;
+
         this.obstacle = Obstacle.CreateHexagonWithPosRotSource(this, 1.5);
         this.obstacle.name = name + "-obstacle";
     }

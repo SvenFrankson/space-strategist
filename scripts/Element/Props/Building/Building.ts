@@ -2,7 +2,8 @@
 
 abstract class Building extends Prop {
     
-    public completion: number = 0;
+    public currentCompletion: number = 0;
+    public completionRequired: number = 20;
     public resourcesAvailable: number = 0;
     public resourcesRequired: number = 10;
 
@@ -26,11 +27,12 @@ abstract class Building extends Prop {
     }
 
     public build(amount: number): void {
-        this.completion += amount;
-        this.completion = Math.min(10, this.completion);
-        this.position.y = this.completion - 10;
-        if (this.completion === 10) {
+        this.currentCompletion += amount;
+        this.currentCompletion = Math.min(this.completionRequired, this.currentCompletion);
+        this.position.y = this.currentCompletion - this.completionRequired;
+        if (this.currentCompletion === this.completionRequired) {
             this._areaMesh.dispose();
+            this.addToScene();
         }
     }
 

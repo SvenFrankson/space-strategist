@@ -28,7 +28,21 @@ class DroneWorkerUI {
                 container.instantiateBuilding();
                 this.target.currentTask = new BuildTask(this.target, container);
             }
-        })
+        });
+        this._panel.addLargeButton("BUILD TANK", () => {
+            this._onLeftClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
+                let tank = new Tank("", pickedPoint, 0);
+                tank.instantiateBuilding();
+                this.target.currentTask = new BuildTask(this.target, tank);
+            }
+        });
+        this._panel.addLargeButton("BUILD TURRET", () => {
+            this._onLeftClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
+                let turret = new Turret("", pickedPoint, 0);
+                turret.instantiateBuilding();
+                this.target.currentTask = new BuildTask(this.target, turret);
+            }
+        });
 
         this._selector = ShapeDraw.CreateCircle(1.05, 1.2);
         this.target.getScene().onBeforeRenderObservable.add(this._update);
