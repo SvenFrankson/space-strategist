@@ -1665,6 +1665,7 @@ class Container extends Building {
             this.name = "container-" + containerCount;
         }
         this.completionRequired = 10;
+        this.ui = new ContainerUI(this);
         this.obstacle = Obstacle.CreateRectWithPosRotSource(this, 2, 4);
         this.obstacle.name = name + "-obstacle";
     }
@@ -1684,6 +1685,12 @@ class Container extends Building {
         this.groundWidth = max - min;
         vertexData.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
+    }
+    onSelected() {
+        this.ui.enable();
+    }
+    onUnselected() {
+        this.ui.disable();
     }
     elementName() {
         return "Container";
@@ -1800,6 +1807,7 @@ class Tank extends Building {
             this.name = "tank-" + tankCount;
         }
         this.completionRequired = 10;
+        this.ui = new TankUI(this);
         this.obstacle = Obstacle.CreateHexagonWithPosRotSource(this, 1.5);
         this.obstacle.name = name + "-obstacle";
     }
@@ -1819,6 +1827,12 @@ class Tank extends Building {
         this.groundWidth = max - min;
         vertexData.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
+    }
+    onSelected() {
+        this.ui.enable();
+    }
+    onUnselected() {
+        this.ui.disable();
     }
     elementName() {
         return "Tank";
@@ -1872,6 +1886,7 @@ class Turret extends Building {
         }
         this.resourcesRequired = 15;
         this.completionRequired = 30;
+        this.ui = new TurretUI(this);
         this._headBase = new BABYLON.Mesh("turret-canonBase");
         this._headBase.parent = this;
         this._headBase.position.copyFromFloats(0, 2.1, 0);
@@ -1911,6 +1926,12 @@ class Turret extends Building {
         this._canon.material = Main.cellShadingMaterial;
         this.groundWidth = 2;
         this.height = 3;
+    }
+    onSelected() {
+        this.ui.enable();
+    }
+    onUnselected() {
+        this.ui.disable();
     }
     async _fire() {
         this._fireCooldown -= this.getScene().getEngine().getDeltaTime() / 1000;
@@ -2348,6 +2369,57 @@ class WallNodeEditor {
         return panel;
     }
     static Unselect(node) {
+    }
+}
+class ContainerUI {
+    constructor(target) {
+        this.target = target;
+    }
+    enable() {
+        this._panel = SpacePanel.CreateSpacePanel();
+        this._panel.setTarget(this.target);
+        this._panel.addTitle1(this.target.elementName().toLocaleUpperCase());
+        this._panel.addTitle2(this.target.name.toLocaleUpperCase());
+        this._selector = ShapeDraw.CreateCircle(this.target.groundWidth * Math.SQRT2 * 0.5, this.target.groundWidth * Math.SQRT2 * 0.5 + 0.15);
+        this._selector.position.copyFromFloats(this.target.position2D.x, 0.1, this.target.position2D.y);
+    }
+    disable() {
+        this._panel.dispose();
+        this._selector.dispose();
+    }
+}
+class TankUI {
+    constructor(target) {
+        this.target = target;
+    }
+    enable() {
+        this._panel = SpacePanel.CreateSpacePanel();
+        this._panel.setTarget(this.target);
+        this._panel.addTitle1(this.target.elementName().toLocaleUpperCase());
+        this._panel.addTitle2(this.target.name.toLocaleUpperCase());
+        this._selector = ShapeDraw.CreateCircle(this.target.groundWidth * Math.SQRT2 * 0.5, this.target.groundWidth * Math.SQRT2 * 0.5 + 0.15);
+        this._selector.position.copyFromFloats(this.target.position2D.x, 0.1, this.target.position2D.y);
+    }
+    disable() {
+        this._panel.dispose();
+        this._selector.dispose();
+    }
+}
+class TurretUI {
+    constructor(target) {
+        this.target = target;
+    }
+    enable() {
+        this._panel = SpacePanel.CreateSpacePanel();
+        this._panel.setTarget(this.target);
+        this._panel.addTitle1(this.target.elementName().toLocaleUpperCase());
+        this._panel.addTitle2(this.target.name.toLocaleUpperCase());
+        this._selector = ShapeDraw.CreateCircle(this.target.groundWidth * Math.SQRT2 * 0.5, this.target.groundWidth * Math.SQRT2 * 0.5 + 0.15);
+        this._selector.position.copyFromFloats(this.target.position2D.x, 0.1, this.target.position2D.y);
+    }
+    disable() {
+        this._panel.dispose();
+        this._selector.dispose();
     }
 }
 class VertexDataLoader {

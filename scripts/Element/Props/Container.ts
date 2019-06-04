@@ -2,6 +2,8 @@
 
 class Container extends Building {
 
+    public ui: ContainerUI;
+
     constructor(name: string, position2D: BABYLON.Vector2, rotation2D: number) {
         super(name, position2D, rotation2D);
         if (this.name === "") {
@@ -10,6 +12,8 @@ class Container extends Building {
         }
 
         this.completionRequired = 10;
+
+        this.ui = new ContainerUI(this);
 
         this.obstacle = Obstacle.CreateRectWithPosRotSource(this, 2, 4);
         this.obstacle.name = name + "-obstacle";
@@ -33,6 +37,14 @@ class Container extends Building {
 
         vertexData.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
+    }
+
+    public onSelected(): void {
+        this.ui.enable();
+    }
+
+    public onUnselected(): void {
+        this.ui.disable();
     }
 
     public elementName(): string {

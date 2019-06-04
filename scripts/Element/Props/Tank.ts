@@ -1,5 +1,7 @@
 class Tank extends Building {
 
+    public ui: TankUI;
+
     constructor(name: string, position2D: BABYLON.Vector2, rotation2D: number) {
         super(name, position2D, rotation2D);
         if (this.name === "") {
@@ -8,6 +10,8 @@ class Tank extends Building {
         }
 
         this.completionRequired = 10;
+
+        this.ui = new TankUI(this);
 
         this.obstacle = Obstacle.CreateHexagonWithPosRotSource(this, 1.5);
         this.obstacle.name = name + "-obstacle";
@@ -31,6 +35,14 @@ class Tank extends Building {
 
         vertexData.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
+    }
+
+    public onSelected(): void {
+        this.ui.enable();
+    }
+
+    public onUnselected(): void {
+        this.ui.disable();
     }
 
     public elementName(): string {
