@@ -1,6 +1,6 @@
-/// <reference path="./Prop.ts"/>
+/// <reference path="./Building/Building.ts"/>
 
-class Container extends Prop {
+class Container extends Building {
 
     constructor(name: string, position2D: BABYLON.Vector2, rotation2D: number) {
         super(name, position2D, rotation2D);

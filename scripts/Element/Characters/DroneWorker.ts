@@ -100,6 +100,95 @@ class HarvestTask extends Task {
     }
 }
 
+class BuildTask extends Task {
+
+    public hasPathToTarget: boolean = false;
+    public depot: Prop;
+    public hasPathToDepot: boolean = false;
+
+    constructor(
+        worker: DroneWorker,
+        public target: Building
+    ) {
+        super(worker);
+    }
+
+    public update(): void {
+        let neededResources = this.target.resourcesRequired - this.target.resourcesAvailable;
+        if (neededResources > 0) {
+            if (this.worker.inventory < Math.max(10, neededResources)) {
+                if (!this.depot) {
+                    this.depot = this.worker.getScene().meshes.find((m) => { return m instanceof Container; }) as Container;
+                }
+                if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth) {
+                    this.worker.inventory += 5 * Main.Engine.getDeltaTime() / 1000;
+                    this.hasPathToDepot = false;
+                    this.worker.currentAction = "Fetching from depot";
+                    return;
+                }
+                if (!this.hasPathToDepot) {
+                    let navGraph = NavGraphManager.GetForRadius(1);
+                    navGraph.update();
+                    navGraph.computePathFromTo(this.worker.position2D, this.depot.obstacle);
+                    this.worker.currentPath = navGraph.path;
+                    this.hasPathToDepot = this.worker.currentPath !== undefined;
+                    this.worker.currentAction = "Going to depot";
+                }
+                if (this.hasPathToDepot) {
+                    this.worker.moveOnPath();
+                    this.worker.currentAction = "Going to depot";
+                }
+            }
+            else {
+                if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth) {
+                    this.target.resourcesAvailable += this.worker.inventory;
+                    this.worker.inventory = 0;
+                    this.hasPathToTarget = false;
+                    this.worker.currentAction = "Gathering resource";
+                    return;
+                }
+                if (!this.hasPathToTarget) {
+                    let navGraph = NavGraphManager.GetForRadius(1);
+                    navGraph.update();
+                    navGraph.computePathFromTo(this.worker.position2D, this.target.obstacle);
+                    this.worker.currentPath = navGraph.path;
+                    this.hasPathToTarget = this.worker.currentPath !== undefined;
+                    this.worker.currentAction = "Going to building";
+                }
+                if (this.hasPathToTarget) {
+                    this.worker.moveOnPath();
+                    this.worker.currentAction = "Going to building";
+                }
+            }
+            return;
+        }
+        
+        if (this.target.completion < 10) {
+            if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth) {
+                this.target.build(2 * Main.Engine.getDeltaTime() / 1000);
+                this.hasPathToTarget = false;
+                this.worker.currentAction = "Building";
+                return;
+            }
+            if (!this.hasPathToTarget) {
+                let navGraph = NavGraphManager.GetForRadius(1);
+                navGraph.update();
+                navGraph.computePathFromTo(this.worker.position2D, this.target.obstacle);
+                this.worker.currentPath = navGraph.path;
+                this.hasPathToTarget = this.worker.currentPath !== undefined;
+                this.worker.currentAction = "Going to building";
+            }
+            if (this.hasPathToTarget) {
+                this.worker.moveOnPath();
+                this.worker.currentAction = "Going to building";
+            }
+            return;
+        }
+        
+        this.worker.currentTask = undefined;
+    }
+}
+
 class DroneWorker extends Character {
 
     public currentTask: Task;

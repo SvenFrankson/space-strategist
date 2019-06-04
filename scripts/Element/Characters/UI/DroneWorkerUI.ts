@@ -2,6 +2,7 @@ class DroneWorkerUI {
 
     private _isEnabled: boolean = false;
     private _panel: SpacePanel;
+    private _onLeftClickOverride: (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => void;
 
     private _inventoryInput: HTMLInputElement;
     private _currentActionInput: HTMLInputElement;
@@ -21,6 +22,13 @@ class DroneWorkerUI {
         this._panel.addTitle2(this.target.name.toLocaleUpperCase());
         this._inventoryInput = this._panel.addNumberInput("CRISTAL", this.target.inventory);
         this._currentActionInput = this._panel.addTextInput("ACTION", this.target.currentAction);
+        this._panel.addLargeButton("BUILD CONTAINER", () => {
+            this._onLeftClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
+                let container = new Container("", pickedPoint, 0);
+                container.instantiateBuilding();
+                this.target.currentTask = new BuildTask(this.target, container);
+            }
+        })
 
         this._selector = ShapeDraw.CreateCircle(1.05, 1.2);
         this.target.getScene().onBeforeRenderObservable.add(this._update);
@@ -51,6 +59,11 @@ class DroneWorkerUI {
     }
 
     public onLeftClick(pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable): void {
+        if (this._onLeftClickOverride) {
+            this._onLeftClickOverride(pickedPoint, pickedTarget);
+            this._onLeftClickOverride = undefined;
+            return;
+        }
         if (pickedTarget instanceof Prop) {
             this.target.currentTask = new HarvestTask(this.target, pickedTarget);
         }

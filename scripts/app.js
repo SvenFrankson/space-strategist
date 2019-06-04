@@ -1120,6 +1120,86 @@ class HarvestTask extends Task {
         }
     }
 }
+class BuildTask extends Task {
+    constructor(worker, target) {
+        super(worker);
+        this.target = target;
+        this.hasPathToTarget = false;
+        this.hasPathToDepot = false;
+    }
+    update() {
+        let neededResources = this.target.resourcesRequired - this.target.resourcesAvailable;
+        if (neededResources > 0) {
+            if (this.worker.inventory < Math.max(10, neededResources)) {
+                if (!this.depot) {
+                    this.depot = this.worker.getScene().meshes.find((m) => { return m instanceof Container; });
+                }
+                if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth) {
+                    this.worker.inventory += 5 * Main.Engine.getDeltaTime() / 1000;
+                    this.hasPathToDepot = false;
+                    this.worker.currentAction = "Fetching from depot";
+                    return;
+                }
+                if (!this.hasPathToDepot) {
+                    let navGraph = NavGraphManager.GetForRadius(1);
+                    navGraph.update();
+                    navGraph.computePathFromTo(this.worker.position2D, this.depot.obstacle);
+                    this.worker.currentPath = navGraph.path;
+                    this.hasPathToDepot = this.worker.currentPath !== undefined;
+                    this.worker.currentAction = "Going to depot";
+                }
+                if (this.hasPathToDepot) {
+                    this.worker.moveOnPath();
+                    this.worker.currentAction = "Going to depot";
+                }
+            }
+            else {
+                if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth) {
+                    this.target.resourcesAvailable += this.worker.inventory;
+                    this.worker.inventory = 0;
+                    this.hasPathToTarget = false;
+                    this.worker.currentAction = "Gathering resource";
+                    return;
+                }
+                if (!this.hasPathToTarget) {
+                    let navGraph = NavGraphManager.GetForRadius(1);
+                    navGraph.update();
+                    navGraph.computePathFromTo(this.worker.position2D, this.target.obstacle);
+                    this.worker.currentPath = navGraph.path;
+                    this.hasPathToTarget = this.worker.currentPath !== undefined;
+                    this.worker.currentAction = "Going to building";
+                }
+                if (this.hasPathToTarget) {
+                    this.worker.moveOnPath();
+                    this.worker.currentAction = "Going to building";
+                }
+            }
+            return;
+        }
+        if (this.target.completion < 10) {
+            if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth) {
+                this.target.build(2 * Main.Engine.getDeltaTime() / 1000);
+                this.hasPathToTarget = false;
+                this.worker.currentAction = "Building";
+                return;
+            }
+            if (!this.hasPathToTarget) {
+                let navGraph = NavGraphManager.GetForRadius(1);
+                navGraph.update();
+                navGraph.computePathFromTo(this.worker.position2D, this.target.obstacle);
+                this.worker.currentPath = navGraph.path;
+                this.hasPathToTarget = this.worker.currentPath !== undefined;
+                this.worker.currentAction = "Going to building";
+            }
+            if (this.hasPathToTarget) {
+                this.worker.moveOnPath();
+                this.worker.currentAction = "Going to building";
+            }
+            return;
+        }
+        this.worker.currentTask = undefined;
+    }
+}
 class DroneWorker extends Character {
     constructor() {
         super("droneWorker");
@@ -1429,6 +1509,13 @@ class DroneWorkerUI {
         this._panel.addTitle2(this.target.name.toLocaleUpperCase());
         this._inventoryInput = this._panel.addNumberInput("CRISTAL", this.target.inventory);
         this._currentActionInput = this._panel.addTextInput("ACTION", this.target.currentAction);
+        this._panel.addLargeButton("BUILD CONTAINER", () => {
+            this._onLeftClickOverride = (pickedPoint, pickedTarget) => {
+                let container = new Container("", pickedPoint, 0);
+                container.instantiateBuilding();
+                this.target.currentTask = new BuildTask(this.target, container);
+            };
+        });
         this._selector = ShapeDraw.CreateCircle(1.05, 1.2);
         this.target.getScene().onBeforeRenderObservable.add(this._update);
         console.log("Enable DroneWorker Panel");
@@ -1449,6 +1536,11 @@ class DroneWorkerUI {
         this._currentActionInput.value = this.target.currentAction;
     }
     onLeftClick(pickedPoint, pickedTarget) {
+        if (this._onLeftClickOverride) {
+            this._onLeftClickOverride(pickedPoint, pickedTarget);
+            this._onLeftClickOverride = undefined;
+            return;
+        }
         if (pickedTarget instanceof Prop) {
             this.target.currentTask = new HarvestTask(this.target, pickedTarget);
         }
@@ -1511,8 +1603,35 @@ class Prop extends Draggable {
         return "Prop";
     }
 }
-/// <reference path="./Prop.ts"/>
-class Container extends Prop {
+/// <reference path="../Prop.ts"/>
+class Building extends Prop {
+    constructor(name, position2D, rotation2D) {
+        super(name, position2D, rotation2D);
+        this.completion = 0;
+        this.resourcesAvailable = 0;
+        this.resourcesRequired = 10;
+    }
+    async instantiateBuilding() {
+        await this.instantiate();
+        this.position.y = -10;
+        this._areaMesh = ShapeDraw.CreateCircle(this.groundWidth * 0.5, this.groundWidth * 0.5 + 0.15);
+        this._areaMesh.position.copyFromFloats(this.position2D.x, 0.1, this.position2D.y);
+    }
+    build(amount) {
+        this.completion += amount;
+        this.completion = Math.min(10, this.completion);
+        this.position.y = this.completion - 10;
+        if (this.completion === 10) {
+            this._areaMesh.dispose();
+        }
+    }
+    gather(resource) {
+        this.resourcesAvailable += resource;
+        this.resourcesAvailable = Math.min(this.resourcesRequired, this.resourcesAvailable);
+    }
+}
+/// <reference path="./Building/Building.ts"/>
+class Container extends Building {
     constructor(name, position2D, rotation2D) {
         super(name, position2D, rotation2D);
         if (this.name === "") {
@@ -1646,7 +1765,7 @@ class PropEditor {
     static Unselect(prop) {
     }
 }
-class Tank extends Prop {
+class Tank extends Building {
     constructor(name, position2D, rotation2D) {
         super(name, position2D, rotation2D);
         if (this.name === "") {
@@ -2887,7 +3006,7 @@ class ShapeDraw {
             positions.push(cosa * rMax, 0, sina * rMax);
         }
         for (let i = 0; i < 32; i++) {
-            if (Math.random() > 0.5) {
+            if (Math.cos(i * 500) > 0) {
                 indices.push(2 * i, 2 * i + 1, 2 * (i + 1) + 1);
                 indices.push(2 * i, 2 * (i + 1) + 1, 2 * (i + 1));
             }

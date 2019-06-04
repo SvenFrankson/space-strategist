@@ -18,7 +18,7 @@ class ShapeDraw {
             positions.push(cosa * rMax, 0, sina * rMax);
         }
         for (let i = 0; i < 32; i++) {
-            if (Math.random() > 0.5) {
+            if (Math.cos(i * 500) > 0) {
                 indices.push(2 * i, 2 * i + 1, 2 * (i + 1) + 1);
                 indices.push(2 * i, 2 * (i + 1) + 1, 2 * (i + 1));
             }
