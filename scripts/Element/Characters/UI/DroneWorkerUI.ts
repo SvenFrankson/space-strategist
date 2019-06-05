@@ -2,6 +2,9 @@ class DroneWorkerUI {
 
     private _isEnabled: boolean = false;
     private _panel: SpacePanel;
+    private _ghostProp: Prop;
+    private _onMouseMoveOverride: (currentPoint: BABYLON.Vector2) => void;
+    private _onRightClickOverride: (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => void;
     private _onLeftClickOverride: (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => void;
 
     private _inventoryInput: HTMLInputElement;
@@ -23,24 +26,42 @@ class DroneWorkerUI {
         this._inventoryInput = this._panel.addTextInput("CRISTAL", this.target.inventory.toFixed(0) + "/" + this.target.carriageCapacity.toFixed(0));
         this._currentActionInput = this._panel.addTextInput("ACTION", this.target.currentAction);
         this._panel.addLargeButton("BUILD CONTAINER", () => {
-            this._onLeftClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
+            this._ghostProp = new Container("ghost", BABYLON.Vector2.Zero(), 0);
+            this._ghostProp.instantiate();
+            this._ghostProp.isVisible = false;
+            this._ghostProp.isPickable = false;
+            this._onRightClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
                 let container = new Container("", pickedPoint, 0);
                 container.instantiateBuilding();
                 this.target.currentTask = new BuildTask(this.target, container);
+                this._ghostProp.dispose();
+                this._ghostProp = undefined;
             }
         });
         this._panel.addLargeButton("BUILD TANK", () => {
-            this._onLeftClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
+            this._ghostProp = new Tank("ghost", BABYLON.Vector2.Zero(), 0);
+            this._ghostProp.instantiate();
+            this._ghostProp.isVisible = false;
+            this._ghostProp.isPickable = false;
+            this._onRightClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
                 let tank = new Tank("", pickedPoint, 0);
                 tank.instantiateBuilding();
                 this.target.currentTask = new BuildTask(this.target, tank);
+                this._ghostProp.dispose();
+                this._ghostProp = undefined;
             }
         });
         this._panel.addLargeButton("BUILD TURRET", () => {
-            this._onLeftClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
+            this._ghostProp = new Turret("ghost", BABYLON.Vector2.Zero(), 0);
+            this._ghostProp.instantiate();
+            this._ghostProp.isVisible = false;
+            this._ghostProp.isPickable = false;
+            this._onRightClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
                 let turret = new Turret("", pickedPoint, 0);
                 turret.instantiateBuilding();
                 this.target.currentTask = new BuildTask(this.target, turret);
+                this._ghostProp.dispose();
+                this._ghostProp = undefined;
             }
         });
 
@@ -72,17 +93,38 @@ class DroneWorkerUI {
         }
     }
 
-    public onLeftClick(pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable): void {
+    public onMouseMove(currentPoint: BABYLON.Vector2): boolean {
+        if (this._ghostProp) {
+            this._ghostProp.isVisible = true;
+            this._ghostProp.position2D = currentPoint;
+            return true;
+        }
+        return false;
+    }
+
+    public onRightClick(pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable): boolean {
+        if (this._onRightClickOverride) {
+            this._onRightClickOverride(pickedPoint, pickedTarget);
+            this._onRightClickOverride = undefined;
+            return true;
+        }
+        return false;
+    }
+
+    public onLeftClick(pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable): boolean {
         if (this._onLeftClickOverride) {
             this._onLeftClickOverride(pickedPoint, pickedTarget);
             this._onLeftClickOverride = undefined;
-            return;
         }
-        if (pickedTarget instanceof Prop) {
+        else if (pickedTarget instanceof Prop) {
             this.target.currentTask = new HarvestTask(this.target, pickedTarget);
         }
         else if (pickedPoint instanceof BABYLON.Vector2) {
             this.target.currentTask = new GoToTask(this.target, pickedPoint);
         }
+        else {
+            return false;
+        }
+        return true;
     };
 }

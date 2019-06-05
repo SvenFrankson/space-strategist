@@ -54,8 +54,16 @@ class DroneWorker extends Character {
         this.ui.disable();
     }
 
-    public onLeftClick(pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable): void {
-        this.ui.onLeftClick(pickedPoint, pickedTarget);
+    public onMouseMove(currentPoint: BABYLON.Vector2): boolean {
+        return this.ui.onMouseMove(currentPoint);
+    };
+
+    public onRightClick(pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable): boolean {
+        return this.ui.onRightClick(pickedPoint, pickedTarget);
+    };
+
+    public onLeftClick(pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable): boolean {
+        return this.ui.onLeftClick(pickedPoint, pickedTarget);
     };
 
     private _update = () => {

@@ -555,15 +555,26 @@ class PlayerControl {
             this._pointerDownY = this.scene.pointerY;
         };
         this.pointerMove = () => {
+            let pick = this.scene.pick(this.scene.pointerX, this.scene.pointerY, (m) => {
+                return m.isPickable && (m instanceof Selectionable || m === this._zero);
+            });
+            if (pick.hit) {
+                if (this.selectedElement && this.selectedElement.onMouseMove(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z))) {
+                    return;
+                }
+            }
         };
         this.pointerUp = (ev) => {
             if (Math.abs(this.scene.pointerX - this._pointerDownX) < 3 && Math.abs(this.scene.pointerY - this._pointerDownY) < 3) {
                 let pick = this.scene.pick(this.scene.pointerX, this.scene.pointerY, (m) => {
-                    return m instanceof Selectionable || m === this._zero;
+                    return m.isPickable && (m instanceof Selectionable || m === this._zero);
                 });
                 if (pick.hit) {
                     if (pick.pickedMesh instanceof Selectionable) {
                         if (ev.button === 0) {
+                            if (this.selectedElement && this.selectedElement.onRightClick(undefined, pick.pickedMesh)) {
+                                return;
+                            }
                             this.selectedElement = pick.pickedMesh;
                             return;
                         }
@@ -575,6 +586,11 @@ class PlayerControl {
                         }
                     }
                     if (pick.pickedMesh === this._zero) {
+                        if (ev.button === 0) {
+                            if (this.selectedElement && this.selectedElement.onRightClick(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z), undefined)) {
+                                return;
+                            }
+                        }
                         if (ev.button === 2) {
                             if (this.selectedElement) {
                                 this.selectedElement.onLeftClick(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z), undefined);
@@ -992,7 +1008,11 @@ class Selectionable extends BABYLON.Mesh {
     ;
     onUnselected() { }
     ;
-    onLeftClick(pickedPoint, pickedTarget) { }
+    onMouseMove(currentPoint) { return false; }
+    ;
+    onRightClick(pickedPoint, pickedTarget) { return false; }
+    ;
+    onLeftClick(pickedPoint, pickedTarget) { return false; }
     ;
 }
 /// <reference path="Selectionable.ts"/>
@@ -1093,8 +1113,16 @@ class DroneWorker extends Character {
     onUnselected() {
         this.ui.disable();
     }
+    onMouseMove(currentPoint) {
+        return this.ui.onMouseMove(currentPoint);
+    }
+    ;
+    onRightClick(pickedPoint, pickedTarget) {
+        return this.ui.onRightClick(pickedPoint, pickedTarget);
+    }
+    ;
     onLeftClick(pickedPoint, pickedTarget) {
-        this.ui.onLeftClick(pickedPoint, pickedTarget);
+        return this.ui.onLeftClick(pickedPoint, pickedTarget);
     }
     ;
     moveOnPath() {
@@ -1520,24 +1548,42 @@ class DroneWorkerUI {
         this._inventoryInput = this._panel.addTextInput("CRISTAL", this.target.inventory.toFixed(0) + "/" + this.target.carriageCapacity.toFixed(0));
         this._currentActionInput = this._panel.addTextInput("ACTION", this.target.currentAction);
         this._panel.addLargeButton("BUILD CONTAINER", () => {
-            this._onLeftClickOverride = (pickedPoint, pickedTarget) => {
+            this._ghostProp = new Container("ghost", BABYLON.Vector2.Zero(), 0);
+            this._ghostProp.instantiate();
+            this._ghostProp.isVisible = false;
+            this._ghostProp.isPickable = false;
+            this._onRightClickOverride = (pickedPoint, pickedTarget) => {
                 let container = new Container("", pickedPoint, 0);
                 container.instantiateBuilding();
                 this.target.currentTask = new BuildTask(this.target, container);
+                this._ghostProp.dispose();
+                this._ghostProp = undefined;
             };
         });
         this._panel.addLargeButton("BUILD TANK", () => {
-            this._onLeftClickOverride = (pickedPoint, pickedTarget) => {
+            this._ghostProp = new Tank("ghost", BABYLON.Vector2.Zero(), 0);
+            this._ghostProp.instantiate();
+            this._ghostProp.isVisible = false;
+            this._ghostProp.isPickable = false;
+            this._onRightClickOverride = (pickedPoint, pickedTarget) => {
                 let tank = new Tank("", pickedPoint, 0);
                 tank.instantiateBuilding();
                 this.target.currentTask = new BuildTask(this.target, tank);
+                this._ghostProp.dispose();
+                this._ghostProp = undefined;
             };
         });
         this._panel.addLargeButton("BUILD TURRET", () => {
-            this._onLeftClickOverride = (pickedPoint, pickedTarget) => {
+            this._ghostProp = new Turret("ghost", BABYLON.Vector2.Zero(), 0);
+            this._ghostProp.instantiate();
+            this._ghostProp.isVisible = false;
+            this._ghostProp.isPickable = false;
+            this._onRightClickOverride = (pickedPoint, pickedTarget) => {
                 let turret = new Turret("", pickedPoint, 0);
                 turret.instantiateBuilding();
                 this.target.currentTask = new BuildTask(this.target, turret);
+                this._ghostProp.dispose();
+                this._ghostProp = undefined;
             };
         });
         this._selector = ShapeDraw.CreateCircle(1.05, 1.2);
@@ -1559,18 +1605,37 @@ class DroneWorkerUI {
         this._inventoryInput.value = this.target.inventory.toFixed(0) + " / " + this.target.carriageCapacity.toFixed(0);
         this._currentActionInput.value = this.target.currentAction;
     }
+    onMouseMove(currentPoint) {
+        if (this._ghostProp) {
+            this._ghostProp.isVisible = true;
+            this._ghostProp.position2D = currentPoint;
+            return true;
+        }
+        return false;
+    }
+    onRightClick(pickedPoint, pickedTarget) {
+        if (this._onRightClickOverride) {
+            this._onRightClickOverride(pickedPoint, pickedTarget);
+            this._onRightClickOverride = undefined;
+            return true;
+        }
+        return false;
+    }
     onLeftClick(pickedPoint, pickedTarget) {
         if (this._onLeftClickOverride) {
             this._onLeftClickOverride(pickedPoint, pickedTarget);
             this._onLeftClickOverride = undefined;
-            return;
         }
-        if (pickedTarget instanceof Prop) {
+        else if (pickedTarget instanceof Prop) {
             this.target.currentTask = new HarvestTask(this.target, pickedTarget);
         }
         else if (pickedPoint instanceof BABYLON.Vector2) {
             this.target.currentTask = new GoToTask(this.target, pickedPoint);
         }
+        else {
+            return false;
+        }
+        return true;
     }
     ;
 }

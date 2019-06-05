@@ -55,7 +55,18 @@ class PlayerControl {
     }
 
     private pointerMove = () => {
-        
+        let pick = this.scene.pick(
+            this.scene.pointerX,
+            this.scene.pointerY,
+            (m) => {
+                return m.isPickable && (m instanceof Selectionable || m === this._zero);
+            }
+        );
+        if (pick.hit) {
+            if (this.selectedElement && this.selectedElement.onMouseMove(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z))) {
+                return;
+            } 
+        }
     }
 
     private pointerUp = (ev: PointerEvent) => {
@@ -64,12 +75,15 @@ class PlayerControl {
                 this.scene.pointerX,
                 this.scene.pointerY,
                 (m) => {
-                    return m instanceof Selectionable || m === this._zero;
+                    return m.isPickable && (m instanceof Selectionable || m === this._zero);
                 }
             );
             if (pick.hit) {
                 if (pick.pickedMesh instanceof Selectionable) {
                     if (ev.button === 0) {
+                        if (this.selectedElement && this.selectedElement.onRightClick(undefined, pick.pickedMesh)) {
+                            return;
+                        } 
                         this.selectedElement = pick.pickedMesh;
                         return;
                     }
@@ -81,6 +95,11 @@ class PlayerControl {
                     }
                 }
                 if (pick.pickedMesh === this._zero) {
+                    if (ev.button === 0) {
+                        if (this.selectedElement && this.selectedElement.onRightClick(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z), undefined)) {
+                            return;
+                        } 
+                    }
                     if (ev.button === 2) {
                         if (this.selectedElement) {
                             this.selectedElement.onLeftClick(new BABYLON.Vector2(pick.pickedPoint.x, pick.pickedPoint.z), undefined);
