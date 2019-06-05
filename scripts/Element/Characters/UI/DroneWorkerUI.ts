@@ -28,7 +28,7 @@ class DroneWorkerUI {
         this._panel.addLargeButton("BUILD CONTAINER", () => {
             this._ghostProp = new Container("ghost", BABYLON.Vector2.Zero(), 0);
             this._ghostProp.instantiate();
-            this._ghostProp.isVisible = false;
+            this._ghostProp.setVisibility(0);
             this._ghostProp.isPickable = false;
             this._onRightClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
                 let container = new Container("", pickedPoint, 0);
@@ -41,7 +41,7 @@ class DroneWorkerUI {
         this._panel.addLargeButton("BUILD TANK", () => {
             this._ghostProp = new Tank("ghost", BABYLON.Vector2.Zero(), 0);
             this._ghostProp.instantiate();
-            this._ghostProp.isVisible = false;
+            this._ghostProp.setVisibility(0);
             this._ghostProp.isPickable = false;
             this._onRightClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
                 let tank = new Tank("", pickedPoint, 0);
@@ -54,7 +54,7 @@ class DroneWorkerUI {
         this._panel.addLargeButton("BUILD TURRET", () => {
             this._ghostProp = new Turret("ghost", BABYLON.Vector2.Zero(), 0);
             this._ghostProp.instantiate();
-            this._ghostProp.isVisible = false;
+            this._ghostProp.setVisibility(0);
             this._ghostProp.isPickable = false;
             this._onRightClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
                 let turret = new Turret("", pickedPoint, 0);
@@ -95,7 +95,7 @@ class DroneWorkerUI {
 
     public onMouseMove(currentPoint: BABYLON.Vector2): boolean {
         if (this._ghostProp) {
-            this._ghostProp.isVisible = true;
+            this._ghostProp.setVisibility(0.5);
             this._ghostProp.position2D = currentPoint;
             return true;
         }

@@ -89,6 +89,9 @@ class Turret extends Building {
 
     private _dirToTarget: BABYLON.Vector2 = BABYLON.Vector2.Zero();
     private _update = () => {
+        if (!this.isActive) {
+            return;
+        }
         let dt = this.getScene().getEngine().getDeltaTime() / 1000;
         this._headBase.rotation.y = Math2D.StepFromToCirular(this._headBase.rotation.y, this._targetAzimut, this.rotationSpeed * dt);
         this._canon.rotation.x = Math2D.StepFromToCirular(this._canon.rotation.x, this._targetElevation, this.rotationSpeed * dt);

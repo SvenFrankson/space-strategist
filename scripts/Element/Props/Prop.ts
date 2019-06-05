@@ -9,6 +9,7 @@ class PropData {
 
 abstract class Prop extends Draggable {
 
+    public isActive = false;
     public obstacle: Obstacle;
 
     constructor(name: string, position2D: BABYLON.Vector2, rotation2D: number) {
@@ -35,6 +36,7 @@ abstract class Prop extends Draggable {
     protected onPositionChanged(): void {}
 
     public addToScene(): void {
+        this.isActive = true;
         NavGraphManager.AddObstacle(this.obstacle);
     }
 
@@ -66,6 +68,24 @@ abstract class Prop extends Draggable {
     }
 
     public abstract async instantiate(): Promise<void>;
+
+    public setVisibility(v: number): void {
+        let children = this.getChildMeshes();
+        if (v === 0) {
+            this.isVisible = false;
+            for (let i = 0; i < children.length; i++) {
+                children[i].isVisible = false;
+            }
+        }
+        else {
+            this.isVisible = true;
+            this.visibility = v;
+            for (let i = 0; i < children.length; i++) {
+                children[i].isVisible = true;
+                children[i].visibility = v;
+            }
+        }
+    }
 
     public elementName(): string {
         return "Prop";

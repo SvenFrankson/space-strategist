@@ -1550,7 +1550,7 @@ class DroneWorkerUI {
         this._panel.addLargeButton("BUILD CONTAINER", () => {
             this._ghostProp = new Container("ghost", BABYLON.Vector2.Zero(), 0);
             this._ghostProp.instantiate();
-            this._ghostProp.isVisible = false;
+            this._ghostProp.setVisibility(0);
             this._ghostProp.isPickable = false;
             this._onRightClickOverride = (pickedPoint, pickedTarget) => {
                 let container = new Container("", pickedPoint, 0);
@@ -1563,7 +1563,7 @@ class DroneWorkerUI {
         this._panel.addLargeButton("BUILD TANK", () => {
             this._ghostProp = new Tank("ghost", BABYLON.Vector2.Zero(), 0);
             this._ghostProp.instantiate();
-            this._ghostProp.isVisible = false;
+            this._ghostProp.setVisibility(0);
             this._ghostProp.isPickable = false;
             this._onRightClickOverride = (pickedPoint, pickedTarget) => {
                 let tank = new Tank("", pickedPoint, 0);
@@ -1576,7 +1576,7 @@ class DroneWorkerUI {
         this._panel.addLargeButton("BUILD TURRET", () => {
             this._ghostProp = new Turret("ghost", BABYLON.Vector2.Zero(), 0);
             this._ghostProp.instantiate();
-            this._ghostProp.isVisible = false;
+            this._ghostProp.setVisibility(0);
             this._ghostProp.isPickable = false;
             this._onRightClickOverride = (pickedPoint, pickedTarget) => {
                 let turret = new Turret("", pickedPoint, 0);
@@ -1607,7 +1607,7 @@ class DroneWorkerUI {
     }
     onMouseMove(currentPoint) {
         if (this._ghostProp) {
-            this._ghostProp.isVisible = true;
+            this._ghostProp.setVisibility(0.5);
             this._ghostProp.position2D = currentPoint;
             return true;
         }
@@ -1645,6 +1645,7 @@ class PropData {
 class Prop extends Draggable {
     constructor(name, position2D, rotation2D) {
         super(name);
+        this.isActive = false;
         this._updatePosition = () => {
             if (this.position.x !== this.position2D.x || this.position.z !== this.position2D.y || this.rotation.y !== -this.rotation2D) {
                 this.position.x = this.position2D.x;
@@ -1663,6 +1664,7 @@ class Prop extends Draggable {
     }
     onPositionChanged() { }
     addToScene() {
+        this.isActive = true;
         NavGraphManager.AddObstacle(this.obstacle);
     }
     serialize() {
@@ -1687,6 +1689,23 @@ class Prop extends Draggable {
             return new Turret(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
         }
         return undefined;
+    }
+    setVisibility(v) {
+        let children = this.getChildMeshes();
+        if (v === 0) {
+            this.isVisible = false;
+            for (let i = 0; i < children.length; i++) {
+                children[i].isVisible = false;
+            }
+        }
+        else {
+            this.isVisible = true;
+            this.visibility = v;
+            for (let i = 0; i < children.length; i++) {
+                children[i].isVisible = true;
+                children[i].visibility = v;
+            }
+        }
     }
     elementName() {
         return "Prop";
@@ -1914,6 +1933,9 @@ class Turret extends Building {
         this._targetElevation = 0;
         this._dirToTarget = BABYLON.Vector2.Zero();
         this._update = () => {
+            if (!this.isActive) {
+                return;
+            }
             let dt = this.getScene().getEngine().getDeltaTime() / 1000;
             this._headBase.rotation.y = Math2D.StepFromToCirular(this._headBase.rotation.y, this._targetAzimut, this.rotationSpeed * dt);
             this._canon.rotation.x = Math2D.StepFromToCirular(this._canon.rotation.x, this._targetElevation, this.rotationSpeed * dt);
