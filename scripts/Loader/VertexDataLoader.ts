@@ -16,6 +16,12 @@ class VertexDataLoader {
         clonedData.positions = [...data.positions];
         clonedData.indices = [...data.indices];
         clonedData.normals = [...data.normals];
+        if (data.matricesIndices) {
+            clonedData.matricesIndices = [...data.matricesIndices];
+        }
+        if (data.matricesWeights) {
+            clonedData.matricesWeights = [...data.matricesWeights];
+        }
         if (data.uvs) {
             clonedData.uvs = [...data.uvs];
         }
@@ -29,32 +35,15 @@ class VertexDataLoader {
         if (this._vertexDatas.get(name)) {
             return this._vertexDatas.get(name);
         }
-        let request = new XMLHttpRequest();
-        return new Promise<BABYLON.VertexData> (
-            (resolve) => {
-                request.onload = () => {
-                    if (request.status >= 200 && request.status < 400) {
-                        let rawData = JSON.parse(request.responseText);
-                        let data = new BABYLON.VertexData();
-                        data.positions = rawData.meshes[0].positions;
-                        data.indices = rawData.meshes[0].indices;
-                        if (rawData.meshes[0].normals) {
-                            data.normals = rawData.meshes[0].normals;
-                        }
-                        if (rawData.meshes[0].uvs) {
-                            data.uvs = rawData.meshes[0].uvs;
-                        }
-                        if (rawData.meshes[0].colors) {
-                            data.colors = rawData.meshes[0].colors;
-                        }
-                        this._vertexDatas.set(name, data);
-                        resolve(this._vertexDatas.get(name));
-                    }
-                }
-                request.open("GET", "./datas/" + name + ".babylon");
-                request.send();
-            }
-        )
+        let vertexData: BABYLON.VertexData = undefined;
+        let loadedFile = await BABYLON.SceneLoader.ImportMeshAsync("", "./datas/" + name + ".babylon", "", Main.Scene);
+        let loadedMesh = loadedFile.meshes[0];
+        if (loadedMesh instanceof BABYLON.Mesh) {
+            vertexData =  BABYLON.VertexData.ExtractFromMesh(loadedMesh);
+        }
+        loadedFile.meshes.forEach(m => { m.dispose(); });
+        loadedFile.skeletons.forEach(s => { s.dispose(); });
+        return vertexData;
     }
 
     public async getColorized(

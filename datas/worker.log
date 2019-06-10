@@ -7,15 +7,27 @@ Exporter version: 5.4.2, Blender version: 2.78 (sub 0)
 		texture directory:  C:\Users\Sven\Documents\SvenFrankson\space-strategist\datas\
 	Python World class constructor completed
 	WARNING: No active camera has been assigned, or is not in a currently selected Blender layer
+	processing begun of skeleton:  Armature.001, id:  0
+		processing begun of bone:  Base, index:  0
+		processing begun of bone:  Head, index:  1
+		processing begun of bone:  EyeTop, index:  2
+		processing begun of bone:  EyeBottom, index:  3
+	WARNING: The following armature not visible in scene thus ignored: Armature
 	processing begun of mesh:  worker
 		WARNING: No materials have been assigned: 
-		num positions      :  881
-		num normals        :  881
+		num positions      :  885
+		num normals        :  885
 		num uvs            :  0
 		num uvs2           :  0
-		num colors         :  3524
-		num indices        :  4710
+		num colors         :  3540
+		num indices        :  4758
+		Skeleton stats:  
+			Total Influencers:  1772
+			Avg # of influencers per vertex:  2.0023
+			Highest # of influencers observed:  4, num vertices with this:  47
+			exported as 4 influencers
+			num skeletonWeights and skeletonIndices:  3540
 ========= Writing of scene file started =========
 ========= Writing of scene file completed =========
 ========= end of processing =========
-elapsed time:  0 min, 0.254 secs
+elapsed time:  0 min, 0.6813 secs

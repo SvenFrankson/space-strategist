@@ -1,5 +1,7 @@
 class DroneWorker extends Character {
 
+    public targetSkeleton: BABYLON.Skeleton;
+
     public harvestRate: number = 2;
     public buildRate: number = 1;
     public carriageCapacity: number = 10;
@@ -34,8 +36,19 @@ class DroneWorker extends Character {
     }
 
     public async instantiate(): Promise<void> {
+        
         let data = await VertexDataLoader.instance.getColorized("worker", "#ce7633", "#383838", "#6d6d6d", "#c94022", "#1c1c1c");
         data.applyToMesh(this);
+
+        let loadedFile = await BABYLON.SceneLoader.ImportMeshAsync(
+            "",
+            "./datas/worker.babylon",
+            "",
+            Main.Scene
+        );
+        loadedFile.meshes[0].dispose();
+        this.skeleton = loadedFile.skeletons[0];
+        
         this.material = Main.cellShadingMaterial;
         this.groundWidth = 1;
         this.height = 1;

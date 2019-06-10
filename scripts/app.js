@@ -1099,6 +1099,9 @@ class DroneWorker extends Character {
     async instantiate() {
         let data = await VertexDataLoader.instance.getColorized("worker", "#ce7633", "#383838", "#6d6d6d", "#c94022", "#1c1c1c");
         data.applyToMesh(this);
+        let loadedFile = await BABYLON.SceneLoader.ImportMeshAsync("", "./datas/worker.babylon", "", Main.Scene);
+        loadedFile.meshes[0].dispose();
+        this.skeleton = loadedFile.skeletons[0];
         this.material = Main.cellShadingMaterial;
         this.groundWidth = 1;
         this.height = 1;
@@ -2520,6 +2523,12 @@ class VertexDataLoader {
         clonedData.positions = [...data.positions];
         clonedData.indices = [...data.indices];
         clonedData.normals = [...data.normals];
+        if (data.matricesIndices) {
+            clonedData.matricesIndices = [...data.matricesIndices];
+        }
+        if (data.matricesWeights) {
+            clonedData.matricesWeights = [...data.matricesWeights];
+        }
         if (data.uvs) {
             clonedData.uvs = [...data.uvs];
         }
@@ -2532,34 +2541,19 @@ class VertexDataLoader {
         if (this._vertexDatas.get(name)) {
             return this._vertexDatas.get(name);
         }
-        let request = new XMLHttpRequest();
-        return new Promise((resolve) => {
-            request.onload = () => {
-                if (request.status >= 200 && request.status < 400) {
-                    let rawData = JSON.parse(request.responseText);
-                    let data = new BABYLON.VertexData();
-                    data.positions = rawData.meshes[0].positions;
-                    data.indices = rawData.meshes[0].indices;
-                    if (rawData.meshes[0].normals) {
-                        data.normals = rawData.meshes[0].normals;
-                    }
-                    if (rawData.meshes[0].uvs) {
-                        data.uvs = rawData.meshes[0].uvs;
-                    }
-                    if (rawData.meshes[0].colors) {
-                        data.colors = rawData.meshes[0].colors;
-                    }
-                    this._vertexDatas.set(name, data);
-                    resolve(this._vertexDatas.get(name));
-                }
-            };
-            request.open("GET", "./datas/" + name + ".babylon");
-            request.send();
-        });
+        let vertexData = undefined;
+        let loadedFile = await BABYLON.SceneLoader.ImportMeshAsync("", "./datas/" + name + ".babylon", "", Main.Scene);
+        let loadedMesh = loadedFile.meshes[0];
+        if (loadedMesh instanceof BABYLON.Mesh) {
+            vertexData = BABYLON.VertexData.ExtractFromMesh(loadedMesh);
+        }
+        loadedFile.meshes.forEach(m => { m.dispose(); });
+        loadedFile.skeletons.forEach(s => { s.dispose(); });
+        return vertexData;
     }
     async getColorized(name, baseColorHex = "#FFFFFF", frameColorHex = "", color1Hex = "", // Replace red
-    color2Hex = "", // Replace green
-    color3Hex = "" // Replace blue
+        color2Hex = "", // Replace green
+        color3Hex = "" // Replace blue
     ) {
         let baseColor;
         if (baseColorHex !== "") {
