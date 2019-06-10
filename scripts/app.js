@@ -1102,6 +1102,7 @@ class DroneWorker extends Character {
         let loadedFile = await BABYLON.SceneLoader.ImportMeshAsync("", "./datas/worker.babylon", "", Main.Scene);
         loadedFile.meshes[0].dispose();
         this.skeleton = loadedFile.skeletons[0];
+        Main.Scene.beginAnimation(this.skeleton, 0, 100, true, 1);
         this.material = Main.cellShadingMaterial;
         this.groundWidth = 1;
         this.height = 1;

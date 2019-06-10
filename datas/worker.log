@@ -12,22 +12,36 @@ Exporter version: 5.4.2, Blender version: 2.78 (sub 0)
 		processing begun of bone:  Head, index:  1
 		processing begun of bone:  EyeTop, index:  2
 		processing begun of bone:  EyeBottom, index:  3
+		processing begun of bone:  UpArmL, index:  4
+		processing begun of bone:  ArmL, index:  5
+		processing begun of bone:  HandL, index:  6
+		processing begun of bone:  UpArmR, index:  7
+		processing begun of bone:  ArmR, index:  8
+		processing begun of bone:  HandR, index:  9
+		processing action ArmatureAction:  in[1 - 100], out[0 - 100]
+		processing action ArmatureAction.001:  in[1 - 100], out[110 - 210]
+		processing action ArmatureAction.002:  in[1 - 100], out[220 - 320]
 	WARNING: The following armature not visible in scene thus ignored: Armature
-	processing begun of mesh:  worker
-		WARNING: No materials have been assigned: 
-		num positions      :  885
-		num normals        :  885
+	processing begun of mesh:  arm.001
+		processing begun of Standard material:  Color2
+		processing begun of Standard material:  Frame
+		processing begun of Standard material:  Base
+		processing begun of Standard material:  Color1
+		processing begun of Standard material:  Color3
+		processing begun of multimaterial:  worker.Multimaterial#0
+		num positions      :  1228
+		num normals        :  1228
 		num uvs            :  0
 		num uvs2           :  0
-		num colors         :  3540
-		num indices        :  4758
+		num colors         :  4912
+		num indices        :  6450
 		Skeleton stats:  
-			Total Influencers:  1772
-			Avg # of influencers per vertex:  2.0023
+			Total Influencers:  2519
+			Avg # of influencers per vertex:  2.0513
 			Highest # of influencers observed:  4, num vertices with this:  47
 			exported as 4 influencers
-			num skeletonWeights and skeletonIndices:  3540
+			num skeletonWeights and skeletonIndices:  4912
 ========= Writing of scene file started =========
 ========= Writing of scene file completed =========
 ========= end of processing =========
-elapsed time:  0 min, 0.6813 secs
+elapsed time:  0 min, 1.615 secs
