@@ -32,10 +32,12 @@ class GoToTask extends Task {
             this.worker.currentPath = navGraph.path;
             this.hasPathToTarget = this.worker.currentPath !== undefined;
             this.worker.currentAction = "Going to " + this.target.x.toFixed(1) + " " + this.target.y.toFixed(1);
+            this.worker.animator.setIdle();
         }
         if (this.hasPathToTarget) {
             this.worker.moveOnPath();
             this.worker.currentAction = "Going to " + this.target.x.toFixed(1) + " " + this.target.y.toFixed(1);
+            this.worker.animator.setIdle();
         }
     }
 }
@@ -57,10 +59,11 @@ class HarvestTask extends Task {
 
     public update(): void {
         if (!this._isDropping && this.worker.inventory < this.worker.carriageCapacity) {
-            if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth) {
+            if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth * this.target.groundWidth) {
                 this.worker.inventory += this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
                 this.hasPathToTarget = false;
                 this.worker.currentAction = "Harvesting resource";
+                this.worker.animator.setGrab();
                 return;
             }
             if (!this.hasPathToTarget) {
@@ -70,21 +73,24 @@ class HarvestTask extends Task {
                 this.worker.currentPath = navGraph.path;
                 this.hasPathToTarget = this.worker.currentPath !== undefined;
                 this.worker.currentAction = "Going to resource";
+                this.worker.animator.setIdle();
             }
             if (this.hasPathToTarget) {
                 this.worker.moveOnPath();
                 this.worker.currentAction = "Going to resource";
+                this.worker.animator.setIdle();
             }
         }
         else {
             if (!this.depot) {
                 this.depot = this.worker.getScene().meshes.find((m) => { return m instanceof Container; }) as Container;
             }
-            if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth) {
+            if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth * this.depot.groundWidth) {
                 this.worker.inventory -= 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
                 this._isDropping = this.worker.inventory > 0;
                 this.hasPathToDepot = false;
                 this.worker.currentAction = "Droping in depot";
+                this.worker.animator.setDrop();
                 return;
             }
             if (!this.hasPathToDepot) {
@@ -94,10 +100,12 @@ class HarvestTask extends Task {
                 this.worker.currentPath = navGraph.path;
                 this.hasPathToDepot = this.worker.currentPath !== undefined;
                 this.worker.currentAction = "Going to depot";
+                this.worker.animator.setIdle();
             }
             if (this.hasPathToDepot) {
                 this.worker.moveOnPath();
                 this.worker.currentAction = "Going to depot";
+                this.worker.animator.setIdle();
             }
         }
     }
@@ -125,10 +133,11 @@ class BuildTask extends Task {
                 if (!this.depot) {
                     this.depot = this.worker.getScene().meshes.find((m) => { return m instanceof Container; }) as Container;
                 }
-                if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth) {
+                if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth * this.depot.groundWidth) {
                     this.worker.inventory += 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
                     this.hasPathToDepot = false;
                     this.worker.currentAction = "Fetching from depot";
+                    this.worker.animator.setGrab();
                     return;
                 }
                 if (!this.hasPathToDepot) {
@@ -138,19 +147,22 @@ class BuildTask extends Task {
                     this.worker.currentPath = navGraph.path;
                     this.hasPathToDepot = this.worker.currentPath !== undefined;
                     this.worker.currentAction = "Going to depot";
+                    this.worker.animator.setIdle();
                 }
                 if (this.hasPathToDepot) {
                     this.worker.moveOnPath();
                     this.worker.currentAction = "Going to depot";
+                    this.worker.animator.setIdle();
                 }
             }
             else {
-                if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth) {
+                if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth * this.target.groundWidth) {
                     this.target.resourcesAvailable += 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
                     this.worker.inventory -= 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
                     this._isDropping = this.worker.inventory > 0;
                     this.hasPathToTarget = false;
                     this.worker.currentAction = "Droping at building";
+                    this.worker.animator.setDrop();
                     return;
                 }
                 if (!this.hasPathToTarget) {
@@ -160,10 +172,12 @@ class BuildTask extends Task {
                     this.worker.currentPath = navGraph.path;
                     this.hasPathToTarget = this.worker.currentPath !== undefined;
                     this.worker.currentAction = "Going to building";
+                    this.worker.animator.setIdle();
                 }
                 if (this.hasPathToTarget) {
                     this.worker.moveOnPath();
                     this.worker.currentAction = "Going to building";
+                    this.worker.animator.setIdle();
                 }
             }
             return;
@@ -174,6 +188,7 @@ class BuildTask extends Task {
                 this.target.build(this.worker.buildRate * Main.Engine.getDeltaTime() / 1000);
                 this.hasPathToTarget = false;
                 this.worker.currentAction = "Building";
+                this.worker.animator.setBuild();
                 return;
             }
             if (!this.hasPathToTarget) {
@@ -183,15 +198,18 @@ class BuildTask extends Task {
                 this.worker.currentPath = navGraph.path;
                 this.hasPathToTarget = this.worker.currentPath !== undefined;
                 this.worker.currentAction = "Going to building";
+                this.worker.animator.setIdle();
             }
             if (this.hasPathToTarget) {
                 this.worker.moveOnPath();
                 this.worker.currentAction = "Going to building";
+                this.worker.animator.setIdle();
             }
             return;
         }
         
         this.worker.currentTask = undefined;
+        this.worker.animator.setIdle();
     }
 }
 

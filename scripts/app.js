@@ -1058,6 +1058,65 @@ class Character extends Draggable {
         this.alive = false;
     }
 }
+var DroneWorkerAnimState;
+(function (DroneWorkerAnimState) {
+    DroneWorkerAnimState[DroneWorkerAnimState["Idle"] = 0] = "Idle";
+    DroneWorkerAnimState[DroneWorkerAnimState["IdleGrab"] = 1] = "IdleGrab";
+    DroneWorkerAnimState[DroneWorkerAnimState["Grab"] = 2] = "Grab";
+    DroneWorkerAnimState[DroneWorkerAnimState["Drop"] = 3] = "Drop";
+    DroneWorkerAnimState[DroneWorkerAnimState["Build"] = 4] = "Build";
+})(DroneWorkerAnimState || (DroneWorkerAnimState = {}));
+class DroneWorkerAnimator {
+    constructor(target) {
+        this.target = target;
+        this._animationIdle();
+    }
+    _animationIdle() {
+        this.state = DroneWorkerAnimState.Idle;
+        Main.Scene.beginAnimation(this.target.skeleton, 1, 120, true, 1);
+    }
+    _animationIdleGrab() {
+        this.state = DroneWorkerAnimState.IdleGrab;
+        Main.Scene.beginAnimation(this.target.skeleton, 161, 220, true, 1);
+    }
+    _animationGrab() {
+        this.state = DroneWorkerAnimState.Grab;
+        Main.Scene.beginAnimation(this.target.skeleton, 121, 160, true, 1);
+    }
+    _animationDrop() {
+        this.state = DroneWorkerAnimState.Drop;
+        Main.Scene.beginAnimation(this.target.skeleton, 221, 280, true, 1);
+    }
+    _animationBuild() {
+        this.state = DroneWorkerAnimState.Build;
+        Main.Scene.beginAnimation(this.target.skeleton, 281, 400, true, 1);
+    }
+    setIdle() {
+        if (this.state !== DroneWorkerAnimState.Idle && this.state !== DroneWorkerAnimState.IdleGrab) {
+            if (this.target.inventory !== 0) {
+                this._animationIdleGrab();
+            }
+            else {
+                this._animationIdle();
+            }
+        }
+    }
+    setGrab() {
+        if (this.state !== DroneWorkerAnimState.Grab) {
+            this._animationGrab();
+        }
+    }
+    setDrop() {
+        if (this.state !== DroneWorkerAnimState.Drop) {
+            this._animationDrop();
+        }
+    }
+    setBuild() {
+        if (this.state !== DroneWorkerAnimState.Build) {
+            this._animationBuild();
+        }
+    }
+}
 class DroneWorker extends Character {
     constructor() {
         super("droneWorker");
@@ -1077,7 +1136,6 @@ class DroneWorker extends Character {
             this.position.z = this.position2D.y;
             this.rotation.y = -this.rotation2D;
         };
-        this._grabing = false;
         this.moveSpeed = 3;
         this.ui = new DroneWorkerUI(this);
         this.getScene().onBeforeRenderObservable.add(this._update);
@@ -1089,18 +1147,6 @@ class DroneWorker extends Character {
         this._inventory = n;
         this._inventory = Math.min(Math.max(this._inventory, 0), this.carriageCapacity);
         this.ui.update();
-        if (this._inventory === 0) {
-            console.log("idle");
-            this.animationIdle();
-        }
-        else if (this._inventory === this.carriageCapacity) {
-            console.log("grab idle");
-            this.animationGrabLoop();
-        }
-        else {
-            console.log("grab");
-            this.animationGrab();
-        }
     }
     get currentAction() {
         return this._currentAction;
@@ -1115,7 +1161,7 @@ class DroneWorker extends Character {
         let loadedFile = await BABYLON.SceneLoader.ImportMeshAsync("", "./datas/worker.babylon", "", Main.Scene);
         loadedFile.meshes[0].dispose();
         this.skeleton = loadedFile.skeletons[0];
-        this.animationGrab();
+        this.animator = new DroneWorkerAnimator(this);
         this.material = Main.cellShadingMaterial;
         this.groundWidth = 1;
         this.height = 1;
@@ -1158,21 +1204,6 @@ class DroneWorker extends Character {
                 this.rotation2D = Math2D.StepFromToCirular(this.rotation2D, rotationToNext, Math.PI / 60);
             }
         }
-    }
-    animationIdle() {
-        this._grabing = false;
-        Main.Scene.beginAnimation(this.skeleton, 1, 120, true, 1);
-    }
-    animationGrab() {
-        if (this._grabing) {
-            return;
-        }
-        this._grabing = true;
-        Main.Scene.beginAnimation(this.skeleton, 121, 160, true, 1);
-    }
-    animationGrabLoop() {
-        this._grabing = false;
-        Main.Scene.beginAnimation(this.skeleton, 161, 220, true, 1);
     }
 }
 class Fongus extends Character {
@@ -1418,10 +1449,12 @@ class GoToTask extends Task {
             this.worker.currentPath = navGraph.path;
             this.hasPathToTarget = this.worker.currentPath !== undefined;
             this.worker.currentAction = "Going to " + this.target.x.toFixed(1) + " " + this.target.y.toFixed(1);
+            this.worker.animator.setIdle();
         }
         if (this.hasPathToTarget) {
             this.worker.moveOnPath();
             this.worker.currentAction = "Going to " + this.target.x.toFixed(1) + " " + this.target.y.toFixed(1);
+            this.worker.animator.setIdle();
         }
     }
 }
@@ -1435,10 +1468,11 @@ class HarvestTask extends Task {
     }
     update() {
         if (!this._isDropping && this.worker.inventory < this.worker.carriageCapacity) {
-            if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth) {
+            if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth * this.target.groundWidth) {
                 this.worker.inventory += this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
                 this.hasPathToTarget = false;
                 this.worker.currentAction = "Harvesting resource";
+                this.worker.animator.setGrab();
                 return;
             }
             if (!this.hasPathToTarget) {
@@ -1448,21 +1482,24 @@ class HarvestTask extends Task {
                 this.worker.currentPath = navGraph.path;
                 this.hasPathToTarget = this.worker.currentPath !== undefined;
                 this.worker.currentAction = "Going to resource";
+                this.worker.animator.setIdle();
             }
             if (this.hasPathToTarget) {
                 this.worker.moveOnPath();
                 this.worker.currentAction = "Going to resource";
+                this.worker.animator.setIdle();
             }
         }
         else {
             if (!this.depot) {
                 this.depot = this.worker.getScene().meshes.find((m) => { return m instanceof Container; });
             }
-            if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth) {
+            if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth * this.depot.groundWidth) {
                 this.worker.inventory -= 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
                 this._isDropping = this.worker.inventory > 0;
                 this.hasPathToDepot = false;
                 this.worker.currentAction = "Droping in depot";
+                this.worker.animator.setDrop();
                 return;
             }
             if (!this.hasPathToDepot) {
@@ -1472,10 +1509,12 @@ class HarvestTask extends Task {
                 this.worker.currentPath = navGraph.path;
                 this.hasPathToDepot = this.worker.currentPath !== undefined;
                 this.worker.currentAction = "Going to depot";
+                this.worker.animator.setIdle();
             }
             if (this.hasPathToDepot) {
                 this.worker.moveOnPath();
                 this.worker.currentAction = "Going to depot";
+                this.worker.animator.setIdle();
             }
         }
     }
@@ -1495,10 +1534,11 @@ class BuildTask extends Task {
                 if (!this.depot) {
                     this.depot = this.worker.getScene().meshes.find((m) => { return m instanceof Container; });
                 }
-                if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth) {
+                if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth * this.depot.groundWidth) {
                     this.worker.inventory += 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
                     this.hasPathToDepot = false;
                     this.worker.currentAction = "Fetching from depot";
+                    this.worker.animator.setGrab();
                     return;
                 }
                 if (!this.hasPathToDepot) {
@@ -1508,19 +1548,22 @@ class BuildTask extends Task {
                     this.worker.currentPath = navGraph.path;
                     this.hasPathToDepot = this.worker.currentPath !== undefined;
                     this.worker.currentAction = "Going to depot";
+                    this.worker.animator.setIdle();
                 }
                 if (this.hasPathToDepot) {
                     this.worker.moveOnPath();
                     this.worker.currentAction = "Going to depot";
+                    this.worker.animator.setIdle();
                 }
             }
             else {
-                if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth) {
+                if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth * this.target.groundWidth) {
                     this.target.resourcesAvailable += 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
                     this.worker.inventory -= 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
                     this._isDropping = this.worker.inventory > 0;
                     this.hasPathToTarget = false;
                     this.worker.currentAction = "Droping at building";
+                    this.worker.animator.setDrop();
                     return;
                 }
                 if (!this.hasPathToTarget) {
@@ -1530,10 +1573,12 @@ class BuildTask extends Task {
                     this.worker.currentPath = navGraph.path;
                     this.hasPathToTarget = this.worker.currentPath !== undefined;
                     this.worker.currentAction = "Going to building";
+                    this.worker.animator.setIdle();
                 }
                 if (this.hasPathToTarget) {
                     this.worker.moveOnPath();
                     this.worker.currentAction = "Going to building";
+                    this.worker.animator.setIdle();
                 }
             }
             return;
@@ -1543,6 +1588,7 @@ class BuildTask extends Task {
                 this.target.build(this.worker.buildRate * Main.Engine.getDeltaTime() / 1000);
                 this.hasPathToTarget = false;
                 this.worker.currentAction = "Building";
+                this.worker.animator.setBuild();
                 return;
             }
             if (!this.hasPathToTarget) {
@@ -1552,14 +1598,17 @@ class BuildTask extends Task {
                 this.worker.currentPath = navGraph.path;
                 this.hasPathToTarget = this.worker.currentPath !== undefined;
                 this.worker.currentAction = "Going to building";
+                this.worker.animator.setIdle();
             }
             if (this.hasPathToTarget) {
                 this.worker.moveOnPath();
                 this.worker.currentAction = "Going to building";
+                this.worker.animator.setIdle();
             }
             return;
         }
         this.worker.currentTask = undefined;
+        this.worker.animator.setIdle();
     }
 }
 class DroneWorkerUI {
