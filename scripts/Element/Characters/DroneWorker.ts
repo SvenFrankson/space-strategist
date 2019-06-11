@@ -10,6 +10,12 @@ class DroneWorker extends Character {
         return this._inventory;
     }
     public set inventory(n: number) {
+        if (this._inventory === 0 && n > 0) {
+            this.animationGrab();
+        }
+        else if (this._inventory > 0 && n === 0) {
+            this.animationIdle();
+        }
         this._inventory = n;
         this._inventory = Math.min(Math.max(this._inventory, 0), this.carriageCapacity);
         this.ui.update();
@@ -49,7 +55,7 @@ class DroneWorker extends Character {
         loadedFile.meshes[0].dispose();
         this.skeleton = loadedFile.skeletons[0];
 
-        Main.Scene.beginAnimation(this.skeleton, 0, 100, true, 1);
+        this.animationIdle();
         
         this.material = Main.cellShadingMaterial;
         this.groundWidth = 1;
@@ -110,5 +116,21 @@ class DroneWorker extends Character {
                 this.rotation2D = Math2D.StepFromToCirular(this.rotation2D, rotationToNext, Math.PI / 60);
             }
         }
+    }
+
+    public animationIdle(): void {
+        Main.Scene.beginAnimation(this.skeleton, 1, 120, true, 1);
+    }
+
+    public animationGrab(): void {
+        Main.Scene.beginAnimation(this.skeleton, 121, 160, false, 1,
+            () => {
+                this.animationGrabLoop()
+            }
+        );
+    }
+
+    public animationGrabLoop(): void {
+        Main.Scene.beginAnimation(this.skeleton, 161, 220, true, 1);
     }
 }

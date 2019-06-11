@@ -18,30 +18,32 @@ Exporter version: 5.4.2, Blender version: 2.78 (sub 0)
 		processing begun of bone:  UpArmR, index:  7
 		processing begun of bone:  ArmR, index:  8
 		processing begun of bone:  HandR, index:  9
-		processing action ArmatureAction:  in[1 - 100], out[0 - 100]
-		processing action ArmatureAction.001:  in[1 - 100], out[110 - 210]
-		processing action ArmatureAction.002:  in[1 - 100], out[220 - 320]
+		processing action ArmatureAction:  in[1 - 220], out[0 - 220]
+		processing action ArmatureAction.001:  in[1 - 220], out[230 - 450]
+		processing action ArmatureAction.002:  in[1 - 120], out[460 - 580]
+		processing action ArmatureAction.003:  in[1 - 220], out[590 - 810]
+		processing action ArmatureAction.004:  in[1 - 220], out[820 - 1040]
 	WARNING: The following armature not visible in scene thus ignored: Armature
-	processing begun of mesh:  arm.001
+	processing begun of mesh:  wheels.001
 		processing begun of Standard material:  Color2
 		processing begun of Standard material:  Frame
 		processing begun of Standard material:  Base
 		processing begun of Standard material:  Color1
 		processing begun of Standard material:  Color3
 		processing begun of multimaterial:  worker.Multimaterial#0
-		num positions      :  1228
-		num normals        :  1228
+		num positions      :  1229
+		num normals        :  1229
 		num uvs            :  0
 		num uvs2           :  0
-		num colors         :  4912
+		num colors         :  4916
 		num indices        :  6450
 		Skeleton stats:  
-			Total Influencers:  2519
-			Avg # of influencers per vertex:  2.0513
+			Total Influencers:  2539
+			Avg # of influencers per vertex:  2.0659
 			Highest # of influencers observed:  4, num vertices with this:  47
 			exported as 4 influencers
-			num skeletonWeights and skeletonIndices:  4912
+			num skeletonWeights and skeletonIndices:  4916
 ========= Writing of scene file started =========
 ========= Writing of scene file completed =========
 ========= end of processing =========
-elapsed time:  0 min, 1.615 secs
+elapsed time:  0 min, 2.8047 secs
