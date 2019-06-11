@@ -10,15 +10,21 @@ class DroneWorker extends Character {
         return this._inventory;
     }
     public set inventory(n: number) {
-        if (this._inventory === 0 && n > 0) {
-            this.animationGrab();
-        }
-        else if (this._inventory > 0 && n === 0) {
-            this.animationIdle();
-        }
         this._inventory = n;
         this._inventory = Math.min(Math.max(this._inventory, 0), this.carriageCapacity);
         this.ui.update();
+        if (this._inventory === 0) {
+            console.log("idle");
+            this.animationIdle();
+        }
+        else if (this._inventory === this.carriageCapacity) {
+            console.log("grab idle");
+            this.animationGrabLoop();
+        }
+        else {
+            console.log("grab");
+            this.animationGrab();
+        }
     }
 
     public currentTask: Task;
@@ -55,7 +61,7 @@ class DroneWorker extends Character {
         loadedFile.meshes[0].dispose();
         this.skeleton = loadedFile.skeletons[0];
 
-        this.animationIdle();
+        this.animationGrab();
         
         this.material = Main.cellShadingMaterial;
         this.groundWidth = 1;
@@ -118,19 +124,22 @@ class DroneWorker extends Character {
         }
     }
 
+    private _grabing: boolean = false;
     public animationIdle(): void {
+        this._grabing = false;
         Main.Scene.beginAnimation(this.skeleton, 1, 120, true, 1);
     }
 
     public animationGrab(): void {
-        Main.Scene.beginAnimation(this.skeleton, 121, 160, false, 1,
-            () => {
-                this.animationGrabLoop()
-            }
-        );
+        if (this._grabing) {
+            return;
+        }
+        this._grabing = true;
+        Main.Scene.beginAnimation(this.skeleton, 121, 160, true, 1);
     }
 
     public animationGrabLoop(): void {
+        this._grabing = false;
         Main.Scene.beginAnimation(this.skeleton, 161, 220, true, 1);
     }
 }

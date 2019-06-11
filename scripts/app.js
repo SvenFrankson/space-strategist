@@ -1077,6 +1077,7 @@ class DroneWorker extends Character {
             this.position.z = this.position2D.y;
             this.rotation.y = -this.rotation2D;
         };
+        this._grabing = false;
         this.moveSpeed = 3;
         this.ui = new DroneWorkerUI(this);
         this.getScene().onBeforeRenderObservable.add(this._update);
@@ -1085,15 +1086,21 @@ class DroneWorker extends Character {
         return this._inventory;
     }
     set inventory(n) {
-        if (this._inventory === 0 && n > 0) {
-            this.animationGrab();
-        }
-        else if (this._inventory > 0 && n === 0) {
-            this.animationIdle();
-        }
         this._inventory = n;
         this._inventory = Math.min(Math.max(this._inventory, 0), this.carriageCapacity);
         this.ui.update();
+        if (this._inventory === 0) {
+            console.log("idle");
+            this.animationIdle();
+        }
+        else if (this._inventory === this.carriageCapacity) {
+            console.log("grab idle");
+            this.animationGrabLoop();
+        }
+        else {
+            console.log("grab");
+            this.animationGrab();
+        }
     }
     get currentAction() {
         return this._currentAction;
@@ -1108,7 +1115,7 @@ class DroneWorker extends Character {
         let loadedFile = await BABYLON.SceneLoader.ImportMeshAsync("", "./datas/worker.babylon", "", Main.Scene);
         loadedFile.meshes[0].dispose();
         this.skeleton = loadedFile.skeletons[0];
-        this.animationIdle();
+        this.animationGrab();
         this.material = Main.cellShadingMaterial;
         this.groundWidth = 1;
         this.height = 1;
@@ -1153,14 +1160,18 @@ class DroneWorker extends Character {
         }
     }
     animationIdle() {
+        this._grabing = false;
         Main.Scene.beginAnimation(this.skeleton, 1, 120, true, 1);
     }
     animationGrab() {
-        Main.Scene.beginAnimation(this.skeleton, 121, 160, false, 1, () => {
-            this.animationGrabLoop();
-        });
+        if (this._grabing) {
+            return;
+        }
+        this._grabing = true;
+        Main.Scene.beginAnimation(this.skeleton, 121, 160, true, 1);
     }
     animationGrabLoop() {
+        this._grabing = false;
         Main.Scene.beginAnimation(this.skeleton, 161, 220, true, 1);
     }
 }

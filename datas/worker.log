@@ -23,6 +23,7 @@ Exporter version: 5.4.2, Blender version: 2.78 (sub 0)
 		processing action ArmatureAction.002:  in[1 - 120], out[460 - 580]
 		processing action ArmatureAction.003:  in[1 - 220], out[590 - 810]
 		processing action ArmatureAction.004:  in[1 - 220], out[820 - 1040]
+		processing action ArmatureAction.005:  in[1 - 220], out[1050 - 1270]
 	WARNING: The following armature not visible in scene thus ignored: Armature
 	processing begun of mesh:  wheels.001
 		processing begun of Standard material:  Color2
@@ -31,19 +32,19 @@ Exporter version: 5.4.2, Blender version: 2.78 (sub 0)
 		processing begun of Standard material:  Color1
 		processing begun of Standard material:  Color3
 		processing begun of multimaterial:  worker.Multimaterial#0
-		num positions      :  1229
-		num normals        :  1229
+		num positions      :  1226
+		num normals        :  1226
 		num uvs            :  0
 		num uvs2           :  0
-		num colors         :  4916
+		num colors         :  4904
 		num indices        :  6450
 		Skeleton stats:  
-			Total Influencers:  2539
-			Avg # of influencers per vertex:  2.0659
+			Total Influencers:  2530
+			Avg # of influencers per vertex:  2.0636
 			Highest # of influencers observed:  4, num vertices with this:  47
 			exported as 4 influencers
-			num skeletonWeights and skeletonIndices:  4916
+			num skeletonWeights and skeletonIndices:  4904
 ========= Writing of scene file started =========
 ========= Writing of scene file completed =========
 ========= end of processing =========
-elapsed time:  0 min, 2.8047 secs
+elapsed time:  0 min, 3.37 secs
