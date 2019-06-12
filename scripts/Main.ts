@@ -50,8 +50,8 @@ class Main {
 		Main.Scene.onBeforeRenderObservable.add(
 			() => {
 				if (Main.CameraTarget) {
-					Main.Camera.target.x = Main.CameraTarget.position.x;
-					Main.Camera.target.z = Main.CameraTarget.position.z;
+					Main.Camera.target.x = Main.Camera.target.x * 0.9 + Main.CameraTarget.position.x * 0.1;
+					Main.Camera.target.z = Main.Camera.target.z * 0.9 + Main.CameraTarget.position.z * 0.1;
 				}
 				Main.Camera.target.y = 0;
 				let pointerTop = Main.Scene.pointerY;

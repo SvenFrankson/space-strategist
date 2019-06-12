@@ -31,8 +31,8 @@ class Main {
         Main.Camera.wheelPrecision *= 8;
         Main.Scene.onBeforeRenderObservable.add(() => {
             if (Main.CameraTarget) {
-                Main.Camera.target.x = Main.CameraTarget.position.x;
-                Main.Camera.target.z = Main.CameraTarget.position.z;
+                Main.Camera.target.x = Main.Camera.target.x * 0.9 + Main.CameraTarget.position.x * 0.1;
+                Main.Camera.target.z = Main.Camera.target.z * 0.9 + Main.CameraTarget.position.z * 0.1;
             }
             Main.Camera.target.y = 0;
             let pointerTop = Main.Scene.pointerY;
@@ -1715,6 +1715,7 @@ class DroneWorkerUI {
                 this._ghostProp = undefined;
             };
         });
+        this._panel.addLargeButton("LOOK AT", () => { Main.CameraTarget = this.target; });
         this._selector = ShapeDraw.CreateCircle(1.05, 1.2);
         this.target.getScene().onBeforeRenderObservable.add(this._update);
         console.log("Enable DroneWorker Panel");
@@ -2596,6 +2597,7 @@ class ContainerUI {
         this._panel.setTarget(this.target);
         this._panel.addTitle1(this.target.elementName().toLocaleUpperCase());
         this._panel.addTitle2(this.target.name.toLocaleUpperCase());
+        this._panel.addLargeButton("LOOK AT", () => { Main.CameraTarget = this.target; });
         this._selector = ShapeDraw.CreateCircle(this.target.groundWidth * Math.SQRT2 * 0.5, this.target.groundWidth * Math.SQRT2 * 0.5 + 0.15);
         this._selector.position.copyFromFloats(this.target.position2D.x, 0.1, this.target.position2D.y);
     }
@@ -2613,6 +2615,7 @@ class TankUI {
         this._panel.setTarget(this.target);
         this._panel.addTitle1(this.target.elementName().toLocaleUpperCase());
         this._panel.addTitle2(this.target.name.toLocaleUpperCase());
+        this._panel.addLargeButton("LOOK AT", () => { Main.CameraTarget = this.target; });
         this._selector = ShapeDraw.CreateCircle(this.target.groundWidth * Math.SQRT2 * 0.5, this.target.groundWidth * Math.SQRT2 * 0.5 + 0.15);
         this._selector.position.copyFromFloats(this.target.position2D.x, 0.1, this.target.position2D.y);
     }
@@ -2630,6 +2633,7 @@ class TurretUI {
         this._panel.setTarget(this.target);
         this._panel.addTitle1(this.target.elementName().toLocaleUpperCase());
         this._panel.addTitle2(this.target.name.toLocaleUpperCase());
+        this._panel.addLargeButton("LOOK AT", () => { Main.CameraTarget = this.target; });
         this._selector = ShapeDraw.CreateCircle(this.target.groundWidth * Math.SQRT2 * 0.5, this.target.groundWidth * Math.SQRT2 * 0.5 + 0.15);
         this._selector.position.copyFromFloats(this.target.position2D.x, 0.1, this.target.position2D.y);
     }
