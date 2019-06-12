@@ -7,6 +7,7 @@ class Main {
     public static Scene: BABYLON.Scene;
 	public static Light: BABYLON.Light;
 	public static Camera: BABYLON.ArcRotateCamera;
+	public static CameraTarget: BABYLON.Mesh;
 	public static Ground: Ground;
 
     public static _cellShadingMaterial: BABYLON.CellMaterial;
@@ -41,6 +42,20 @@ class Main {
         Main.Camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 1, new BABYLON.Vector3(0, 0, 0), Main.Scene);
         Main.Camera.setPosition(new BABYLON.Vector3(0, 5, - 10));
 		Main.Camera.attachControl(Main.Canvas, true);
+		Main.Camera.lowerRadiusLimit = 6;
+		Main.Camera.upperRadiusLimit = 20;
+		Main.Camera.upperBetaLimit = 2 * Math.PI / 5;
+		Main.Camera.wheelPrecision *= 8;
+
+		Main.Scene.onBeforeRenderObservable.add(
+			() => {
+				if (Main.CameraTarget) {
+					Main.Camera.target.x = Main.CameraTarget.position.x;
+					Main.Camera.target.z = Main.CameraTarget.position.z;
+				}
+				Main.Camera.target.y = 0;
+			}
+		)
 
         BABYLON.Effect.ShadersStore["EdgeFragmentShader"] = `
 			#ifdef GL_ES

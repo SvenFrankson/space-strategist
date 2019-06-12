@@ -25,6 +25,17 @@ class Main {
         Main.Camera = new BABYLON.ArcRotateCamera("camera1", 0, 0, 1, new BABYLON.Vector3(0, 0, 0), Main.Scene);
         Main.Camera.setPosition(new BABYLON.Vector3(0, 5, -10));
         Main.Camera.attachControl(Main.Canvas, true);
+        Main.Camera.lowerRadiusLimit = 6;
+        Main.Camera.upperRadiusLimit = 20;
+        Main.Camera.upperBetaLimit = 2 * Math.PI / 5;
+        Main.Camera.wheelPrecision *= 8;
+        Main.Scene.onBeforeRenderObservable.add(() => {
+            if (Main.CameraTarget) {
+                Main.Camera.target.x = Main.CameraTarget.position.x;
+                Main.Camera.target.z = Main.CameraTarget.position.z;
+            }
+            Main.Camera.target.y = 0;
+        });
         BABYLON.Effect.ShadersStore["EdgeFragmentShader"] = `
 			#ifdef GL_ES
 			precision highp float;
@@ -492,6 +503,7 @@ class PerformanceConsole {
         this._meshesCount = 0;
         this._turretsCount = 0;
         this._fongisCount = 0;
+        this._pointerPos = "";
         this._timer5s = 0;
         this._lastT = NaN;
         this._update = () => {
@@ -519,6 +531,8 @@ class PerformanceConsole {
             this._turretsCountInput.value = this._turretsCount.toFixed(0);
             this._fongisCount = Fongus.Instances.length;
             this._fongisCountInput.value = this._fongisCount.toFixed(0);
+            this._pointerPos = "X " + Main.Scene.pointerX.toFixed(0) + " Y " + Main.Scene.pointerY.toFixed(0);
+            this._pointerPosInput.value = this._pointerPos;
         };
     }
     enable() {
@@ -530,12 +544,10 @@ class PerformanceConsole {
         this._maxFrameLast5sInput = this._panel.addNumberInput("MAX LAST 5s", this._maxFrameLast5s);
         this._panel.addTitle2("SCENE");
         this._meshesCountInput = this._panel.addNumberInput("MESHES", this._meshesCount);
-        this._panel.style.right = "10px";
-        this._panel.style.top = "10px";
         this._turretsCountInput = this._panel.addNumberInput("TURRETS", this._turretsCount);
-        this._panel.style.right = "10px";
-        this._panel.style.top = "10px";
         this._fongisCountInput = this._panel.addNumberInput("FONGIS", this._fongisCount);
+        this._panel.addTitle2("POINTER");
+        this._pointerPosInput = this._panel.addTextInput("POINTER", this._pointerPos);
         this._panel.style.right = "10px";
         this._panel.style.top = "10px";
         this.scene.onBeforeRenderObservable.add(this._update);

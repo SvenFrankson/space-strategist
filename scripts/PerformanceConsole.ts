@@ -14,6 +14,8 @@ class PerformanceConsole {
     private _turretsCount: number = 0;
     private _fongisCountInput: HTMLInputElement;
     private _fongisCount: number = 0;
+    private _pointerPosInput: HTMLInputElement;
+    private _pointerPos: string = "";
 
     constructor(public scene: BABYLON.Scene) {
         
@@ -28,12 +30,11 @@ class PerformanceConsole {
         this._maxFrameLast5sInput = this._panel.addNumberInput("MAX LAST 5s", this._maxFrameLast5s);
         this._panel.addTitle2("SCENE");
         this._meshesCountInput = this._panel.addNumberInput("MESHES", this._meshesCount);
-        this._panel.style.right = "10px";
-        this._panel.style.top = "10px";
         this._turretsCountInput = this._panel.addNumberInput("TURRETS", this._turretsCount);
-        this._panel.style.right = "10px";
-        this._panel.style.top = "10px";
         this._fongisCountInput = this._panel.addNumberInput("FONGIS", this._fongisCount);
+        this._panel.addTitle2("POINTER");
+        this._pointerPosInput = this._panel.addTextInput("POINTER", this._pointerPos);
+
         this._panel.style.right = "10px";
         this._panel.style.top = "10px";
 
@@ -78,5 +79,8 @@ class PerformanceConsole {
 
         this._fongisCount = Fongus.Instances.length;
         this._fongisCountInput.value = this._fongisCount.toFixed(0);
+
+        this._pointerPos = "X " + Main.Scene.pointerX.toFixed(0) + " Y " + Main.Scene.pointerY.toFixed(0);
+        this._pointerPosInput.value = this._pointerPos;
     }
 }
