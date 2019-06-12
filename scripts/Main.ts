@@ -54,6 +54,43 @@ class Main {
 					Main.Camera.target.z = Main.CameraTarget.position.z;
 				}
 				Main.Camera.target.y = 0;
+				let pointerTop = Main.Scene.pointerY;
+				let pointerLeft = Main.Scene.pointerX;
+				let pointerBottom = Main.Canvas.height - Main.Scene.pointerY;
+				let pointerRight = Main.Canvas.width - Main.Scene.pointerX;
+
+				if (pointerTop < 50) {
+					Main.CameraTarget = undefined;
+					let groundForward = Main.Camera.getDirection(BABYLON.Axis.Z);
+					groundForward.y = 0;
+					groundForward.normalize();
+					groundForward.scaleInPlace(Main.Engine.getDeltaTime() / 1000 * 10 * (50 - pointerTop) / 50);
+					Main.Camera.target.addInPlace(groundForward);
+				}
+				if (pointerBottom < 50) {
+					Main.CameraTarget = undefined;
+					let groundBackward = Main.Camera.getDirection(BABYLON.Axis.Z);
+					groundBackward.y = 0;
+					groundBackward.normalize();
+					groundBackward.scaleInPlace(- Main.Engine.getDeltaTime() / 1000 *  10 * (50 - pointerBottom) / 50);
+					Main.Camera.target.addInPlace(groundBackward);
+				}
+				if (pointerLeft < 50) {
+					Main.CameraTarget = undefined;
+					let groundLeft = Main.Camera.getDirection(BABYLON.Axis.X);
+					groundLeft.y = 0;
+					groundLeft.normalize();
+					groundLeft.scaleInPlace(- Main.Engine.getDeltaTime() / 1000 * 10 * (50 - pointerLeft) / 50);
+					Main.Camera.target.addInPlace(groundLeft);
+				}
+				if (pointerRight < 50) {
+					Main.CameraTarget = undefined;
+					let groundRight = Main.Camera.getDirection(BABYLON.Axis.X);
+					groundRight.y = 0;
+					groundRight.normalize();
+					groundRight.scaleInPlace(Main.Engine.getDeltaTime() / 1000 *  10 * (50 - pointerRight) / 50);
+					Main.Camera.target.addInPlace(groundRight);
+				}
 			}
 		)
 
