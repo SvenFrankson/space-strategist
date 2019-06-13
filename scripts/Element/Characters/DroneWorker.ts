@@ -79,6 +79,16 @@ class DroneWorker extends Character {
     public harvestRate: number = 2;
     public buildRate: number = 1;
     public carriageCapacity: number = 10;
+    private _carriedResource: Resource;
+    public get carriedResource(): Resource {
+        return this._carriedResource;
+    }
+    public set carriedResource(t: Resource) {
+        if (t !== this._carriedResource) {
+            this.inventory = 0;
+        }
+        this._carriedResource = t;
+    }
     private _inventory: number = 0;
     public get inventory(): number {
         return this._inventory;
@@ -102,8 +112,8 @@ class DroneWorker extends Character {
         this.ui.update();
     }
 
-    constructor() {
-        super("droneWorker");
+    constructor(owner: Player) {
+        super("droneWorker", owner);
         this.moveSpeed = 3;
         this.ui = new DroneWorkerUI(this);
         this.getScene().onBeforeRenderObservable.add(this._update);

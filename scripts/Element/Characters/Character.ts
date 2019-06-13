@@ -2,13 +2,16 @@
 
 class Character extends Draggable {
 
+    public owner: Player;
+
     public moveSpeed: number = 1;
     public stamina: number = 20;
     public currentHitPoint: number = 20;
     public alive: boolean = true;
 
-    constructor(name: string = "") {
+    constructor(name: string = "", owner: Player) {
         super(name);
+        this.owner = owner;
     }
 
     public wound(amount: number = 1): void {

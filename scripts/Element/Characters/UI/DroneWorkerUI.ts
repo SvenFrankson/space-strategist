@@ -26,12 +26,12 @@ class DroneWorkerUI {
         this._inventoryInput = this._panel.addTextInput("CRISTAL", this.target.inventory.toFixed(0) + "/" + this.target.carriageCapacity.toFixed(0));
         this._currentActionInput = this._panel.addTextInput("ACTION", this.target.currentAction);
         this._panel.addLargeButton("BUILD CONTAINER", () => {
-            this._ghostProp = new Container("ghost", BABYLON.Vector2.Zero(), 0);
+            this._ghostProp = new Container("ghost", this.target.owner, BABYLON.Vector2.Zero(), 0);
             this._ghostProp.instantiate();
             this._ghostProp.setVisibility(0);
             this._ghostProp.isPickable = false;
             this._onRightClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
-                let container = new Container("", pickedPoint, 0);
+                let container = new Container("", this.target.owner, pickedPoint, 0);
                 container.instantiateBuilding();
                 this.target.currentTask = new BuildTask(this.target, container);
                 this._ghostProp.dispose();
@@ -39,12 +39,12 @@ class DroneWorkerUI {
             }
         });
         this._panel.addLargeButton("BUILD TANK", () => {
-            this._ghostProp = new Tank("ghost", BABYLON.Vector2.Zero(), 0);
+            this._ghostProp = new Tank("ghost", this.target.owner, BABYLON.Vector2.Zero(), 0);
             this._ghostProp.instantiate();
             this._ghostProp.setVisibility(0);
             this._ghostProp.isPickable = false;
             this._onRightClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
-                let tank = new Tank("", pickedPoint, 0);
+                let tank = new Tank("", this.target.owner, pickedPoint, 0);
                 tank.instantiateBuilding();
                 this.target.currentTask = new BuildTask(this.target, tank);
                 this._ghostProp.dispose();
@@ -52,12 +52,12 @@ class DroneWorkerUI {
             }
         });
         this._panel.addLargeButton("BUILD TURRET", () => {
-            this._ghostProp = new Turret("ghost", BABYLON.Vector2.Zero(), 0);
+            this._ghostProp = new Turret("ghost", this.target.owner, BABYLON.Vector2.Zero(), 0);
             this._ghostProp.instantiate();
             this._ghostProp.setVisibility(0);
             this._ghostProp.isPickable = false;
             this._onRightClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
-                let turret = new Turret("", pickedPoint, 0);
+                let turret = new Turret("", this.target.owner, pickedPoint, 0);
                 turret.instantiateBuilding();
                 this.target.currentTask = new BuildTask(this.target, turret);
                 this._ghostProp.dispose();

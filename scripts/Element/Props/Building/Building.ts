@@ -1,6 +1,8 @@
 /// <reference path="../Prop.ts"/>
 
 abstract class Building extends Prop {
+
+    public owner: Player;
     
     public currentCompletion: number = 0;
     public completionRequired: number = 20;
@@ -9,8 +11,9 @@ abstract class Building extends Prop {
 
     private _areaMesh: BABYLON.Mesh;
 
-    constructor(name: string, position2D: BABYLON.Vector2, rotation2D: number) {
+    constructor(name: string, owner: Player, position2D: BABYLON.Vector2, rotation2D: number) {
         super(name, position2D, rotation2D);
+        this.owner = owner;
     }
 
     public abstract async instantiate(): Promise<void>;

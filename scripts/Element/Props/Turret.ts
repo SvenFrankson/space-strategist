@@ -23,8 +23,8 @@ class Turret extends Building {
     private _targetAzimut: number = 0;
     private _targetElevation: number = 0;
 
-    constructor(name: string, position2D: BABYLON.Vector2, rotation2D: number) {
-        super(name, position2D, rotation2D);
+    constructor(name: string, owner: Player, position2D: BABYLON.Vector2, rotation2D: number) {
+        super(name, owner, position2D, rotation2D);
         if (this.name === "") {
             let turretCount = this.getScene().meshes.filter((m) => { return m instanceof Turret; }).length;
             this.name = "turret-" + turretCount;

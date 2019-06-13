@@ -60,6 +60,7 @@ class HarvestTask extends Task {
     public update(): void {
         if (!this._isDropping && this.worker.inventory < this.worker.carriageCapacity) {
             if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth * this.target.groundWidth) {
+                this.worker.carriedResource = Resource.Cristal;
                 this.worker.inventory += this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
                 this.hasPathToTarget = false;
                 this.worker.currentAction = "Harvesting resource";
@@ -86,7 +87,9 @@ class HarvestTask extends Task {
                 this.depot = this.worker.getScene().meshes.find((m) => { return m instanceof Container; }) as Container;
             }
             if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth * this.depot.groundWidth) {
-                this.worker.inventory -= 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
+                let r = 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
+                this.worker.inventory -= r;
+                this.worker.owner.currentCristal += r;
                 this._isDropping = this.worker.inventory > 0;
                 this.hasPathToDepot = false;
                 this.worker.currentAction = "Droping in depot";
@@ -134,7 +137,9 @@ class BuildTask extends Task {
                     this.depot = this.worker.getScene().meshes.find((m) => { return m instanceof Container; }) as Container;
                 }
                 if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth * this.depot.groundWidth) {
-                    this.worker.inventory += 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
+                    let r = 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
+                    this.worker.inventory += r;
+                    this.worker.owner.currentSteel -= r;
                     this.hasPathToDepot = false;
                     this.worker.currentAction = "Fetching from depot";
                     this.worker.animator.setGrab();
@@ -157,8 +162,9 @@ class BuildTask extends Task {
             }
             else {
                 if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth * this.target.groundWidth) {
-                    this.target.resourcesAvailable += 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
-                    this.worker.inventory -= 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
+                    let r = 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
+                    this.target.resourcesAvailable += r;
+                    this.worker.inventory -= r;
                     this._isDropping = this.worker.inventory > 0;
                     this.hasPathToTarget = false;
                     this.worker.currentAction = "Droping at building";

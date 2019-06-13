@@ -156,10 +156,12 @@ class Main {
         new VertexDataLoader(Main.Scene);
         new NavGraphManager();
 
+		let player = new Player();
+
         let wallSystem = new WallSystem();
         if (window.localStorage.getItem("scene-data")) {
             let data = JSON.parse(window.localStorage.getItem("scene-data"));
-            await Serializer.Deserialize(Main.Scene, data);
+            await Serializer.Deserialize(Main.Scene, data, player);
         }
 
         //let sceneEditor = new SceneEditor(wallSystem, Main.Scene);
@@ -178,7 +180,7 @@ class Main {
         fongus.position2D = new BABYLON.Vector2(0, -10);
         fongus.instantiate();
 
-        let worker = new DroneWorker();
+        let worker = new DroneWorker(player);
         worker.position2D = new BABYLON.Vector2(0, -10);
 		worker.instantiate();
     }

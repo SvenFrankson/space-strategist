@@ -47,10 +47,10 @@ class Serializer {
         return data;
     }
 
-    public static async Deserialize(scene: BABYLON.Scene, data: SceneData): Promise<void> {
+    public static async Deserialize(scene: BABYLON.Scene, data: SceneData, owner: Player): Promise<void> {
         let propsData = data.props;
         for (let i = 0; i < propsData.length; i++) {
-            let prop = Prop.Deserialize(propsData[i]);
+            let prop = Prop.Deserialize(propsData[i], owner);
             await prop.instantiate();
             prop.addToScene();
         }

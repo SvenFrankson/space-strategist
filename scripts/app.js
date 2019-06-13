@@ -128,10 +128,11 @@ class Main {
         Main.Ground.material = Main.groundMaterial;
         new VertexDataLoader(Main.Scene);
         new NavGraphManager();
+        let player = new Player();
         let wallSystem = new WallSystem();
         if (window.localStorage.getItem("scene-data")) {
             let data = JSON.parse(window.localStorage.getItem("scene-data"));
-            await Serializer.Deserialize(Main.Scene, data);
+            await Serializer.Deserialize(Main.Scene, data, player);
         }
         //let sceneEditor = new SceneEditor(wallSystem, Main.Scene);
         //sceneEditor.enable();
@@ -144,7 +145,7 @@ class Main {
         let fongus = new Fongus();
         fongus.position2D = new BABYLON.Vector2(0, -10);
         fongus.instantiate();
-        let worker = new DroneWorker();
+        let worker = new DroneWorker(player);
         worker.position2D = new BABYLON.Vector2(0, -10);
         worker.instantiate();
     }
@@ -593,6 +594,19 @@ class PerformanceConsole {
         this.scene.onBeforeRenderObservable.removeCallback(this._update);
     }
 }
+var Resource;
+(function (Resource) {
+    Resource[Resource["Rock"] = 0] = "Rock";
+    Resource[Resource["Steel"] = 1] = "Steel";
+    Resource[Resource["Cristal"] = 2] = "Cristal";
+})(Resource || (Resource = {}));
+class Player {
+    constructor() {
+        this.currentRock = 100;
+        this.currentSteel = 100;
+        this.currentCristal = 50;
+    }
+}
 class PlayerControl {
     constructor(scene) {
         this.scene = scene;
@@ -728,10 +742,10 @@ class Serializer {
         }
         return data;
     }
-    static async Deserialize(scene, data) {
+    static async Deserialize(scene, data, owner) {
         let propsData = data.props;
         for (let i = 0; i < propsData.length; i++) {
-            let prop = Prop.Deserialize(propsData[i]);
+            let prop = Prop.Deserialize(propsData[i], owner);
             await prop.instantiate();
             prop.addToScene();
         }
@@ -1086,12 +1100,13 @@ class Draggable extends Selectionable {
 }
 /// <reference path="../Draggable.ts"/>
 class Character extends Draggable {
-    constructor(name = "") {
+    constructor(name = "", owner) {
         super(name);
         this.moveSpeed = 1;
         this.stamina = 20;
         this.currentHitPoint = 20;
         this.alive = true;
+        this.owner = owner;
     }
     wound(amount = 1) {
         if (this.alive) {
@@ -1166,8 +1181,8 @@ class DroneWorkerAnimator {
     }
 }
 class DroneWorker extends Character {
-    constructor() {
-        super("droneWorker");
+    constructor(owner) {
+        super("droneWorker", owner);
         this.harvestRate = 2;
         this.buildRate = 1;
         this.carriageCapacity = 10;
@@ -1187,6 +1202,15 @@ class DroneWorker extends Character {
         this.moveSpeed = 3;
         this.ui = new DroneWorkerUI(this);
         this.getScene().onBeforeRenderObservable.add(this._update);
+    }
+    get carriedResource() {
+        return this._carriedResource;
+    }
+    set carriedResource(t) {
+        if (t !== this._carriedResource) {
+            this.inventory = 0;
+        }
+        this._carriedResource = t;
     }
     get inventory() {
         return this._inventory;
@@ -1517,6 +1541,7 @@ class HarvestTask extends Task {
     update() {
         if (!this._isDropping && this.worker.inventory < this.worker.carriageCapacity) {
             if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth * this.target.groundWidth) {
+                this.worker.carriedResource = Resource.Cristal;
                 this.worker.inventory += this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
                 this.hasPathToTarget = false;
                 this.worker.currentAction = "Harvesting resource";
@@ -1543,7 +1568,9 @@ class HarvestTask extends Task {
                 this.depot = this.worker.getScene().meshes.find((m) => { return m instanceof Container; });
             }
             if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth * this.depot.groundWidth) {
-                this.worker.inventory -= 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
+                let r = 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
+                this.worker.inventory -= r;
+                this.worker.owner.currentCristal += r;
                 this._isDropping = this.worker.inventory > 0;
                 this.hasPathToDepot = false;
                 this.worker.currentAction = "Droping in depot";
@@ -1583,7 +1610,9 @@ class BuildTask extends Task {
                     this.depot = this.worker.getScene().meshes.find((m) => { return m instanceof Container; });
                 }
                 if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth * this.depot.groundWidth) {
-                    this.worker.inventory += 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
+                    let r = 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
+                    this.worker.inventory += r;
+                    this.worker.owner.currentSteel -= r;
                     this.hasPathToDepot = false;
                     this.worker.currentAction = "Fetching from depot";
                     this.worker.animator.setGrab();
@@ -1606,8 +1635,9 @@ class BuildTask extends Task {
             }
             else {
                 if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth * this.target.groundWidth) {
-                    this.target.resourcesAvailable += 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
-                    this.worker.inventory -= 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
+                    let r = 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
+                    this.target.resourcesAvailable += r;
+                    this.worker.inventory -= r;
                     this._isDropping = this.worker.inventory > 0;
                     this.hasPathToTarget = false;
                     this.worker.currentAction = "Droping at building";
@@ -1677,12 +1707,12 @@ class DroneWorkerUI {
         this._inventoryInput = this._panel.addTextInput("CRISTAL", this.target.inventory.toFixed(0) + "/" + this.target.carriageCapacity.toFixed(0));
         this._currentActionInput = this._panel.addTextInput("ACTION", this.target.currentAction);
         this._panel.addLargeButton("BUILD CONTAINER", () => {
-            this._ghostProp = new Container("ghost", BABYLON.Vector2.Zero(), 0);
+            this._ghostProp = new Container("ghost", this.target.owner, BABYLON.Vector2.Zero(), 0);
             this._ghostProp.instantiate();
             this._ghostProp.setVisibility(0);
             this._ghostProp.isPickable = false;
             this._onRightClickOverride = (pickedPoint, pickedTarget) => {
-                let container = new Container("", pickedPoint, 0);
+                let container = new Container("", this.target.owner, pickedPoint, 0);
                 container.instantiateBuilding();
                 this.target.currentTask = new BuildTask(this.target, container);
                 this._ghostProp.dispose();
@@ -1690,12 +1720,12 @@ class DroneWorkerUI {
             };
         });
         this._panel.addLargeButton("BUILD TANK", () => {
-            this._ghostProp = new Tank("ghost", BABYLON.Vector2.Zero(), 0);
+            this._ghostProp = new Tank("ghost", this.target.owner, BABYLON.Vector2.Zero(), 0);
             this._ghostProp.instantiate();
             this._ghostProp.setVisibility(0);
             this._ghostProp.isPickable = false;
             this._onRightClickOverride = (pickedPoint, pickedTarget) => {
-                let tank = new Tank("", pickedPoint, 0);
+                let tank = new Tank("", this.target.owner, pickedPoint, 0);
                 tank.instantiateBuilding();
                 this.target.currentTask = new BuildTask(this.target, tank);
                 this._ghostProp.dispose();
@@ -1703,12 +1733,12 @@ class DroneWorkerUI {
             };
         });
         this._panel.addLargeButton("BUILD TURRET", () => {
-            this._ghostProp = new Turret("ghost", BABYLON.Vector2.Zero(), 0);
+            this._ghostProp = new Turret("ghost", this.target.owner, BABYLON.Vector2.Zero(), 0);
             this._ghostProp.instantiate();
             this._ghostProp.setVisibility(0);
             this._ghostProp.isPickable = false;
             this._onRightClickOverride = (pickedPoint, pickedTarget) => {
-                let turret = new Turret("", pickedPoint, 0);
+                let turret = new Turret("", this.target.owner, pickedPoint, 0);
                 turret.instantiateBuilding();
                 this.target.currentTask = new BuildTask(this.target, turret);
                 this._ghostProp.dispose();
@@ -1805,18 +1835,18 @@ class Prop extends Draggable {
         data.rotation2D = this.rotation2D;
         return data;
     }
-    static Deserialize(data) {
+    static Deserialize(data, owner) {
         if (data.elementName === "Container") {
-            return new Container(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
+            return new Container(data.name, owner, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
         }
         if (data.elementName === "Tank") {
-            return new Tank(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
+            return new Tank(data.name, owner, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
         }
         if (data.elementName === "Cristal") {
             return new Cristal(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
         }
         if (data.elementName === "Turret") {
-            return new Turret(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
+            return new Turret(data.name, owner, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
         }
         return undefined;
     }
@@ -1843,12 +1873,13 @@ class Prop extends Draggable {
 }
 /// <reference path="../Prop.ts"/>
 class Building extends Prop {
-    constructor(name, position2D, rotation2D) {
+    constructor(name, owner, position2D, rotation2D) {
         super(name, position2D, rotation2D);
         this.currentCompletion = 0;
         this.completionRequired = 20;
         this.resourcesAvailable = 0;
         this.resourcesRequired = 10;
+        this.owner = owner;
     }
     async instantiateBuilding() {
         await this.instantiate();
@@ -1872,8 +1903,8 @@ class Building extends Prop {
 }
 /// <reference path="./Building/Building.ts"/>
 class Container extends Building {
-    constructor(name, position2D, rotation2D) {
-        super(name, position2D, rotation2D);
+    constructor(name, owner, position2D, rotation2D) {
+        super(name, owner, position2D, rotation2D);
         if (this.name === "") {
             let containerCount = this.getScene().meshes.filter((m) => { return m instanceof Container; }).length;
             this.name = "container-" + containerCount;
@@ -2014,8 +2045,8 @@ class PropEditor {
     }
 }
 class Tank extends Building {
-    constructor(name, position2D, rotation2D) {
-        super(name, position2D, rotation2D);
+    constructor(name, owner, position2D, rotation2D) {
+        super(name, owner, position2D, rotation2D);
         if (this.name === "") {
             let tankCount = this.getScene().meshes.filter((m) => { return m instanceof Tank; }).length;
             this.name = "tank-" + tankCount;
@@ -2053,8 +2084,8 @@ class Tank extends Building {
     }
 }
 class Turret extends Building {
-    constructor(name, position2D, rotation2D) {
-        super(name, position2D, rotation2D);
+    constructor(name, owner, position2D, rotation2D) {
+        super(name, owner, position2D, rotation2D);
         this.fireRate = 15; // Rounds per minute.
         this._fireCooldown = 0;
         this.range = 30;
@@ -2591,19 +2622,29 @@ class WallNodeEditor {
 class ContainerUI {
     constructor(target) {
         this.target = target;
+        this._update = () => {
+            this._rockInput.value = this.target.owner.currentRock.toFixed(0);
+            this._steelInput.value = this.target.owner.currentSteel.toFixed(0);
+            this._cristalInput.value = this.target.owner.currentCristal.toFixed(0);
+        };
     }
     enable() {
         this._panel = SpacePanel.CreateSpacePanel();
         this._panel.setTarget(this.target);
         this._panel.addTitle1(this.target.elementName().toLocaleUpperCase());
         this._panel.addTitle2(this.target.name.toLocaleUpperCase());
+        this._rockInput = this._panel.addTextInput("ROCK", this.target.owner.currentRock.toFixed(0));
+        this._steelInput = this._panel.addTextInput("STEEL", this.target.owner.currentSteel.toFixed(0));
+        this._cristalInput = this._panel.addTextInput("CRISTAL", this.target.owner.currentCristal.toFixed(0));
         this._panel.addLargeButton("LOOK AT", () => { Main.CameraTarget = this.target; });
         this._selector = ShapeDraw.CreateCircle(this.target.groundWidth * Math.SQRT2 * 0.5, this.target.groundWidth * Math.SQRT2 * 0.5 + 0.15);
         this._selector.position.copyFromFloats(this.target.position2D.x, 0.1, this.target.position2D.y);
+        this.target.getScene().onBeforeRenderObservable.add(this._update);
     }
     disable() {
         this._panel.dispose();
         this._selector.dispose();
+        this.target.getScene().onBeforeRenderObservable.removeCallback(this._update);
     }
 }
 class TankUI {

@@ -2,8 +2,8 @@ class Tank extends Building {
 
     public ui: TankUI;
 
-    constructor(name: string, position2D: BABYLON.Vector2, rotation2D: number) {
-        super(name, position2D, rotation2D);
+    constructor(name: string, owner: Player, position2D: BABYLON.Vector2, rotation2D: number) {
+        super(name, owner, position2D, rotation2D);
         if (this.name === "") {
             let tankCount = this.getScene().meshes.filter((m) => { return m instanceof Tank; }).length;
             this.name = "tank-" + tankCount;

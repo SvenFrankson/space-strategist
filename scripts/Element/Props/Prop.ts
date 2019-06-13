@@ -51,18 +51,18 @@ abstract class Prop extends Draggable {
         return data;
     }
 
-    public static Deserialize(data: PropData): Prop {
+    public static Deserialize(data: PropData, owner: Player): Prop {
         if(data.elementName === "Container") {
-            return new Container(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
+            return new Container(data.name, owner, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
         }
         if(data.elementName === "Tank") {
-            return new Tank(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
+            return new Tank(data.name, owner, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
         }
         if(data.elementName === "Cristal") {
             return new Cristal(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
         }
         if(data.elementName === "Turret") {
-            return new Turret(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
+            return new Turret(data.name, owner, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
         }
         return undefined;
     }
