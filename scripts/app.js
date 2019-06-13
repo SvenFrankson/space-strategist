@@ -134,7 +134,7 @@ class Main {
             let data = JSON.parse(window.localStorage.getItem("scene-data"));
             await Serializer.Deserialize(Main.Scene, data, player);
         }
-        //let sceneEditor = new SceneEditor(wallSystem, Main.Scene);
+        //let sceneEditor = new SceneEditor(wallSystem, player, Main.Scene);
         //sceneEditor.enable();
         let playerControl = new PlayerControl(Main.Scene);
         playerControl.enable();
@@ -606,6 +606,28 @@ class Player {
         this.currentSteel = 100;
         this.currentCristal = 50;
     }
+    addCurrentResource(amount, type) {
+        if (type === Resource.Rock) {
+            this.currentRock += amount;
+        }
+        else if (type === Resource.Steel) {
+            this.currentSteel += amount;
+        }
+        else if (type === Resource.Cristal) {
+            this.currentCristal += amount;
+        }
+    }
+    setCurrentResource(value, type) {
+        if (type === Resource.Rock) {
+            this.currentRock = value;
+        }
+        else if (type === Resource.Steel) {
+            this.currentSteel = value;
+        }
+        else if (type === Resource.Cristal) {
+            this.currentCristal = value;
+        }
+    }
 }
 class PlayerControl {
     constructor(scene) {
@@ -860,17 +882,23 @@ class AIControler extends SpaceshipControler {
     }
 }
 class SceneEditor {
-    constructor(wallSystem, scene) {
+    constructor(wallSystem, owner, scene) {
         this.wallSystem = wallSystem;
+        this.owner = owner;
         this.scene = scene;
         this.createContainer = () => {
             this.selectedElement = undefined;
-            this._newProp = new Container("", BABYLON.Vector2.Zero(), 0);
+            this._newProp = new Container("", this.owner, BABYLON.Vector2.Zero(), 0);
             this._newProp.instantiate();
         };
         this.createTank = () => {
             this.selectedElement = undefined;
-            this._newProp = new Tank("", BABYLON.Vector2.Zero(), 0);
+            this._newProp = new Tank("", this.owner, BABYLON.Vector2.Zero(), 0);
+            this._newProp.instantiate();
+        };
+        this.createTurret = () => {
+            this.selectedElement = undefined;
+            this._newProp = new Turret("", this.owner, BABYLON.Vector2.Zero(), 0);
             this._newProp.instantiate();
         };
         this.createCristal = () => {
@@ -878,9 +906,9 @@ class SceneEditor {
             this._newProp = new Cristal("", BABYLON.Vector2.Zero(), 0);
             this._newProp.instantiate();
         };
-        this.createTurret = () => {
+        this.createRock = () => {
             this.selectedElement = undefined;
-            this._newProp = new Turret("", BABYLON.Vector2.Zero(), 0);
+            this._newProp = new Rock("", BABYLON.Vector2.Zero(), 0);
             this._newProp.instantiate();
         };
         this.createNode = () => {
@@ -1035,6 +1063,7 @@ class SceneEditor {
         this._panel.addLargeButton("TANK", this.createTank);
         this._panel.addLargeButton("TURRET", this.createTurret);
         this._panel.addLargeButton("CRISTAL", this.createCristal);
+        this._panel.addLargeButton("ROCK", this.createRock);
         this._panel.addLargeButton("WALL", this.createNode);
         this._panel.addTitle2("DATA");
         this._panel.addMediumButtons("SAVE", () => {
@@ -1042,7 +1071,7 @@ class SceneEditor {
             window.localStorage.setItem("scene-data", JSON.stringify(data));
         }, "LOAD", () => {
             let data = JSON.parse(window.localStorage.getItem("scene-data"));
-            Serializer.Deserialize(Main.Scene, data);
+            Serializer.Deserialize(Main.Scene, data, this.owner);
             this.wallSystem.instantiate();
         });
         this.addEventListenerDrag();
@@ -1541,7 +1570,7 @@ class HarvestTask extends Task {
     update() {
         if (!this._isDropping && this.worker.inventory < this.worker.carriageCapacity) {
             if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth * this.target.groundWidth) {
-                this.worker.carriedResource = Resource.Cristal;
+                this.worker.carriedResource = this.target.resourceType;
                 this.worker.inventory += this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
                 this.hasPathToTarget = false;
                 this.worker.currentAction = "Harvesting resource";
@@ -1570,7 +1599,7 @@ class HarvestTask extends Task {
             if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth * this.depot.groundWidth) {
                 let r = 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
                 this.worker.inventory -= r;
-                this.worker.owner.currentCristal += r;
+                this.worker.owner.addCurrentResource(r, this.worker.carriedResource);
                 this._isDropping = this.worker.inventory > 0;
                 this.hasPathToDepot = false;
                 this.worker.currentAction = "Droping in depot";
@@ -1845,6 +1874,9 @@ class Prop extends Draggable {
         if (data.elementName === "Cristal") {
             return new Cristal(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
         }
+        if (data.elementName === "Rock") {
+            return new Rock(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
+        }
         if (data.elementName === "Turret") {
             return new Turret(data.name, owner, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
         }
@@ -1939,68 +1971,6 @@ class Container extends Building {
     }
     elementName() {
         return "Container";
-    }
-}
-class Cristal extends Prop {
-    constructor(name, position2D, rotation2D) {
-        super(name, position2D, rotation2D);
-        if (this.name === "") {
-            let CristalCount = this.getScene().meshes.filter((m) => { return m instanceof Cristal; }).length;
-            this.name = "cristal-" + CristalCount;
-        }
-        this.obstacle = Obstacle.CreateHexagonWithPosRotSource(this, 2);
-        this.obstacle.name = name + "-obstacle";
-    }
-    async instantiate() {
-        let vertexData = await VertexDataLoader.instance.getColorized("cristal-2", "#b0b0b0", "#d0d0d0", "#9ef442");
-        for (let i = 0; i < vertexData.positions.length; i++) {
-            vertexData.positions[i] *= 0.5;
-        }
-        let iHole0 = Math.round(this.position2D.x / 5) - Main.Ground.stepZeroW;
-        let jHole0 = Math.round(this.position2D.y / 5) - Main.Ground.stepZeroH;
-        let iHole1 = iHole0 - 1;
-        let jHole1 = jHole0 - 1;
-        let seamXMin = (Main.Ground.stepZeroW + iHole1) * 5;
-        let seamXMax = (Main.Ground.stepZeroW + iHole0 + 1) * 5;
-        let seamZMin = (Main.Ground.stepZeroH + jHole1) * 5;
-        let seamZMax = (Main.Ground.stepZeroH + jHole0 + 1) * 5;
-        for (let i = 0; i < vertexData.positions.length / 3; i++) {
-            let x = vertexData.positions[3 * i];
-            if (x === 2.5) {
-                vertexData.positions[3 * i] = seamXMax - this.position2D.x;
-            }
-            if (x === -2.5) {
-                vertexData.positions[3 * i] = seamXMin - this.position2D.x;
-            }
-            let z = vertexData.positions[3 * i + 2];
-            if (z === 2.5) {
-                vertexData.positions[3 * i + 2] = seamZMax - this.position2D.y;
-            }
-            if (z === -2.5) {
-                vertexData.positions[3 * i + 2] = seamZMin - this.position2D.y;
-            }
-        }
-        let min = Infinity;
-        let max = -Infinity;
-        this.height = -Infinity;
-        for (let i = 0; i < vertexData.positions.length / 3; i++) {
-            let x = vertexData.positions[3 * i];
-            let y = vertexData.positions[3 * i + 1];
-            let z = vertexData.positions[3 * i + 2];
-            min = Math.min(min, x, z);
-            max = Math.max(max, x, z);
-            this.height = Math.max(this.height, y);
-        }
-        this.groundWidth = 4;
-        vertexData.applyToMesh(this);
-        this.material = Main.cellShadingMaterial;
-    }
-    onPositionChanged() {
-        this.instantiate();
-        Main.Ground.instantiate();
-    }
-    elementName() {
-        return "Cristal";
     }
 }
 class PropEditor {
@@ -2681,6 +2651,138 @@ class TurretUI {
     disable() {
         this._panel.dispose();
         this._selector.dispose();
+    }
+}
+class ResourceSpot extends Prop {
+    constructor(name, position2D, rotation2D) {
+        super(name, position2D, rotation2D);
+    }
+}
+/// <reference path="ResourceSpot.ts"/>
+class Cristal extends ResourceSpot {
+    constructor(name, position2D, rotation2D) {
+        super(name, position2D, rotation2D);
+        if (this.name === "") {
+            let CristalCount = this.getScene().meshes.filter((m) => { return m instanceof Cristal; }).length;
+            this.name = "cristal-" + CristalCount;
+        }
+        this.obstacle = Obstacle.CreateHexagonWithPosRotSource(this, 2);
+        this.obstacle.name = name + "-obstacle";
+        this.resourceType = Resource.Cristal;
+    }
+    async instantiate() {
+        let vertexData = await VertexDataLoader.instance.getColorized("cristal-2", "#b0b0b0", "#d0d0d0", "#9ef442");
+        for (let i = 0; i < vertexData.positions.length; i++) {
+            vertexData.positions[i] *= 0.5;
+        }
+        let iHole0 = Math.round(this.position2D.x / 5) - Main.Ground.stepZeroW;
+        let jHole0 = Math.round(this.position2D.y / 5) - Main.Ground.stepZeroH;
+        let iHole1 = iHole0 - 1;
+        let jHole1 = jHole0 - 1;
+        let seamXMin = (Main.Ground.stepZeroW + iHole1) * 5;
+        let seamXMax = (Main.Ground.stepZeroW + iHole0 + 1) * 5;
+        let seamZMin = (Main.Ground.stepZeroH + jHole1) * 5;
+        let seamZMax = (Main.Ground.stepZeroH + jHole0 + 1) * 5;
+        for (let i = 0; i < vertexData.positions.length / 3; i++) {
+            let x = vertexData.positions[3 * i];
+            if (x === 2.5) {
+                vertexData.positions[3 * i] = seamXMax - this.position2D.x;
+            }
+            if (x === -2.5) {
+                vertexData.positions[3 * i] = seamXMin - this.position2D.x;
+            }
+            let z = vertexData.positions[3 * i + 2];
+            if (z === 2.5) {
+                vertexData.positions[3 * i + 2] = seamZMax - this.position2D.y;
+            }
+            if (z === -2.5) {
+                vertexData.positions[3 * i + 2] = seamZMin - this.position2D.y;
+            }
+        }
+        let min = Infinity;
+        let max = -Infinity;
+        this.height = -Infinity;
+        for (let i = 0; i < vertexData.positions.length / 3; i++) {
+            let x = vertexData.positions[3 * i];
+            let y = vertexData.positions[3 * i + 1];
+            let z = vertexData.positions[3 * i + 2];
+            min = Math.min(min, x, z);
+            max = Math.max(max, x, z);
+            this.height = Math.max(this.height, y);
+        }
+        this.groundWidth = 4;
+        vertexData.applyToMesh(this);
+        this.material = Main.cellShadingMaterial;
+    }
+    onPositionChanged() {
+        this.instantiate();
+        Main.Ground.instantiate();
+    }
+    elementName() {
+        return "Cristal";
+    }
+}
+class Rock extends ResourceSpot {
+    constructor(name, position2D, rotation2D) {
+        super(name, position2D, rotation2D);
+        if (this.name === "") {
+            let rockCount = this.getScene().meshes.filter((m) => { return m instanceof Rock; }).length;
+            this.name = "rock-" + rockCount;
+        }
+        this.obstacle = Obstacle.CreateHexagonWithPosRotSource(this, 2);
+        this.obstacle.name = name + "-obstacle";
+        this.resourceType = Resource.Rock;
+    }
+    async instantiate() {
+        let vertexData = await VertexDataLoader.instance.getColorized("cristal-2", "#b0b0b0", "#d0d0d0", "#dadada");
+        for (let i = 0; i < vertexData.positions.length; i++) {
+            vertexData.positions[i] *= 0.5;
+        }
+        let iHole0 = Math.round(this.position2D.x / 5) - Main.Ground.stepZeroW;
+        let jHole0 = Math.round(this.position2D.y / 5) - Main.Ground.stepZeroH;
+        let iHole1 = iHole0 - 1;
+        let jHole1 = jHole0 - 1;
+        let seamXMin = (Main.Ground.stepZeroW + iHole1) * 5;
+        let seamXMax = (Main.Ground.stepZeroW + iHole0 + 1) * 5;
+        let seamZMin = (Main.Ground.stepZeroH + jHole1) * 5;
+        let seamZMax = (Main.Ground.stepZeroH + jHole0 + 1) * 5;
+        for (let i = 0; i < vertexData.positions.length / 3; i++) {
+            let x = vertexData.positions[3 * i];
+            if (x === 2.5) {
+                vertexData.positions[3 * i] = seamXMax - this.position2D.x;
+            }
+            if (x === -2.5) {
+                vertexData.positions[3 * i] = seamXMin - this.position2D.x;
+            }
+            let z = vertexData.positions[3 * i + 2];
+            if (z === 2.5) {
+                vertexData.positions[3 * i + 2] = seamZMax - this.position2D.y;
+            }
+            if (z === -2.5) {
+                vertexData.positions[3 * i + 2] = seamZMin - this.position2D.y;
+            }
+        }
+        let min = Infinity;
+        let max = -Infinity;
+        this.height = -Infinity;
+        for (let i = 0; i < vertexData.positions.length / 3; i++) {
+            let x = vertexData.positions[3 * i];
+            let y = vertexData.positions[3 * i + 1];
+            let z = vertexData.positions[3 * i + 2];
+            min = Math.min(min, x, z);
+            max = Math.max(max, x, z);
+            this.height = Math.max(this.height, y);
+        }
+        this.groundWidth = 4;
+        vertexData.applyToMesh(this);
+        this.material = Main.cellShadingMaterial;
+    }
+    onPositionChanged() {
+        this.instantiate();
+        Main.Ground.instantiate();
+    }
+    elementName() {
+        return "Rock";
     }
 }
 class VertexDataLoader {

@@ -52,7 +52,7 @@ class HarvestTask extends Task {
 
     constructor(
         worker: DroneWorker,
-        public target: Prop
+        public target: ResourceSpot
     ) {
         super(worker);
     }
@@ -60,7 +60,7 @@ class HarvestTask extends Task {
     public update(): void {
         if (!this._isDropping && this.worker.inventory < this.worker.carriageCapacity) {
             if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth * this.target.groundWidth) {
-                this.worker.carriedResource = Resource.Cristal;
+                this.worker.carriedResource = this.target.resourceType;
                 this.worker.inventory += this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
                 this.hasPathToTarget = false;
                 this.worker.currentAction = "Harvesting resource";
@@ -89,7 +89,7 @@ class HarvestTask extends Task {
             if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth * this.depot.groundWidth) {
                 let r = 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
                 this.worker.inventory -= r;
-                this.worker.owner.currentCristal += r;
+                this.worker.owner.addCurrentResource(r, this.worker.carriedResource);
                 this._isDropping = this.worker.inventory > 0;
                 this.hasPathToDepot = false;
                 this.worker.currentAction = "Droping in depot";

@@ -54,6 +54,7 @@ class SceneEditor {
 
     constructor(
         public wallSystem: WallSystem,
+        public owner: Player,
         public scene: BABYLON.Scene
     ) {
         this._zero = BABYLON.MeshBuilder.CreateGround("zero", { width: 100, height: 100}, scene);
@@ -70,6 +71,7 @@ class SceneEditor {
         this._panel.addLargeButton("TANK", this.createTank);
         this._panel.addLargeButton("TURRET", this.createTurret);
         this._panel.addLargeButton("CRISTAL", this.createCristal);
+        this._panel.addLargeButton("ROCK", this.createRock);
         this._panel.addLargeButton("WALL", this.createNode);
         this._panel.addTitle2("DATA");
 
@@ -82,7 +84,7 @@ class SceneEditor {
             "LOAD",
             () => {
                 let data = JSON.parse(window.localStorage.getItem("scene-data"));
-                Serializer.Deserialize(Main.Scene, data);
+                Serializer.Deserialize(Main.Scene, data, this.owner);
                 this.wallSystem.instantiate();
             }
         )
@@ -101,13 +103,19 @@ class SceneEditor {
 
     private createContainer = () => {
         this.selectedElement = undefined;
-        this._newProp = new Container("", BABYLON.Vector2.Zero(), 0);
+        this._newProp = new Container("", this.owner, BABYLON.Vector2.Zero(), 0);
         this._newProp.instantiate();
     }
 
     private createTank = () => {
         this.selectedElement = undefined;
-        this._newProp = new Tank("", BABYLON.Vector2.Zero(), 0);
+        this._newProp = new Tank("", this.owner, BABYLON.Vector2.Zero(), 0);
+        this._newProp.instantiate();
+    }
+
+    private createTurret = () => {
+        this.selectedElement = undefined;
+        this._newProp = new Turret("", this.owner, BABYLON.Vector2.Zero(), 0);
         this._newProp.instantiate();
     }
 
@@ -117,9 +125,9 @@ class SceneEditor {
         this._newProp.instantiate();
     }
 
-    private createTurret = () => {
+    private createRock = () => {
         this.selectedElement = undefined;
-        this._newProp = new Turret("", BABYLON.Vector2.Zero(), 0);
+        this._newProp = new Rock("", BABYLON.Vector2.Zero(), 0);
         this._newProp.instantiate();
     }
 

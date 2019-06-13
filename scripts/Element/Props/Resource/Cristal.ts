@@ -1,4 +1,6 @@
-class Cristal extends Prop {
+/// <reference path="ResourceSpot.ts"/>
+
+class Cristal extends ResourceSpot {
 
     constructor(name: string, position2D: BABYLON.Vector2, rotation2D: number) {
         super(name, position2D, rotation2D);
@@ -8,6 +10,7 @@ class Cristal extends Prop {
         }
         this.obstacle = Obstacle.CreateHexagonWithPosRotSource(this, 2);
         this.obstacle.name = name + "-obstacle";
+        this.resourceType = Resource.Cristal;
     }
 
     public async instantiate(): Promise<void> {

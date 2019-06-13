@@ -164,7 +164,7 @@ class Main {
             await Serializer.Deserialize(Main.Scene, data, player);
         }
 
-        //let sceneEditor = new SceneEditor(wallSystem, Main.Scene);
+        //let sceneEditor = new SceneEditor(wallSystem, player, Main.Scene);
 		//sceneEditor.enable();
 		
 		let playerControl = new PlayerControl(Main.Scene);
