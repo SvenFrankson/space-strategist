@@ -27,14 +27,21 @@ class Main {
         Main.Camera.attachControl(Main.Canvas, true);
         Main.Camera.lowerRadiusLimit = 6;
         Main.Camera.upperRadiusLimit = 20;
+        Main.Camera.radius = Main.Camera.upperRadiusLimit;
         Main.Camera.upperBetaLimit = 2 * Math.PI / 5;
         Main.Camera.wheelPrecision *= 8;
+        let canvasHasFocus = false;
+        Main.Canvas.addEventListener("pointerleave", () => { canvasHasFocus = false; });
+        Main.Canvas.addEventListener("pointerenter", () => { canvasHasFocus = true; });
         Main.Scene.onBeforeRenderObservable.add(() => {
             if (Main.CameraTarget) {
                 Main.Camera.target.x = Main.Camera.target.x * 0.9 + Main.CameraTarget.position.x * 0.1;
                 Main.Camera.target.z = Main.Camera.target.z * 0.9 + Main.CameraTarget.position.z * 0.1;
             }
             Main.Camera.target.y = 0;
+            if (!canvasHasFocus) {
+                return;
+            }
             let pointerTop = Main.Scene.pointerY;
             let pointerLeft = Main.Scene.pointerX;
             let pointerBottom = Main.Canvas.height - Main.Scene.pointerY;
@@ -594,12 +601,12 @@ class PerformanceConsole {
         this.scene.onBeforeRenderObservable.removeCallback(this._update);
     }
 }
-var Resource;
-(function (Resource) {
-    Resource[Resource["Rock"] = 0] = "Rock";
-    Resource[Resource["Steel"] = 1] = "Steel";
-    Resource[Resource["Cristal"] = 2] = "Cristal";
-})(Resource || (Resource = {}));
+var ResourceType;
+(function (ResourceType) {
+    ResourceType[ResourceType["Rock"] = 0] = "Rock";
+    ResourceType[ResourceType["Steel"] = 1] = "Steel";
+    ResourceType[ResourceType["Cristal"] = 2] = "Cristal";
+})(ResourceType || (ResourceType = {}));
 class Player {
     constructor() {
         this.currentRock = 100;
@@ -607,24 +614,24 @@ class Player {
         this.currentCristal = 50;
     }
     addCurrentResource(amount, type) {
-        if (type === Resource.Rock) {
+        if (type === ResourceType.Rock) {
             this.currentRock += amount;
         }
-        else if (type === Resource.Steel) {
+        else if (type === ResourceType.Steel) {
             this.currentSteel += amount;
         }
-        else if (type === Resource.Cristal) {
+        else if (type === ResourceType.Cristal) {
             this.currentCristal += amount;
         }
     }
     setCurrentResource(value, type) {
-        if (type === Resource.Rock) {
+        if (type === ResourceType.Rock) {
             this.currentRock = value;
         }
-        else if (type === Resource.Steel) {
+        else if (type === ResourceType.Steel) {
             this.currentSteel = value;
         }
-        else if (type === Resource.Cristal) {
+        else if (type === ResourceType.Cristal) {
             this.currentCristal = value;
         }
     }
@@ -1221,19 +1228,19 @@ class DroneWorkerAnimator {
     async _updateStack() {
         if (this._currentResourceType !== this.target.carriedResource) {
             this._currentResourceType = this.target.carriedResource;
-            if (this._currentResourceType === Resource.Rock) {
+            if (this._currentResourceType === ResourceType.Rock) {
                 let vertexData = await VertexDataLoader.instance.getColorized("cristal-stack", "#dadada");
                 vertexData.applyToMesh(this._resourceStack);
                 let vertexDataPiece = await VertexDataLoader.instance.getColorized("cristal-piece", "#dadada");
                 vertexDataPiece.applyToMesh(this._resourcePiece);
             }
-            else if (this._currentResourceType === Resource.Steel) {
+            else if (this._currentResourceType === ResourceType.Steel) {
                 let vertexData = await VertexDataLoader.instance.getColorized("steel-stack", "#bababa");
                 vertexData.applyToMesh(this._resourceStack);
                 let vertexDataPiece = await VertexDataLoader.instance.getColorized("steel-piece", "#bababa");
                 vertexDataPiece.applyToMesh(this._resourcePiece);
             }
-            else if (this._currentResourceType === Resource.Cristal) {
+            else if (this._currentResourceType === ResourceType.Cristal) {
                 let vertexData = await VertexDataLoader.instance.getColorized("cristal-stack", "#9ef442");
                 vertexData.applyToMesh(this._resourceStack);
                 let vertexDataPiece = await VertexDataLoader.instance.getColorized("cristal-piece", "#9ef442");
@@ -2074,7 +2081,7 @@ class PropEditor {
                     data.name = splitName[0] + "-" + (counter + 1);
                 }
             }
-            let clone = Prop.Deserialize(data);
+            let clone = Prop.Deserialize(data, prop.owner);
             if (onCloneCallback) {
                 onCloneCallback(clone);
             }
@@ -2743,7 +2750,7 @@ class Cristal extends ResourceSpot {
         }
         this.obstacle = Obstacle.CreateHexagonWithPosRotSource(this, 2);
         this.obstacle.name = name + "-obstacle";
-        this.resourceType = Resource.Cristal;
+        this.resourceType = ResourceType.Cristal;
     }
     async instantiate() {
         let vertexData = await VertexDataLoader.instance.getColorized("cristal-2", "#b0b0b0", "#d0d0d0", "#9ef442");
@@ -2806,7 +2813,7 @@ class Rock extends ResourceSpot {
         }
         this.obstacle = Obstacle.CreateHexagonWithPosRotSource(this, 2);
         this.obstacle.name = name + "-obstacle";
-        this.resourceType = Resource.Rock;
+        this.resourceType = ResourceType.Rock;
     }
     async instantiate() {
         let vertexData = await VertexDataLoader.instance.getColorized("cristal-2", "#b0b0b0", "#d0d0d0", "#dadada");
@@ -2900,8 +2907,8 @@ class VertexDataLoader {
         return vertexData;
     }
     async getColorized(name, baseColorHex = "#FFFFFF", frameColorHex = "", color1Hex = "", // Replace red
-        color2Hex = "", // Replace green
-        color3Hex = "" // Replace blue
+    color2Hex = "", // Replace green
+    color3Hex = "" // Replace blue
     ) {
         let baseColor;
         if (baseColorHex !== "") {

@@ -45,7 +45,7 @@ class PropEditor {
                         data.name = splitName[0] + "-" + (counter + 1);
                     }
                 }
-                let clone = Prop.Deserialize(data);
+                let clone = Prop.Deserialize(data, prop.owner);
                 if (onCloneCallback) {
                     onCloneCallback(clone);
                 }

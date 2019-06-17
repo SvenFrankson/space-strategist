@@ -1,8 +1,6 @@
 /// <reference path="../Prop.ts"/>
 
 abstract class Building extends Prop {
-
-    public owner: Player;
     
     public currentCompletion: number = 0;
     public completionRequired: number = 20;

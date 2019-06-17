@@ -10,7 +10,7 @@ class Cristal extends ResourceSpot {
         }
         this.obstacle = Obstacle.CreateHexagonWithPosRotSource(this, 2);
         this.obstacle.name = name + "-obstacle";
-        this.resourceType = Resource.Cristal;
+        this.resourceType = ResourceType.Cristal;
     }
 
     public async instantiate(): Promise<void> {

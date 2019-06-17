@@ -10,7 +10,7 @@ class DroneWorkerAnimator {
 
     private _armR: BABYLON.Bone;
     private _handR: BABYLON.Bone;
-    private _currentResourceType: Resource;
+    private _currentResourceType: ResourceType;
     private _resourcePiece: BABYLON.Mesh;
     private _resourceStack: BABYLON.Mesh;
     public state: DroneWorkerAnimState;
@@ -88,19 +88,19 @@ class DroneWorkerAnimator {
     private async _updateStack(): Promise<void> {
         if (this._currentResourceType !== this.target.carriedResource) {
             this._currentResourceType = this.target.carriedResource;
-            if (this._currentResourceType === Resource.Rock) {
+            if (this._currentResourceType === ResourceType.Rock) {
                 let vertexData = await VertexDataLoader.instance.getColorized("cristal-stack", "#dadada");
                 vertexData.applyToMesh(this._resourceStack);
                 let vertexDataPiece = await VertexDataLoader.instance.getColorized("cristal-piece", "#dadada");
                 vertexDataPiece.applyToMesh(this._resourcePiece);
             }
-            else if (this._currentResourceType === Resource.Steel) {
+            else if (this._currentResourceType === ResourceType.Steel) {
                 let vertexData = await VertexDataLoader.instance.getColorized("steel-stack", "#bababa");
                 vertexData.applyToMesh(this._resourceStack);
                 let vertexDataPiece = await VertexDataLoader.instance.getColorized("steel-piece", "#bababa");
                 vertexDataPiece.applyToMesh(this._resourcePiece);
             }
-            else if (this._currentResourceType === Resource.Cristal) {
+            else if (this._currentResourceType === ResourceType.Cristal) {
                 let vertexData = await VertexDataLoader.instance.getColorized("cristal-stack", "#9ef442");
                 vertexData.applyToMesh(this._resourceStack);
                 let vertexDataPiece = await VertexDataLoader.instance.getColorized("cristal-piece", "#9ef442");
@@ -165,11 +165,11 @@ class DroneWorker extends Character {
     public harvestRate: number = 2;
     public buildRate: number = 1;
     public carriageCapacity: number = 10;
-    private _carriedResource: Resource;
-    public get carriedResource(): Resource {
+    private _carriedResource: ResourceType;
+    public get carriedResource(): ResourceType {
         return this._carriedResource;
     }
-    public set carriedResource(t: Resource) {
+    public set carriedResource(t: ResourceType) {
         if (t !== this._carriedResource) {
             this.inventory = 0;
         }

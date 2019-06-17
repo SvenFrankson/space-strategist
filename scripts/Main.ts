@@ -44,9 +44,13 @@ class Main {
 		Main.Camera.attachControl(Main.Canvas, true);
 		Main.Camera.lowerRadiusLimit = 6;
 		Main.Camera.upperRadiusLimit = 20;
+		Main.Camera.radius = Main.Camera.upperRadiusLimit;
 		Main.Camera.upperBetaLimit = 2 * Math.PI / 5;
 		Main.Camera.wheelPrecision *= 8;
 
+		let canvasHasFocus: boolean = false;
+		Main.Canvas.addEventListener("pointerleave", () => { canvasHasFocus = false; });
+		Main.Canvas.addEventListener("pointerenter", () => { canvasHasFocus = true; });
 		Main.Scene.onBeforeRenderObservable.add(
 			() => {
 				if (Main.CameraTarget) {
@@ -54,6 +58,9 @@ class Main {
 					Main.Camera.target.z = Main.Camera.target.z * 0.9 + Main.CameraTarget.position.z * 0.1;
 				}
 				Main.Camera.target.y = 0;
+				if (!canvasHasFocus) {
+					return;
+				}
 				let pointerTop = Main.Scene.pointerY;
 				let pointerLeft = Main.Scene.pointerX;
 				let pointerBottom = Main.Canvas.height - Main.Scene.pointerY;

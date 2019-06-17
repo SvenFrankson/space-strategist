@@ -8,7 +8,7 @@ class Rock extends ResourceSpot {
         }
         this.obstacle = Obstacle.CreateHexagonWithPosRotSource(this, 2);
         this.obstacle.name = name + "-obstacle";
-        this.resourceType = Resource.Rock;
+        this.resourceType = ResourceType.Rock;
     }
 
     public async instantiate(): Promise<void> {

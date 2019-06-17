@@ -9,7 +9,7 @@ class Character extends Draggable {
     public currentHitPoint: number = 20;
     public alive: boolean = true;
 
-    constructor(name: string = "", owner: Player) {
+    constructor(name: string = "", owner?: Player) {
         super(name);
         this.owner = owner;
     }

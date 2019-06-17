@@ -9,6 +9,8 @@ class PropData {
 
 abstract class Prop extends Draggable {
 
+    public owner: Player;
+
     public isActive = false;
     public obstacle: Obstacle;
 
@@ -51,7 +53,7 @@ abstract class Prop extends Draggable {
         return data;
     }
 
-    public static Deserialize(data: PropData, owner: Player): Prop {
+    public static Deserialize(data: PropData, owner?: Player): Prop {
         if(data.elementName === "Container") {
             return new Container(data.name, owner, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
         }
