@@ -9,6 +9,8 @@ class Tank extends Building {
             this.name = "tank-" + tankCount;
         }
 
+        this.resourcesAvailableRequired.get(ResourceType.Steel).required = 20;
+        this.resourcesAvailableRequired.get(ResourceType.Rock).required = 10;
         this.completionRequired = 10;
 
         this.ui = new TankUI(this);

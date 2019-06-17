@@ -22,6 +22,18 @@ class Player {
         }
     }
 
+    public subtractCurrentResource(amount: number, type: ResourceType): void {
+        if (type === ResourceType.Rock) {
+            this.currentRock -= amount;
+        }
+        else if (type === ResourceType.Steel) {
+            this.currentSteel -= amount;
+        }
+        else if (type === ResourceType.Cristal) {
+            this.currentCristal -= amount;
+        }
+    }
+
     public setCurrentResource(value: number, type: ResourceType): void {
         if (type === ResourceType.Rock) {
             this.currentRock = value;

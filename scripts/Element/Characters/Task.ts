@@ -130,7 +130,16 @@ class BuildTask extends Task {
     }
 
     public update(): void {
-        let neededResources = this.target.resourcesRequired - this.target.resourcesAvailable;
+        let neededResources = 0;
+        let neededResourcesType: ResourceType;
+        for (let resourceType = 0; resourceType < 3; resourceType++) {
+            let rAQ = this.target.resourcesAvailableRequired.get(resourceType);
+            neededResources = rAQ.required - rAQ.available;
+            if (neededResources > 0) {
+                neededResourcesType = resourceType;
+                break;
+            }
+        }
         if (neededResources > 0) {
             if (!this._isDropping && this.worker.inventory < Math.min(this.worker.carriageCapacity, neededResources)) {
                 if (!this.depot) {
@@ -138,8 +147,9 @@ class BuildTask extends Task {
                 }
                 if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth * this.depot.groundWidth) {
                     let r = 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
+                    this.worker.carriedResource = neededResourcesType;
                     this.worker.inventory += r;
-                    this.worker.owner.currentSteel -= r;
+                    this.worker.owner.subtractCurrentResource(r, this.worker.carriedResource);
                     this.hasPathToDepot = false;
                     this.worker.currentAction = "Fetching from depot";
                     this.worker.animator.setGrab();
@@ -163,7 +173,7 @@ class BuildTask extends Task {
             else {
                 if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth * this.target.groundWidth) {
                     let r = 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
-                    this.target.resourcesAvailable += r;
+                    this.target.resourcesAvailableRequired.get(this.worker.carriedResource).available += r;
                     this.worker.inventory -= r;
                     this._isDropping = this.worker.inventory > 0;
                     this.hasPathToTarget = false;

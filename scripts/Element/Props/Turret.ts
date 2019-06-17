@@ -30,8 +30,10 @@ class Turret extends Building {
             this.name = "turret-" + turretCount;
         }
 
-        this.resourcesRequired = 15;
-        this.completionRequired = 30;
+        this.resourcesAvailableRequired.get(ResourceType.Rock).required = 20;
+        this.resourcesAvailableRequired.get(ResourceType.Steel).required = 30;
+        this.resourcesAvailableRequired.get(ResourceType.Cristal).required = 20;
+        this.completionRequired = 20;
 
         this.ui = new TurretUI(this);
 

@@ -11,6 +11,7 @@ class Container extends Building {
             this.name = "container-" + containerCount;
         }
 
+        this.resourcesAvailableRequired.get(ResourceType.Steel).required = 20;
         this.completionRequired = 10;
 
         this.ui = new ContainerUI(this);

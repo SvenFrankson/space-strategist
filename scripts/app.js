@@ -624,6 +624,17 @@ class Player {
             this.currentCristal += amount;
         }
     }
+    subtractCurrentResource(amount, type) {
+        if (type === ResourceType.Rock) {
+            this.currentRock -= amount;
+        }
+        else if (type === ResourceType.Steel) {
+            this.currentSteel -= amount;
+        }
+        else if (type === ResourceType.Cristal) {
+            this.currentCristal -= amount;
+        }
+    }
     setCurrentResource(value, type) {
         if (type === ResourceType.Rock) {
             this.currentRock = value;
@@ -1714,7 +1725,16 @@ class BuildTask extends Task {
         this._isDropping = false;
     }
     update() {
-        let neededResources = this.target.resourcesRequired - this.target.resourcesAvailable;
+        let neededResources = 0;
+        let neededResourcesType;
+        for (let resourceType = 0; resourceType < 3; resourceType++) {
+            let rAQ = this.target.resourcesAvailableRequired.get(resourceType);
+            neededResources = rAQ.required - rAQ.available;
+            if (neededResources > 0) {
+                neededResourcesType = resourceType;
+                break;
+            }
+        }
         if (neededResources > 0) {
             if (!this._isDropping && this.worker.inventory < Math.min(this.worker.carriageCapacity, neededResources)) {
                 if (!this.depot) {
@@ -1722,8 +1742,9 @@ class BuildTask extends Task {
                 }
                 if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.depot.position2D) < this.depot.groundWidth * this.depot.groundWidth) {
                     let r = 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
+                    this.worker.carriedResource = neededResourcesType;
                     this.worker.inventory += r;
-                    this.worker.owner.currentSteel -= r;
+                    this.worker.owner.subtractCurrentResource(r, this.worker.carriedResource);
                     this.hasPathToDepot = false;
                     this.worker.currentAction = "Fetching from depot";
                     this.worker.animator.setGrab();
@@ -1747,7 +1768,7 @@ class BuildTask extends Task {
             else {
                 if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth * this.target.groundWidth) {
                     let r = 2 * this.worker.harvestRate * Main.Engine.getDeltaTime() / 1000;
-                    this.target.resourcesAvailable += r;
+                    this.target.resourcesAvailableRequired.get(this.worker.carriedResource).available += r;
                     this.worker.inventory -= r;
                     this._isDropping = this.worker.inventory > 0;
                     this.hasPathToTarget = false;
@@ -1986,14 +2007,22 @@ class Prop extends Draggable {
     }
 }
 /// <reference path="../Prop.ts"/>
+class ResourceAvailableRequired {
+    constructor() {
+        this.available = 0;
+        this.required = 0;
+    }
+}
 class Building extends Prop {
     constructor(name, owner, position2D, rotation2D) {
         super(name, position2D, rotation2D);
         this.currentCompletion = 0;
         this.completionRequired = 20;
-        this.resourcesAvailable = 0;
-        this.resourcesRequired = 10;
+        this.resourcesAvailableRequired = new Map();
         this.owner = owner;
+        this.resourcesAvailableRequired.set(ResourceType.Rock, new ResourceAvailableRequired());
+        this.resourcesAvailableRequired.set(ResourceType.Steel, new ResourceAvailableRequired());
+        this.resourcesAvailableRequired.set(ResourceType.Cristal, new ResourceAvailableRequired());
     }
     async instantiateBuilding() {
         await this.instantiate();
@@ -2010,9 +2039,10 @@ class Building extends Prop {
             this.addToScene();
         }
     }
-    gather(resource) {
-        this.resourcesAvailable += resource;
-        this.resourcesAvailable = Math.min(this.resourcesRequired, this.resourcesAvailable);
+    gather(resource, type) {
+        let rAQ = this.resourcesAvailableRequired.get(resource);
+        rAQ.available += resource;
+        rAQ.available = Math.min(rAQ.available, rAQ.required);
     }
 }
 /// <reference path="./Building/Building.ts"/>
@@ -2023,6 +2053,7 @@ class Container extends Building {
             let containerCount = this.getScene().meshes.filter((m) => { return m instanceof Container; }).length;
             this.name = "container-" + containerCount;
         }
+        this.resourcesAvailableRequired.get(ResourceType.Steel).required = 20;
         this.completionRequired = 10;
         this.ui = new ContainerUI(this);
         this.obstacle = Obstacle.CreateRectWithPosRotSource(this, 2, 4);
@@ -2103,6 +2134,8 @@ class Tank extends Building {
             let tankCount = this.getScene().meshes.filter((m) => { return m instanceof Tank; }).length;
             this.name = "tank-" + tankCount;
         }
+        this.resourcesAvailableRequired.get(ResourceType.Steel).required = 20;
+        this.resourcesAvailableRequired.get(ResourceType.Rock).required = 10;
         this.completionRequired = 10;
         this.ui = new TankUI(this);
         this.obstacle = Obstacle.CreateHexagonWithPosRotSource(this, 1.5);
@@ -2184,8 +2217,10 @@ class Turret extends Building {
             let turretCount = this.getScene().meshes.filter((m) => { return m instanceof Turret; }).length;
             this.name = "turret-" + turretCount;
         }
-        this.resourcesRequired = 15;
-        this.completionRequired = 30;
+        this.resourcesAvailableRequired.get(ResourceType.Rock).required = 20;
+        this.resourcesAvailableRequired.get(ResourceType.Steel).required = 30;
+        this.resourcesAvailableRequired.get(ResourceType.Cristal).required = 20;
+        this.completionRequired = 20;
         this.ui = new TurretUI(this);
         this._headBase = new BABYLON.Mesh("turret-canonBase");
         this._headBase.parent = this;
