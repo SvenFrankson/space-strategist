@@ -1165,6 +1165,7 @@ class DroneWorkerAnimator {
             this._handR.getAbsolutePositionToRef(this.target, this._resourcePiece.position);
             this._armR.getRotationToRef(BABYLON.Space.WORLD, this.target, this._resourcePiece.rotation);
             this._resourcePiece.rotation.x -= Math.PI / 2;
+            this._updateStack();
         };
         this._animationGrabUpdate = () => {
             if (this._animationGrabAnimatable) {
@@ -1216,6 +1217,14 @@ class DroneWorkerAnimator {
             this._resourcePiece.scaling.copyFromFloats(0, 0, 0);
         };
         this.target.getScene().onBeforeRenderObservable.add(this._animationGrabUpdate);
+    }
+    _updateStack() {
+        if (this.target.inventory > 3) {
+            this._resourceStack.isVisible = true;
+        }
+        else {
+            this._resourceStack.isVisible = false;
+        }
     }
     _animationDrop() {
         this.state = DroneWorkerAnimState.Drop;
@@ -1736,7 +1745,7 @@ class BuildTask extends Task {
             return;
         }
         if (this.target.currentCompletion < this.target.completionRequired) {
-            if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth) {
+            if (BABYLON.Vector2.DistanceSquared(this.worker.position2D, this.target.position2D) < this.target.groundWidth * this.target.groundWidth) {
                 this.target.build(this.worker.buildRate * Main.Engine.getDeltaTime() / 1000);
                 this.hasPathToTarget = false;
                 this.worker.currentAction = "Building";
@@ -1860,7 +1869,7 @@ class DroneWorkerUI {
             this._onLeftClickOverride(pickedPoint, pickedTarget);
             this._onLeftClickOverride = undefined;
         }
-        else if (pickedTarget instanceof Prop) {
+        else if (pickedTarget instanceof ResourceSpot) {
             this.target.currentTask = new HarvestTask(this.target, pickedTarget);
         }
         else if (pickedPoint instanceof BABYLON.Vector2) {

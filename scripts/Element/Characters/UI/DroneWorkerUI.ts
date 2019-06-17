@@ -117,7 +117,7 @@ class DroneWorkerUI {
             this._onLeftClickOverride(pickedPoint, pickedTarget);
             this._onLeftClickOverride = undefined;
         }
-        else if (pickedTarget instanceof Prop) {
+        else if (pickedTarget instanceof ResourceSpot) {
             this.target.currentTask = new HarvestTask(this.target, pickedTarget);
         }
         else if (pickedPoint instanceof BABYLON.Vector2) {

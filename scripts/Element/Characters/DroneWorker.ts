@@ -41,6 +41,7 @@ class DroneWorkerAnimator {
         this._handR.getAbsolutePositionToRef(this.target, this._resourcePiece.position);
         this._armR.getRotationToRef(BABYLON.Space.WORLD, this.target, this._resourcePiece.rotation);
         this._resourcePiece.rotation.x -= Math.PI / 2;
+        this._updateStack();
     }
 
     private _animationIdle(): void {
@@ -80,6 +81,15 @@ class DroneWorkerAnimator {
                 s = (i - 18) / 4;
             }
             this._resourcePiece.scaling.copyFromFloats(s, s, s);
+        }
+    }
+
+    private _updateStack(): void {
+        if (this.target.inventory > 3) {
+            this._resourceStack.isVisible = true;
+        }
+        else {
+            this._resourceStack.isVisible = false;
         }
     }
 
