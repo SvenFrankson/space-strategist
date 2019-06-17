@@ -10,6 +10,7 @@ class DroneWorkerAnimator {
 
     private _armR: BABYLON.Bone;
     private _handR: BABYLON.Bone;
+    private _currentResourceType: Resource;
     private _resourcePiece: BABYLON.Mesh;
     private _resourceStack: BABYLON.Mesh;
     public state: DroneWorkerAnimState;
@@ -84,7 +85,28 @@ class DroneWorkerAnimator {
         }
     }
 
-    private _updateStack(): void {
+    private async _updateStack(): Promise<void> {
+        if (this._currentResourceType !== this.target.carriedResource) {
+            this._currentResourceType = this.target.carriedResource;
+            if (this._currentResourceType === Resource.Rock) {
+                let vertexData = await VertexDataLoader.instance.getColorized("cristal-stack", "#dadada");
+                vertexData.applyToMesh(this._resourceStack);
+                let vertexDataPiece = await VertexDataLoader.instance.getColorized("cristal-piece", "#dadada");
+                vertexDataPiece.applyToMesh(this._resourcePiece);
+            }
+            else if (this._currentResourceType === Resource.Steel) {
+                let vertexData = await VertexDataLoader.instance.getColorized("steel-stack", "#bababa");
+                vertexData.applyToMesh(this._resourceStack);
+                let vertexDataPiece = await VertexDataLoader.instance.getColorized("steel-piece", "#bababa");
+                vertexDataPiece.applyToMesh(this._resourcePiece);
+            }
+            else if (this._currentResourceType === Resource.Cristal) {
+                let vertexData = await VertexDataLoader.instance.getColorized("cristal-stack", "#9ef442");
+                vertexData.applyToMesh(this._resourceStack);
+                let vertexDataPiece = await VertexDataLoader.instance.getColorized("cristal-piece", "#9ef442");
+                vertexDataPiece.applyToMesh(this._resourcePiece);
+            }
+        }
         if (this.target.inventory > 3) {
             this._resourceStack.isVisible = true;
         }
