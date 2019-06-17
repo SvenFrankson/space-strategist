@@ -1161,27 +1161,71 @@ var DroneWorkerAnimState;
 class DroneWorkerAnimator {
     constructor(target) {
         this.target = target;
+        this._update = () => {
+            this._handR.getAbsolutePositionToRef(this.target, this._resourcePiece.position);
+            this._armR.getRotationToRef(BABYLON.Space.WORLD, this.target, this._resourcePiece.rotation);
+            this._resourcePiece.rotation.x -= Math.PI / 2;
+        };
+        this._animationGrabUpdate = () => {
+            if (this._animationGrabAnimatable) {
+                let s = 1;
+                let i = this._animationGrabAnimatable.masterFrame - 120;
+                if (i <= 5) {
+                    s = 1 - i / 5;
+                }
+                else if (i <= 18) {
+                    s = 0;
+                }
+                else if (i <= 22) {
+                    s = (i - 18) / 4;
+                }
+                this._resourcePiece.scaling.copyFromFloats(s, s, s);
+            }
+        };
         this._animationIdle();
+    }
+    async instantiate() {
+        this._resourceStack = new BABYLON.Mesh(this.target.name + "-resources-stack");
+        this._resourceStack.parent = this.target;
+        this._resourceStack.position.copyFromFloats(0, 0.5, 0.5);
+        this._resourceStack.rotation.x = Math.PI / 16;
+        let vertexData = await VertexDataLoader.instance.getColorized("steel-stack", "#dadada");
+        vertexData.applyToMesh(this._resourceStack);
+        this._resourcePiece = new BABYLON.Mesh(this.target.name + "-resources-piece");
+        let vertexDataPiece = await VertexDataLoader.instance.getColorized("steel-piece", "#dadada");
+        vertexDataPiece.applyToMesh(this._resourcePiece);
+        this._armR = this.target.skeleton.bones.find(b => { return b.name === "ArmR"; });
+        this._handR = this.target.skeleton.bones.find(b => { return b.name === "HandR"; });
+        this.target.getScene().onBeforeRenderObservable.add(this._update);
     }
     _animationIdle() {
         this.state = DroneWorkerAnimState.Idle;
         Main.Scene.beginAnimation(this.target.skeleton, 1, 120, true, 1);
+        this.target.getScene().onBeforeRenderObservable.removeCallback(this._animationGrabUpdate);
     }
     _animationIdleGrab() {
         this.state = DroneWorkerAnimState.IdleGrab;
         Main.Scene.beginAnimation(this.target.skeleton, 161, 220, true, 1);
+        this.target.getScene().onBeforeRenderObservable.removeCallback(this._animationGrabUpdate);
     }
     _animationGrab() {
         this.state = DroneWorkerAnimState.Grab;
-        Main.Scene.beginAnimation(this.target.skeleton, 121, 160, true, 1);
+        this._animationGrabAnimatable = Main.Scene.beginAnimation(this.target.skeleton, 121, 160, true, 1);
+        this._animationGrabAnimatable.onAnimationEnd = () => {
+            this.target.getScene().onBeforeRenderObservable.removeCallback(this._animationGrabUpdate);
+            this._resourcePiece.scaling.copyFromFloats(0, 0, 0);
+        };
+        this.target.getScene().onBeforeRenderObservable.add(this._animationGrabUpdate);
     }
     _animationDrop() {
         this.state = DroneWorkerAnimState.Drop;
         Main.Scene.beginAnimation(this.target.skeleton, 221, 280, true, 1);
+        this.target.getScene().onBeforeRenderObservable.removeCallback(this._animationGrabUpdate);
     }
     _animationBuild() {
         this.state = DroneWorkerAnimState.Build;
         Main.Scene.beginAnimation(this.target.skeleton, 281, 400, true, 1);
+        this.target.getScene().onBeforeRenderObservable.removeCallback(this._animationGrabUpdate);
     }
     setIdle() {
         if (this.state !== DroneWorkerAnimState.Idle && this.state !== DroneWorkerAnimState.IdleGrab) {
@@ -1263,6 +1307,7 @@ class DroneWorker extends Character {
         loadedFile.meshes[0].dispose();
         this.skeleton = loadedFile.skeletons[0];
         this.animator = new DroneWorkerAnimator(this);
+        await this.animator.instantiate();
         this.material = Main.cellShadingMaterial;
         this.groundWidth = 1;
         this.height = 1;
