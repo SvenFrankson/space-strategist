@@ -34,15 +34,9 @@ class Wall extends Building {
         if (indexNode1 > -1) {
             this.node1.walls.splice(indexNode1, 1);
         }
-        if (this.node1.walls.length === 0) {
-            this.node1.dispose(doNotRecurse, disposeMaterialAndTextures);
-        }
         let indexNode2 = this.node2.walls.indexOf(this);
         if (indexNode2 > -1) {
             this.node2.walls.splice(indexNode2, 1);
-        }
-        if (this.node2.walls.length === 0) {
-            this.node2.dispose(doNotRecurse, disposeMaterialAndTextures);
         }
         super.dispose(doNotRecurse, disposeMaterialAndTextures);
     }

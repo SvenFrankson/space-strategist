@@ -136,7 +136,7 @@ class Main {
         new VertexDataLoader(Main.Scene);
         new NavGraphManager();
         let player = new Player();
-        let wallSystem = new WallSystem();
+        Main.WallSystem = new WallSystem();
         if (window.localStorage.getItem("scene-data")) {
             let data = JSON.parse(window.localStorage.getItem("scene-data"));
             await Serializer.Deserialize(Main.Scene, data, player);
@@ -1885,6 +1885,48 @@ class DroneWorkerUI {
             };
         });
         this._panel.addLargeButton("BUILD WALL", () => {
+            this._ghostProp = new WallNode(BABYLON.Vector2.Zero(), Main.WallSystem);
+            this._ghostProp.instantiate();
+            this._ghostProp.setVisibility(0);
+            this._ghostProp.isPickable = false;
+            this._onRightClickOverride = (pickedPoint, pickedTarget) => {
+                this._ghostProp.dispose();
+                this._ghostProp = undefined;
+                if (pickedTarget && pickedTarget instanceof WallNode) {
+                    console.log("First Build Wall click, use existing WallNode.");
+                    this._newWallOrigin = pickedTarget;
+                }
+                else {
+                    console.log("First Build Wall click, create new WallNode.");
+                    this._newWallOrigin = new WallNode(pickedPoint, Main.WallSystem);
+                    //this._newWallOrigin.instantiateBuilding();
+                    this._ghostProp = this._newWallOrigin;
+                }
+                // Go to second WallNode next frame. TODO.
+                let otherWallNode = new WallNode(BABYLON.Vector2.Zero(), Main.WallSystem);
+                otherWallNode.setVisibility(0);
+                otherWallNode.isPickable = false;
+                let _ghostWall = new Wall(this._newWallOrigin, otherWallNode);
+                this._ghostProps.splice(0, 0, otherWallNode, _ghostWall);
+                requestAnimationFrame(() => {
+                    this._onRightClickOverride = (pickedPoint, pickedTarget) => {
+                        if (pickedTarget && pickedTarget instanceof WallNode) {
+                            console.log("Second Build Wall click, use existing WallNode.");
+                            otherWallNode = pickedTarget;
+                            _ghostWall.dispose();
+                            _ghostWall = new Wall(this._newWallOrigin, otherWallNode);
+                        }
+                        else {
+                            console.log("Second Build Wall click, use ghost WallNode.");
+                        }
+                        _ghostWall.wallSystem.instantiate();
+                        for (let i = 0; i < this._ghostProps.length; i++) {
+                            this._ghostProps[i].setVisibility(1);
+                        }
+                        this._ghostProp = undefined;
+                    };
+                });
+            };
         });
         this._panel.addLargeButton("LOOK AT", () => { Main.CameraTarget = this.target; });
         this._selector = ShapeDraw.CreateCircle(1.05, 1.2);
@@ -1912,6 +1954,11 @@ class DroneWorkerUI {
                 this._ghostProps[i].setVisibility(0.5);
             }
             this._ghostProp.position2D = currentPoint;
+            if (this._ghostProp instanceof WallNode) {
+                for (let i = 0; i < this._ghostProps.length; i++) {
+                    this._ghostProps[i].instantiate();
+                }
+            }
             return true;
         }
         return false;
@@ -2540,15 +2587,9 @@ class Wall extends Building {
         if (indexNode1 > -1) {
             this.node1.walls.splice(indexNode1, 1);
         }
-        if (this.node1.walls.length === 0) {
-            this.node1.dispose(doNotRecurse, disposeMaterialAndTextures);
-        }
         let indexNode2 = this.node2.walls.indexOf(this);
         if (indexNode2 > -1) {
             this.node2.walls.splice(indexNode2, 1);
-        }
-        if (this.node2.walls.length === 0) {
-            this.node2.dispose(doNotRecurse, disposeMaterialAndTextures);
         }
         super.dispose(doNotRecurse, disposeMaterialAndTextures);
     }
@@ -3008,8 +3049,8 @@ class VertexDataLoader {
         return vertexData;
     }
     async getColorized(name, baseColorHex = "#FFFFFF", frameColorHex = "", color1Hex = "", // Replace red
-    color2Hex = "", // Replace green
-    color3Hex = "" // Replace blue
+        color2Hex = "", // Replace green
+        color3Hex = "" // Replace blue
     ) {
         let baseColor;
         if (baseColorHex !== "") {

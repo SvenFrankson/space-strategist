@@ -78,16 +78,46 @@ class DroneWorkerUI {
             this._ghostProp.setVisibility(0);
             this._ghostProp.isPickable = false;
             this._onRightClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
+                this._ghostProp.dispose();
+                this._ghostProp = undefined;
                 if (pickedTarget && pickedTarget instanceof WallNode) {
+                    console.log("First Build Wall click, use existing WallNode.");
                     this._newWallOrigin = pickedTarget;
                 }
                 else {
+                    console.log("First Build Wall click, create new WallNode.");
                     this._newWallOrigin = new WallNode(pickedPoint, Main.WallSystem);
-                    this._newWallOrigin.instantiateBuilding();
+                    //this._newWallOrigin.instantiateBuilding();
+                    this._ghostProp = this._newWallOrigin;
                 }
-                this._ghostProp.dispose();
-                this._ghostProp = undefined;
                 // Go to second WallNode next frame. TODO.
+                let otherWallNode = new WallNode(BABYLON.Vector2.Zero(), Main.WallSystem);
+                otherWallNode.setVisibility(0);
+                otherWallNode.isPickable = false;
+
+                let _ghostWall = new Wall(this._newWallOrigin, otherWallNode);
+
+                this._ghostProps.splice(0, 0, otherWallNode, _ghostWall);
+                requestAnimationFrame(
+                    () => {
+                        this._onRightClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
+                            if (pickedTarget && pickedTarget instanceof WallNode) {
+                                console.log("Second Build Wall click, use existing WallNode.");
+                                otherWallNode = pickedTarget;
+                                _ghostWall.dispose();
+                                _ghostWall = new Wall(this._newWallOrigin, otherWallNode);
+                            }
+                            else {
+                                console.log("Second Build Wall click, use ghost WallNode.");
+                            }
+                            _ghostWall.wallSystem.instantiate();
+                            for (let i = 0; i < this._ghostProps.length; i++) {
+                                this._ghostProps[i].setVisibility(1);
+                            }
+                            this._ghostProp = undefined;
+                        }
+                    }
+                )
             }
         });
         this._panel.addLargeButton("LOOK AT", () => { Main.CameraTarget = this.target; });
@@ -126,6 +156,11 @@ class DroneWorkerUI {
                 this._ghostProps[i].setVisibility(0.5);
             }
             this._ghostProp.position2D = currentPoint;
+            if (this._ghostProp instanceof WallNode) {
+                for (let i = 0; i < this._ghostProps.length; i++) {
+                    this._ghostProps[i].instantiate();
+                }
+            }
             return true;
         }
         return false;
