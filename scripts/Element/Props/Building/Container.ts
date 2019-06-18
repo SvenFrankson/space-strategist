@@ -1,4 +1,4 @@
-/// <reference path="./Building/Building.ts"/>
+/// <reference path="./Building.ts"/>
 
 class Container extends Building {
 

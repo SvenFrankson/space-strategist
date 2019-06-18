@@ -1,17 +1,27 @@
-class WallNode extends Draggable {
+class WallNodeData {
+
+    constructor(
+        public position2D: BABYLON.Vector2
+    ) {}
+}
+
+class WallNode extends Building {
 
     public obstacle: Obstacle;
 
     public dirs: {dir: number, length: number}[] = [];
     public walls: Wall[] = [];
 
+    public ui: WallUI;
+
     constructor(
-        public position2D: BABYLON.Vector2,
+        position2D: BABYLON.Vector2,
         public wallSystem: WallSystem
     ) {
-        super("wallnode");
-        this.position2D = position2D;
+        super("wallnode", wallSystem.owner, position2D);
         this.wallSystem.nodes.push(this);
+
+        this.ui = new WallNodeUI(this);
     }
 
     public dispose(doNotRecurse?: boolean, disposeMaterialAndTextures?: boolean): void {
@@ -251,198 +261,16 @@ class WallNode extends Draggable {
 
         return data;
     }
-}
 
-class Wall extends Selectionable {
-
-    public wallSystem: WallSystem;
-
-    constructor(
-        public node1: WallNode,
-        public node2: WallNode
-    ) {
-        super("wall");
-        node1.walls.push(this);
-        node2.walls.push(this);
-        this.wallSystem = node1.wallSystem;
-        this.wallSystem.walls.push(this);
+    public onSelected(): void {
+        this.ui.enable();
     }
 
-    public dispose(doNotRecurse?: boolean, disposeMaterialAndTextures?: boolean): void {
-        let indexWallSystem = this.wallSystem.walls.indexOf(this);
-        if (indexWallSystem > -1) {
-            this.wallSystem.walls.splice(indexWallSystem, 1);
-        }
-        let indexNode1 = this.node1.walls.indexOf(this);
-        if (indexNode1 > -1) {
-            this.node1.walls.splice(indexNode1, 1);
-        }
-        if (this.node1.walls.length === 0) {
-            this.node1.dispose(doNotRecurse, disposeMaterialAndTextures);
-        }
-        let indexNode2 = this.node2.walls.indexOf(this);
-        if (indexNode2 > -1) {
-            this.node2.walls.splice(indexNode2, 1);
-        }
-        if (this.node2.walls.length === 0) {
-            this.node2.dispose(doNotRecurse, disposeMaterialAndTextures);
-        }
-        super.dispose(doNotRecurse, disposeMaterialAndTextures);
+    public onUnselected(): void {
+        this.ui.disable();
     }
 
-    public otherNode(refNode: WallNode): WallNode {
-        if (this.node1 === refNode) {
-            return this.node2;
-        }
-        if (this.node2 === refNode) {
-            return this.node1;
-        }
-        return undefined;
-    }
-
-    public async instantiate(): Promise<void> {
-        let vertexData = await VertexDataLoader.instance.getColorized("wall", "#6d6d6d", "#383838", "#ce7633");
-        vertexData = VertexDataLoader.clone(vertexData);
-
-        let d = this.node1.position2D.subtract(this.node2.position2D);
-        let l = d.length() - 2;
-        d.scaleInPlace(1 / l);
-        let dir = Math2D.AngleFromTo(new BABYLON.Vector2(1, 0), d, true);
-        let cosDir = Math.cos(dir);
-        let sinDir = Math.sin(dir);
-
-        for (let i = 0; i < vertexData.positions.length / 3; i++) {
-            let x = vertexData.positions[3 * i] * l;
-            let z = vertexData.positions[3 * i + 2];
-
-            vertexData.positions[3 * i] = cosDir * x - sinDir * z;
-            vertexData.positions[3 * i + 2] = sinDir *x + cosDir * z; 
-        }
-        this.groundWidth = 2;
-        this.height = - Infinity;
-        for (let i = 0; i < vertexData.positions.length / 3; i++) {
-            let y = vertexData.positions[3 * i + 1];
-            this.height = Math.max(this.height, y);
-        }
-
-        vertexData.applyToMesh(this);
-        this.material = Main.cellShadingMaterial;
-
-        this.position.x = (this.node1.position2D.x + this.node2.position2D.x) * 0.5;
-        this.position.z = (this.node1.position2D.y + this.node2.position2D.y) * 0.5;
-    }
-}
-
-class WallData {
-
-    constructor(
-        public node1Index: number,
-        public node2Index: number
-    ) {}
-}
-
-class WallNodeData {
-
-    constructor(
-        public position2D: BABYLON.Vector2
-    ) {}
-}
-
-class WallSystemData {
-
-    public nodesData: WallNodeData[] = [];
-    public wallsData: WallData[] = [];
-}
-
-class WallSystem extends BABYLON.TransformNode {
-
-    public nodes: WallNode[] = [];
-    public walls: Wall[] = [];
-
-    constructor() {
-        super("wall-system");
-    }
-
-    public serialize(): WallSystemData {
-        let data = new WallSystemData();
-        for (let i = 0; i < this.nodes.length; i++) {
-            data.nodesData.push(new WallNodeData(this.nodes[i].position2D));
-        }
-        for (let i = 0; i < this.walls.length; i++) {
-            let wall = this.walls[i];
-            data.wallsData.push(
-                new WallData(
-                    this.nodes.indexOf(wall.node1),
-                    this.nodes.indexOf(wall.node2)
-                )
-            );
-        }
-        console.log("Serialize.");
-        console.log("NodesCount = " + data.nodesData.length);
-        console.log("WallsCount = " + data.wallsData.length);
-        console.log(data);
-        return data;
-    }
-
-    public deserialize(data: WallSystemData): void {
-        while (this.nodes.length > 0) {
-            this.nodes.pop().dispose();
-        }
-        while (this.walls.length > 0) {
-            this.walls.pop().dispose();
-        }
-        for (let i = 0; i < data.nodesData.length; i++) {
-            new WallNode(
-                new BABYLON.Vector2(
-                    data.nodesData[i].position2D.x,
-                    data.nodesData[i].position2D.y
-                ),
-                this
-            );
-        }
-        for (let i = 0; i < data.wallsData.length; i++) {
-            let wallData = data.wallsData[i];
-            new Wall(
-                this.nodes[wallData.node1Index],
-                this.nodes[wallData.node2Index]
-            );
-        }
-        console.log("Deserialize.");
-        console.log("NodesCount = " + data.nodesData.length);
-        console.log("WallsCount = " + data.wallsData.length);
-    }
-
-    public async instantiate(): Promise<void> {
-        for (let i = 0; i < this.nodes.length; i++) {
-            await this.nodes[i].instantiate();
-        }
-        for (let i = 0; i < this.walls.length; i++) {
-            await this.walls[i].instantiate();
-        }
-    }
-
-    public addToScene(): void {
-        for (let i = 0; i < this.nodes.length; i++) {
-            this.nodes[i].updateObstacle();
-
-            /*
-            let shape = this.nodes[i].obstacle.getPath(0.5, true);
-            let r = Math.random();
-            let g = Math.random();
-            let b = Math.random();
-            let points: BABYLON.Vector3[] = [];
-            let colors: BABYLON.Color4[] = [];
-            for (let i = 0; i < shape.length; i++) {
-                let p = shape[i];
-                points.push(new BABYLON.Vector3(p.x, - 0.5 * i, p.y));
-                colors.push(new BABYLON.Color4(r, g, b, 1));
-            }
-            points.push(new BABYLON.Vector3(shape[0].x, - 0.5 * shape.length, shape[0].y));
-            colors.push(new BABYLON.Color4(r, g, b, 1));
-            BABYLON.MeshBuilder.CreateLines("shape", { points: points, colors: colors }, Main.Scene);
-            */
-
-            NavGraphManager.AddObstacle(this.nodes[i].obstacle);
-        }
+    public elementName(): string {
+        return "WallNode";
     }
 }

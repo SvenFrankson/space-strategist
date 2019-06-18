@@ -64,6 +64,9 @@ class DroneWorkerUI {
                 this._ghostProp = undefined;
             }
         });
+        this._panel.addLargeButton("BUILD WALL", () => {
+            
+        });
         this._panel.addLargeButton("LOOK AT", () => { Main.CameraTarget = this.target; });
 
         this._selector = ShapeDraw.CreateCircle(1.05, 1.2);

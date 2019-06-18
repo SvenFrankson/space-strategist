@@ -14,7 +14,7 @@ abstract class Prop extends Draggable {
     public isActive = false;
     public obstacle: Obstacle;
 
-    constructor(name: string, position2D: BABYLON.Vector2, rotation2D: number) {
+    constructor(name: string, position2D: BABYLON.Vector2 = BABYLON.Vector2.Zero(), rotation2D: number = 0) {
         super(name);
         this.position2D = position2D;
         this.rotation2D = rotation2D;
