@@ -9,7 +9,9 @@ class DroneWorkerUI {
         this._ghostProps = [p];
     }
     private _ghostProps: Prop[] = [];
+    private _newWallOriginNeedsBuild: boolean = false;
     private _newWallOrigin: WallNode;
+    private _newWallEndNeedsBuild: boolean = false;
 
     private _onMouseMoveOverride: (currentPoint: BABYLON.Vector2) => void;
     private _onRightClickOverride: (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => void;
@@ -83,37 +85,50 @@ class DroneWorkerUI {
                 if (pickedTarget && pickedTarget instanceof WallNode) {
                     console.log("First Build Wall click, use existing WallNode.");
                     this._newWallOrigin = pickedTarget;
+                    this._newWallOriginNeedsBuild = false;
                 }
                 else {
                     console.log("First Build Wall click, create new WallNode.");
                     this._newWallOrigin = new WallNode(pickedPoint, Main.WallSystem);
-                    //this._newWallOrigin.instantiateBuilding();
+                    this._newWallOrigin.instantiate();
                     this._ghostProp = this._newWallOrigin;
+                    this._newWallOriginNeedsBuild = true;
                 }
                 // Go to second WallNode next frame. TODO.
-                let otherWallNode = new WallNode(BABYLON.Vector2.Zero(), Main.WallSystem);
-                otherWallNode.setVisibility(0);
-                otherWallNode.isPickable = false;
+                let newWallEnd = new WallNode(BABYLON.Vector2.Zero(), Main.WallSystem);
+                newWallEnd.setVisibility(0);
+                newWallEnd.isPickable = false;
 
-                let _ghostWall = new Wall(this._newWallOrigin, otherWallNode);
+                let _ghostWall = new Wall(this._newWallOrigin, newWallEnd);
 
-                this._ghostProps.splice(0, 0, otherWallNode, _ghostWall);
+                this._ghostProps.splice(0, 0, newWallEnd, _ghostWall);
                 requestAnimationFrame(
                     () => {
-                        this._onRightClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
+                        this._onRightClickOverride = async (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
                             if (pickedTarget && pickedTarget instanceof WallNode) {
                                 console.log("Second Build Wall click, use existing WallNode.");
-                                otherWallNode = pickedTarget;
+                                newWallEnd = pickedTarget;
                                 _ghostWall.dispose();
-                                _ghostWall = new Wall(this._newWallOrigin, otherWallNode);
+                                _ghostWall = new Wall(this._newWallOrigin, newWallEnd);
+                                this._newWallEndNeedsBuild = false;
                             }
                             else {
                                 console.log("Second Build Wall click, use ghost WallNode.");
+                                this._newWallEndNeedsBuild = true;
                             }
-                            _ghostWall.wallSystem.instantiate();
                             for (let i = 0; i < this._ghostProps.length; i++) {
                                 this._ghostProps[i].setVisibility(1);
+                                this._ghostProps[i].isPickable = true;
                             }
+                            if (this._newWallOriginNeedsBuild) {
+                                await this._newWallOrigin.instantiateBuilding();
+                            }
+                            await _ghostWall.instantiateBuilding();
+                            if (this._newWallEndNeedsBuild) {
+                                await newWallEnd.instantiateBuilding();
+                            }
+                            this.target.currentTask = new BuildTask(this.target, _ghostWall);
+                            console.log(_ghostWall);
                             this._ghostProp = undefined;
                         }
                     }

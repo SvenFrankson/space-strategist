@@ -184,7 +184,12 @@ class BuildTask extends Task {
                 if (!this.hasPathToTarget) {
                     let navGraph = NavGraphManager.GetForRadius(1);
                     navGraph.update();
-                    navGraph.computePathFromTo(this.worker.position2D, this.target.obstacle);
+                    if (this.target.obstacle) {
+                        navGraph.computePathFromTo(this.worker.position2D, this.target.obstacle);
+                    }
+                    else {
+                        navGraph.computePathFromTo(this.worker.position2D, this.target.position2D);
+                    }
                     this.worker.currentPath = navGraph.path;
                     this.hasPathToTarget = this.worker.currentPath !== undefined;
                     this.worker.currentAction = "Going to building";
@@ -210,7 +215,12 @@ class BuildTask extends Task {
             if (!this.hasPathToTarget) {
                 let navGraph = NavGraphManager.GetForRadius(1);
                 navGraph.update();
-                navGraph.computePathFromTo(this.worker.position2D, this.target.obstacle);
+                if (this.target.obstacle) {
+                    navGraph.computePathFromTo(this.worker.position2D, this.target.obstacle);
+                }
+                else {
+                    navGraph.computePathFromTo(this.worker.position2D, this.target.position2D);
+                }
                 this.worker.currentPath = navGraph.path;
                 this.hasPathToTarget = this.worker.currentPath !== undefined;
                 this.worker.currentAction = "Going to building";

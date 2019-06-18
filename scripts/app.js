@@ -1779,7 +1779,12 @@ class BuildTask extends Task {
                 if (!this.hasPathToTarget) {
                     let navGraph = NavGraphManager.GetForRadius(1);
                     navGraph.update();
-                    navGraph.computePathFromTo(this.worker.position2D, this.target.obstacle);
+                    if (this.target.obstacle) {
+                        navGraph.computePathFromTo(this.worker.position2D, this.target.obstacle);
+                    }
+                    else {
+                        navGraph.computePathFromTo(this.worker.position2D, this.target.position2D);
+                    }
                     this.worker.currentPath = navGraph.path;
                     this.hasPathToTarget = this.worker.currentPath !== undefined;
                     this.worker.currentAction = "Going to building";
@@ -1804,7 +1809,12 @@ class BuildTask extends Task {
             if (!this.hasPathToTarget) {
                 let navGraph = NavGraphManager.GetForRadius(1);
                 navGraph.update();
-                navGraph.computePathFromTo(this.worker.position2D, this.target.obstacle);
+                if (this.target.obstacle) {
+                    navGraph.computePathFromTo(this.worker.position2D, this.target.obstacle);
+                }
+                else {
+                    navGraph.computePathFromTo(this.worker.position2D, this.target.position2D);
+                }
                 this.worker.currentPath = navGraph.path;
                 this.hasPathToTarget = this.worker.currentPath !== undefined;
                 this.worker.currentAction = "Going to building";
@@ -1826,6 +1836,8 @@ class DroneWorkerUI {
         this.target = target;
         this._isEnabled = false;
         this._ghostProps = [];
+        this._newWallOriginNeedsBuild = false;
+        this._newWallEndNeedsBuild = false;
         this._update = () => {
             if (this._selector) {
                 this._selector.position.copyFromFloats(this.target.position2D.x, 0.1, this.target.position2D.y);
@@ -1895,34 +1907,47 @@ class DroneWorkerUI {
                 if (pickedTarget && pickedTarget instanceof WallNode) {
                     console.log("First Build Wall click, use existing WallNode.");
                     this._newWallOrigin = pickedTarget;
+                    this._newWallOriginNeedsBuild = false;
                 }
                 else {
                     console.log("First Build Wall click, create new WallNode.");
                     this._newWallOrigin = new WallNode(pickedPoint, Main.WallSystem);
-                    //this._newWallOrigin.instantiateBuilding();
+                    this._newWallOrigin.instantiate();
                     this._ghostProp = this._newWallOrigin;
+                    this._newWallOriginNeedsBuild = true;
                 }
                 // Go to second WallNode next frame. TODO.
-                let otherWallNode = new WallNode(BABYLON.Vector2.Zero(), Main.WallSystem);
-                otherWallNode.setVisibility(0);
-                otherWallNode.isPickable = false;
-                let _ghostWall = new Wall(this._newWallOrigin, otherWallNode);
-                this._ghostProps.splice(0, 0, otherWallNode, _ghostWall);
+                let newWallEnd = new WallNode(BABYLON.Vector2.Zero(), Main.WallSystem);
+                newWallEnd.setVisibility(0);
+                newWallEnd.isPickable = false;
+                let _ghostWall = new Wall(this._newWallOrigin, newWallEnd);
+                this._ghostProps.splice(0, 0, newWallEnd, _ghostWall);
                 requestAnimationFrame(() => {
-                    this._onRightClickOverride = (pickedPoint, pickedTarget) => {
+                    this._onRightClickOverride = async (pickedPoint, pickedTarget) => {
                         if (pickedTarget && pickedTarget instanceof WallNode) {
                             console.log("Second Build Wall click, use existing WallNode.");
-                            otherWallNode = pickedTarget;
+                            newWallEnd = pickedTarget;
                             _ghostWall.dispose();
-                            _ghostWall = new Wall(this._newWallOrigin, otherWallNode);
+                            _ghostWall = new Wall(this._newWallOrigin, newWallEnd);
+                            this._newWallEndNeedsBuild = false;
                         }
                         else {
                             console.log("Second Build Wall click, use ghost WallNode.");
+                            this._newWallEndNeedsBuild = true;
                         }
-                        _ghostWall.wallSystem.instantiate();
                         for (let i = 0; i < this._ghostProps.length; i++) {
                             this._ghostProps[i].setVisibility(1);
+                            this._ghostProps[i].isPickable = true;
                         }
+                        if (this._newWallOriginNeedsBuild) {
+                            await this._newWallOrigin.instantiateBuilding();
+                        }
+                        await _ghostWall.instantiateBuilding();
+                        if (this._newWallEndNeedsBuild) {
+                            await newWallEnd.instantiateBuilding();
+                        }
+                        this.target.currentTask = new BuildTask(this.target, _ghostWall);
+                        console.log(_ghostWall);
                         this._ghostProp = undefined;
                     };
                 });
@@ -2576,6 +2601,9 @@ class Wall extends Building {
         node2.walls.push(this);
         this.wallSystem = node1.wallSystem;
         this.wallSystem.walls.push(this);
+        this.resourcesAvailableRequired.get(ResourceType.Steel).required = 20;
+        this.resourcesAvailableRequired.get(ResourceType.Rock).required = 20;
+        this.completionRequired = 10;
         this.ui = new WallUI(this);
     }
     dispose(doNotRecurse, disposeMaterialAndTextures) {
@@ -2667,6 +2695,9 @@ class WallNode extends Building {
         this.dirs = [];
         this.walls = [];
         this.wallSystem.nodes.push(this);
+        this.resourcesAvailableRequired.get(ResourceType.Steel).required = 10;
+        this.resourcesAvailableRequired.get(ResourceType.Rock).required = 10;
+        this.completionRequired = 10;
         this.ui = new WallNodeUI(this);
     }
     dispose(doNotRecurse, disposeMaterialAndTextures) {

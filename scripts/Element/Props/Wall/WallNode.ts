@@ -21,6 +21,10 @@ class WallNode extends Building {
         super("wallnode", wallSystem.owner, position2D);
         this.wallSystem.nodes.push(this);
 
+        this.resourcesAvailableRequired.get(ResourceType.Steel).required = 10;
+        this.resourcesAvailableRequired.get(ResourceType.Rock).required = 10;
+        this.completionRequired = 10;
+
         this.ui = new WallNodeUI(this);
     }
 
