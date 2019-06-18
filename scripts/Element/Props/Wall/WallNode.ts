@@ -12,7 +12,7 @@ class WallNode extends Building {
     public dirs: {dir: number, length: number}[] = [];
     public walls: Wall[] = [];
 
-    public ui: WallUI;
+    public ui: WallNodeUI;
 
     constructor(
         position2D: BABYLON.Vector2,

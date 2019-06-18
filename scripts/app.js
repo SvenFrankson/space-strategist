@@ -1825,11 +1825,18 @@ class DroneWorkerUI {
     constructor(target) {
         this.target = target;
         this._isEnabled = false;
+        this._ghostProps = [];
         this._update = () => {
             if (this._selector) {
                 this._selector.position.copyFromFloats(this.target.position2D.x, 0.1, this.target.position2D.y);
             }
         };
+    }
+    get _ghostProp() {
+        return this._ghostProps[0];
+    }
+    set _ghostProp(p) {
+        this._ghostProps = [p];
     }
     enable() {
         this._panel = SpacePanel.CreateSpacePanel();
@@ -1901,7 +1908,9 @@ class DroneWorkerUI {
     }
     onMouseMove(currentPoint) {
         if (this._ghostProp) {
-            this._ghostProp.setVisibility(0.5);
+            for (let i = 0; i < this._ghostProps.length; i++) {
+                this._ghostProps[i].setVisibility(0.5);
+            }
             this._ghostProp.position2D = currentPoint;
             return true;
         }

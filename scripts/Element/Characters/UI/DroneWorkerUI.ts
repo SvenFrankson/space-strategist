@@ -2,7 +2,15 @@ class DroneWorkerUI {
 
     private _isEnabled: boolean = false;
     private _panel: SpacePanel;
-    private _ghostProp: Prop;
+    private get _ghostProp(): Prop {
+        return this._ghostProps[0];
+    }
+    private set _ghostProp(p: Prop) {
+        this._ghostProps = [p];
+    }
+    private _ghostProps: Prop[] = [];
+    private _newWallOrigin: WallNode;
+
     private _onMouseMoveOverride: (currentPoint: BABYLON.Vector2) => void;
     private _onRightClickOverride: (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => void;
     private _onLeftClickOverride: (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => void;
@@ -65,7 +73,22 @@ class DroneWorkerUI {
             }
         });
         this._panel.addLargeButton("BUILD WALL", () => {
-            
+            this._ghostProp = new WallNode(BABYLON.Vector2.Zero(), Main.WallSystem);
+            this._ghostProp.instantiate();
+            this._ghostProp.setVisibility(0);
+            this._ghostProp.isPickable = false;
+            this._onRightClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
+                if (pickedTarget && pickedTarget instanceof WallNode) {
+                    this._newWallOrigin = pickedTarget;
+                }
+                else {
+                    this._newWallOrigin = new WallNode(pickedPoint, Main.WallSystem);
+                    this._newWallOrigin.instantiateBuilding();
+                }
+                this._ghostProp.dispose();
+                this._ghostProp = undefined;
+                // Go to second WallNode next frame. TODO.
+            }
         });
         this._panel.addLargeButton("LOOK AT", () => { Main.CameraTarget = this.target; });
 
@@ -99,7 +122,9 @@ class DroneWorkerUI {
 
     public onMouseMove(currentPoint: BABYLON.Vector2): boolean {
         if (this._ghostProp) {
-            this._ghostProp.setVisibility(0.5);
+            for (let i = 0; i < this._ghostProps.length; i++) {
+                this._ghostProps[i].setVisibility(0.5);
+            }
             this._ghostProp.position2D = currentPoint;
             return true;
         }

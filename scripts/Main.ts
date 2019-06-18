@@ -9,6 +9,7 @@ class Main {
 	public static Camera: BABYLON.ArcRotateCamera;
 	public static CameraTarget: BABYLON.Mesh;
 	public static Ground: Ground;
+	public static WallSystem: WallSystem;
 
     public static _cellShadingMaterial: BABYLON.CellMaterial;
 	public static get cellShadingMaterial(): BABYLON.CellMaterial {
@@ -165,7 +166,7 @@ class Main {
 
 		let player = new Player();
 
-        let wallSystem = new WallSystem();
+        Main.WallSystem = new WallSystem();
         if (window.localStorage.getItem("scene-data")) {
             let data = JSON.parse(window.localStorage.getItem("scene-data"));
             await Serializer.Deserialize(Main.Scene, data, player);
