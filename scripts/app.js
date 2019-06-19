@@ -56,7 +56,7 @@ class Main {
                 let groundForward = Main.Camera.getDirection(BABYLON.Axis.Z);
                 groundForward.y = 0;
                 groundForward.normalize();
-                groundForward.scaleInPlace(Main.Engine.getDeltaTime() / 1000 * 10 * (50 - pointerTop) / 50);
+                groundForward.scaleInPlace(Main.Engine.getDeltaTime() / 1000 * 20 * (50 - pointerTop) / 50);
                 Main.Camera.target.addInPlace(groundForward);
             }
             if (pointerBottom < 50) {
@@ -64,7 +64,7 @@ class Main {
                 let groundBackward = Main.Camera.getDirection(BABYLON.Axis.Z);
                 groundBackward.y = 0;
                 groundBackward.normalize();
-                groundBackward.scaleInPlace(-Main.Engine.getDeltaTime() / 1000 * 10 * (50 - pointerBottom) / 50);
+                groundBackward.scaleInPlace(-Main.Engine.getDeltaTime() / 1000 * 20 * (50 - pointerBottom) / 50);
                 Main.Camera.target.addInPlace(groundBackward);
             }
             if (pointerLeft < 50) {
@@ -72,7 +72,7 @@ class Main {
                 let groundLeft = Main.Camera.getDirection(BABYLON.Axis.X);
                 groundLeft.y = 0;
                 groundLeft.normalize();
-                groundLeft.scaleInPlace(-Main.Engine.getDeltaTime() / 1000 * 10 * (50 - pointerLeft) / 50);
+                groundLeft.scaleInPlace(-Main.Engine.getDeltaTime() / 1000 * 20 * (50 - pointerLeft) / 50);
                 Main.Camera.target.addInPlace(groundLeft);
             }
             if (pointerRight < 50) {
@@ -80,7 +80,7 @@ class Main {
                 let groundRight = Main.Camera.getDirection(BABYLON.Axis.X);
                 groundRight.y = 0;
                 groundRight.normalize();
-                groundRight.scaleInPlace(Main.Engine.getDeltaTime() / 1000 * 10 * (50 - pointerRight) / 50);
+                groundRight.scaleInPlace(Main.Engine.getDeltaTime() / 1000 * 20 * (50 - pointerRight) / 50);
                 Main.Camera.target.addInPlace(groundRight);
             }
         });
@@ -1327,6 +1327,9 @@ class DroneWorker extends Character {
             else {
                 this.currentAction = "Doing nothing";
             }
+            if (isFinite(this.targetRotation2D)) {
+                this.rotation2D = Math2D.StepFromToCirular(this.rotation2D, this.targetRotation2D, Math.PI / 60);
+            }
             this.position.x = this.position2D.x;
             this.position.z = this.position2D.y;
             this.rotation.y = -this.rotation2D;
@@ -1408,12 +1411,9 @@ class DroneWorker extends Character {
                 return this.moveOnPath();
             }
             let stepToNext = next.subtract(this.position2D).normalize();
-            let rotationToNext = Math2D.AngleFromTo(new BABYLON.Vector2(0, 1), stepToNext);
+            this.targetRotation2D = Math2D.AngleFromTo(new BABYLON.Vector2(0, 1), stepToNext);
             stepToNext.scaleInPlace(Math.min(distanceToNext, this.moveSpeed * Main.Engine.getDeltaTime() / 1000));
             this.position2D.addInPlace(stepToNext);
-            if (isFinite(rotationToNext)) {
-                this.rotation2D = Math2D.StepFromToCirular(this.rotation2D, rotationToNext, Math.PI / 60);
-            }
         }
     }
 }
