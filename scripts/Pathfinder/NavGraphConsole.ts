@@ -62,6 +62,7 @@ class NavGraphConsole {
         );
         this._panel.style.left = "10px";
         this._panel.style.bottom = "10px";
+        this._panel.hide();
     }
 
     public disable() {

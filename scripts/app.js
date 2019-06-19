@@ -599,6 +599,7 @@ class PerformanceConsole {
         this._pointerPosInput = this._panel.addTextInput("POINTER", this._pointerPos);
         this._panel.style.right = "10px";
         this._panel.style.top = "10px";
+        this._panel.hide();
         this.scene.onBeforeRenderObservable.add(this._update);
     }
     disable() {
@@ -1927,11 +1928,9 @@ class DroneWorkerUI {
                 let newWallOrigin;
                 let newWallOriginNeedsBuild = false;
                 if (pickedTarget && pickedTarget instanceof WallNode) {
-                    console.log("First Build Wall click, use existing WallNode.");
                     newWallOrigin = pickedTarget;
                 }
                 else {
-                    console.log("First Build Wall click, create new WallNode.");
                     newWallOrigin = new WallNode(pickedPoint, Main.WallSystem);
                     newWallOrigin.instantiate();
                     this._ghostProp = newWallOrigin;
@@ -1943,12 +1942,10 @@ class DroneWorkerUI {
                 newWallEnd.isPickable = false;
                 let newWall = new Wall(newWallOrigin, newWallEnd);
                 this._ghostProps.splice(0, 0, newWallEnd, newWall);
-                console.log(this._ghostProps);
                 requestAnimationFrame(() => {
                     this._onRightClickOverride = async (pickedPoint, pickedTarget) => {
                         let newWallEndNeedsBuild = false;
                         if (pickedTarget && pickedTarget instanceof WallNode) {
-                            console.log("Second Build Wall click, use existing WallNode.");
                             newWallEnd.dispose();
                             newWallEnd = pickedTarget;
                             newWall.dispose();
@@ -1956,7 +1953,6 @@ class DroneWorkerUI {
                             newWallEndNeedsBuild = false;
                         }
                         else {
-                            console.log("Second Build Wall click, use ghost WallNode.");
                             newWallEndNeedsBuild = true;
                         }
                         for (let i = 0; i < this._ghostProps.length; i++) {
@@ -3460,6 +3456,7 @@ class NavGraphConsole {
         });
         this._panel.style.left = "10px";
         this._panel.style.bottom = "10px";
+        this._panel.hide();
     }
     disable() {
         this._panel.dispose();
@@ -3909,6 +3906,8 @@ class Ground extends BABYLON.Mesh {
 class SpacePanel extends HTMLElement {
     constructor() {
         super();
+        this._htmlLines = [];
+        this._isVisible = true;
         this._update = () => {
             if (!this._target) {
                 return;
@@ -3936,6 +3935,18 @@ class SpacePanel extends HTMLElement {
         this._innerBorder = document.createElement("div");
         this._innerBorder.classList.add("space-panel-inner-border");
         this.appendChild(this._innerBorder);
+        this._toggleVisibilityInput = document.createElement("button");
+        this._toggleVisibilityInput.classList.add("space-panel-toggle-visibility");
+        this._toggleVisibilityInput.textContent = "^";
+        this._toggleVisibilityInput.addEventListener("click", () => {
+            if (this._isVisible) {
+                this.hide();
+            }
+            else {
+                this.show();
+            }
+        });
+        this._innerBorder.appendChild(this._toggleVisibilityInput);
     }
     dispose() {
         if (this._target) {
@@ -3945,6 +3956,22 @@ class SpacePanel extends HTMLElement {
             this._line.dispose();
         }
         document.body.removeChild(this);
+    }
+    show() {
+        this._toggleVisibilityInput.textContent = "^";
+        this._isVisible = true;
+        console.log("SHOW");
+        this._htmlLines.forEach((l) => {
+            l.style.display = "block";
+        });
+    }
+    hide() {
+        this._toggleVisibilityInput.textContent = "v";
+        this._isVisible = false;
+        console.log("HIDE");
+        this._htmlLines.forEach((l) => {
+            l.style.display = "none";
+        });
     }
     setTarget(mesh) {
         this._target = mesh;
@@ -3981,6 +4008,7 @@ class SpacePanel extends HTMLElement {
         e.classList.add("space-title-2");
         e.textContent = title;
         this._innerBorder.appendChild(e);
+        this._htmlLines.push(e);
     }
     addNumberInput(label, value, onInputCallback, precision = 1) {
         let lineElement = document.createElement("div");
@@ -4006,6 +4034,7 @@ class SpacePanel extends HTMLElement {
         });
         lineElement.appendChild(inputElement);
         this._innerBorder.appendChild(lineElement);
+        this._htmlLines.push(lineElement);
         return inputElement;
     }
     addTextInput(label, text, onInputCallback) {
@@ -4027,6 +4056,7 @@ class SpacePanel extends HTMLElement {
         });
         lineElement.appendChild(inputElement);
         this._innerBorder.appendChild(lineElement);
+        this._htmlLines.push(lineElement);
         return inputElement;
     }
     addLargeButton(value, onClickCallback) {
@@ -4041,6 +4071,7 @@ class SpacePanel extends HTMLElement {
         });
         lineElement.appendChild(inputElement);
         this._innerBorder.appendChild(lineElement);
+        this._htmlLines.push(lineElement);
         return inputElement;
     }
     addConditionalButton(label, value, onClickCallback) {
@@ -4059,6 +4090,7 @@ class SpacePanel extends HTMLElement {
         });
         lineElement.appendChild(inputElement);
         this._innerBorder.appendChild(lineElement);
+        this._htmlLines.push(lineElement);
         return inputElement;
     }
     addMediumButtons(value1, onClickCallback1, value2, onClickCallback2) {
@@ -4085,6 +4117,7 @@ class SpacePanel extends HTMLElement {
             inputs.push(inputElement2);
         }
         this._innerBorder.appendChild(lineElement);
+        this._htmlLines.push(lineElement);
         return inputs;
     }
     addCheckBox(label, value, onToggleCallback) {
@@ -4103,6 +4136,7 @@ class SpacePanel extends HTMLElement {
         });
         lineElement.appendChild(inputElement);
         this._innerBorder.appendChild(lineElement);
+        this._htmlLines.push(lineElement);
         return inputElement;
     }
 }

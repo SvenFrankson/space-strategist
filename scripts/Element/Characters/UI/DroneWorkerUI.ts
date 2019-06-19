@@ -87,11 +87,9 @@ class DroneWorkerUI {
                 let newWallOrigin: WallNode;
                 let newWallOriginNeedsBuild: boolean = false;
                 if (pickedTarget && pickedTarget instanceof WallNode) {
-                    console.log("First Build Wall click, use existing WallNode.");
                     newWallOrigin = pickedTarget;
                 }
                 else {
-                    console.log("First Build Wall click, create new WallNode.");
                     newWallOrigin = new WallNode(pickedPoint, Main.WallSystem);
                     newWallOrigin.instantiate();
                     this._ghostProp = newWallOrigin;
@@ -105,13 +103,11 @@ class DroneWorkerUI {
                 let newWall = new Wall(newWallOrigin, newWallEnd);
 
                 this._ghostProps.splice(0, 0, newWallEnd, newWall);
-                console.log(this._ghostProps);
                 requestAnimationFrame(
                     () => {
                         this._onRightClickOverride = async (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
                             let newWallEndNeedsBuild: boolean = false;
                             if (pickedTarget && pickedTarget instanceof WallNode) {
-                                console.log("Second Build Wall click, use existing WallNode.");
                                 newWallEnd.dispose();
                                 newWallEnd = pickedTarget;
                                 newWall.dispose();
@@ -119,7 +115,6 @@ class DroneWorkerUI {
                                 newWallEndNeedsBuild = false;
                             }
                             else {
-                                console.log("Second Build Wall click, use ghost WallNode.");
                                 newWallEndNeedsBuild = true;
                             }
                             for (let i = 0; i < this._ghostProps.length; i++) {

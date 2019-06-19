@@ -179,7 +179,7 @@ class Main {
 		playerControl.enable();
 
         let navGraphConsole = new NavGraphConsole(Main.Scene);
-        navGraphConsole.enable();
+		navGraphConsole.enable();
 
         let performanceConsole = new PerformanceConsole(Main.Scene);
         performanceConsole.enable();

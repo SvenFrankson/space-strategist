@@ -6,6 +6,9 @@ interface IMeshWithGroundWidth {
 class SpacePanel extends HTMLElement {
 
     private _innerBorder: HTMLDivElement;
+    private _htmlLines: HTMLElement[] = [];
+    private _toggleVisibilityInput: HTMLButtonElement;
+    private _isVisible: boolean = true;
 
     public static CreateSpacePanel(): SpacePanel {
         let panel = document.createElement("space-panel") as SpacePanel;
@@ -21,6 +24,19 @@ class SpacePanel extends HTMLElement {
        this._innerBorder = document.createElement("div");
        this._innerBorder.classList.add("space-panel-inner-border");
        this.appendChild(this._innerBorder);
+
+        this._toggleVisibilityInput = document.createElement("button");
+        this._toggleVisibilityInput.classList.add("space-panel-toggle-visibility");
+        this._toggleVisibilityInput.textContent = "^";
+        this._toggleVisibilityInput.addEventListener("click", () => {
+            if (this._isVisible) {
+                this.hide();
+            }
+            else {
+                this.show();
+            }
+        });
+        this._innerBorder.appendChild(this._toggleVisibilityInput);
     }
 
     public dispose(): void {
@@ -31,6 +47,28 @@ class SpacePanel extends HTMLElement {
             this._line.dispose();
         }
         document.body.removeChild(this);
+    }
+
+    public show(): void {
+        this._toggleVisibilityInput.textContent = "^";
+        this._isVisible = true;
+        console.log("SHOW");
+        this._htmlLines.forEach(
+            (l) => {
+                l.style.display = "block";
+            }
+        )
+    }
+
+    public hide(): void {
+        this._toggleVisibilityInput.textContent = "v";
+        this._isVisible = false;
+        console.log("HIDE");
+        this._htmlLines.forEach(
+            (l) => {
+                l.style.display = "none";
+            }
+        )
     }
 
     private _line: BABYLON.LinesMesh;
@@ -102,6 +140,7 @@ class SpacePanel extends HTMLElement {
         e.classList.add("space-title-2");
         e.textContent = title;
         this._innerBorder.appendChild(e);
+        this._htmlLines.push(e);
     }
 
     public addNumberInput(label: string, value: number, onInputCallback?: (v: number) => void, precision: number = 1): HTMLInputElement {
@@ -131,6 +170,7 @@ class SpacePanel extends HTMLElement {
         );
         lineElement.appendChild(inputElement);
         this._innerBorder.appendChild(lineElement);
+        this._htmlLines.push(lineElement);
         return inputElement;
     }
 
@@ -156,6 +196,7 @@ class SpacePanel extends HTMLElement {
         );
         lineElement.appendChild(inputElement);
         this._innerBorder.appendChild(lineElement);
+        this._htmlLines.push(lineElement);
         return inputElement;
     }
 
@@ -174,6 +215,7 @@ class SpacePanel extends HTMLElement {
         );
         lineElement.appendChild(inputElement);
         this._innerBorder.appendChild(lineElement);
+        this._htmlLines.push(lineElement);
         return inputElement;
     }
 
@@ -196,6 +238,7 @@ class SpacePanel extends HTMLElement {
         );
         lineElement.appendChild(inputElement);
         this._innerBorder.appendChild(lineElement);
+        this._htmlLines.push(lineElement);
         return inputElement;
     }
 
@@ -229,6 +272,7 @@ class SpacePanel extends HTMLElement {
             inputs.push(inputElement2);
         }
         this._innerBorder.appendChild(lineElement);
+        this._htmlLines.push(lineElement);
         return inputs;
     }
 
@@ -251,6 +295,7 @@ class SpacePanel extends HTMLElement {
         );
         lineElement.appendChild(inputElement);
         this._innerBorder.appendChild(lineElement);
+        this._htmlLines.push(lineElement);
         return inputElement;
     }
 }

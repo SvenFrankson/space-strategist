@@ -37,6 +37,7 @@ class PerformanceConsole {
 
         this._panel.style.right = "10px";
         this._panel.style.top = "10px";
+        this._panel.hide();
 
         this.scene.onBeforeRenderObservable.add(this._update);
     }
