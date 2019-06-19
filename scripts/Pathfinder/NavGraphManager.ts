@@ -41,4 +41,19 @@ class NavGraphManager {
             }
         )
     }
+
+    public static RemoveObstacle(obstacle: Obstacle): void {
+        return NavGraphManager.Instance.removeObstacle(obstacle);
+    }
+
+    public removeObstacle(obstacle: Obstacle): void {
+        this._navGraphs.forEach(
+            (navGraph) => {
+                let index = navGraph.obstacles.indexOf(obstacle);
+                if (index !== -1) {
+                    navGraph.obstacles.splice(index, 1);
+                }
+            }
+        )
+    }
 }

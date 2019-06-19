@@ -2992,23 +2992,8 @@ class WallSystem extends BABYLON.TransformNode {
     }
     addToScene() {
         for (let i = 0; i < this.nodes.length; i++) {
+            NavGraphManager.RemoveObstacle(this.nodes[i].obstacle);
             this.nodes[i].updateObstacle();
-            /*
-            let shape = this.nodes[i].obstacle.getPath(0.5, true);
-            let r = Math.random();
-            let g = Math.random();
-            let b = Math.random();
-            let points: BABYLON.Vector3[] = [];
-            let colors: BABYLON.Color4[] = [];
-            for (let i = 0; i < shape.length; i++) {
-                let p = shape[i];
-                points.push(new BABYLON.Vector3(p.x, - 0.5 * i, p.y));
-                colors.push(new BABYLON.Color4(r, g, b, 1));
-            }
-            points.push(new BABYLON.Vector3(shape[0].x, - 0.5 * shape.length, shape[0].y));
-            colors.push(new BABYLON.Color4(r, g, b, 1));
-            BABYLON.MeshBuilder.CreateLines("shape", { points: points, colors: colors }, Main.Scene);
-            */
             NavGraphManager.AddObstacle(this.nodes[i].obstacle);
         }
     }
@@ -3509,6 +3494,17 @@ class NavGraphManager {
     addObstacle(obstacle) {
         this._navGraphs.forEach((navGraph) => {
             navGraph.obstacles.push(obstacle);
+        });
+    }
+    static RemoveObstacle(obstacle) {
+        return NavGraphManager.Instance.removeObstacle(obstacle);
+    }
+    removeObstacle(obstacle) {
+        this._navGraphs.forEach((navGraph) => {
+            let index = navGraph.obstacles.indexOf(obstacle);
+            if (index !== -1) {
+                navGraph.obstacles.splice(index, 1);
+            }
         });
     }
 }
