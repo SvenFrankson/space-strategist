@@ -162,8 +162,14 @@ class DroneWorker extends Character {
     public targetSkeleton: BABYLON.Skeleton;
     public animator: DroneWorkerAnimator;
 
-    public harvestRate: number = 2;
-    public buildRate: number = 1;
+    private _harvestRate: number = 2;
+    public get harvestRate(): number {
+        return Cheat.MasterHarvester?this._harvestRate*10:this._harvestRate;
+    }
+    private _buildRate: number = 2;
+    public get buildRate(): number {
+        return Cheat.MasterBuilder?this._buildRate*10:this._buildRate;
+    }
     public carriageCapacity: number = 10;
     private _carriedResource: ResourceType;
     public get carriedResource(): ResourceType {

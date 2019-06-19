@@ -108,36 +108,6 @@ class WallNode extends Building {
                 points.push(new BABYLON.Vector2(Math.cos(Math2D.LerpFromToCircular(d, dNext, 0.5)), Math.sin(Math2D.LerpFromToCircular(d, dNext, 0.5))));
             }
         }
-        /*
-        for (let i = 0; i < points.length; i++) {
-            BABYLON.MeshBuilder.CreateSphere(
-                "p",
-                { diameter: 0.2 },
-                Main.Scene)
-                .position.copyFromFloats(
-                    points[i].x + this.position2D.x,
-                    - 0.2,
-                    points[i].y + this.position2D.y
-                );
-        }
-        */
-
-        /*
-        let shape = points;
-        let points3D: BABYLON.Vector3[] = [];
-        let colors: BABYLON.Color4[] = [];
-        let r = Math.random();
-        let g = Math.random();
-        let b = Math.random();
-        for (let i = 0; i < shape.length; i++) {
-            let p = shape[i];
-            points3D.push(new BABYLON.Vector3(p.x + this.position2D.x, 0.1, p.y + this.position2D.y));
-            colors.push(new BABYLON.Color4(1, 0, 0, 1));
-        }
-        points3D.push(new BABYLON.Vector3(shape[0].x + this.position2D.x, 0.1, shape[0].y + this.position2D.y));
-        colors.push(new BABYLON.Color4(1, 0, 0, 1));
-        BABYLON.MeshBuilder.CreateLines("shape", { points: points3D, colors: colors }, Main.Scene);
-        */
 
         this.obstacle = Obstacle.CreatePolygon(this.position2D.x, this.position2D.y, points);
     }

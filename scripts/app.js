@@ -1,3 +1,8 @@
+class Cheat {
+}
+Cheat.MasterHarvester = true;
+Cheat.MasterBuilder = true;
+Cheat.MasterWalker = true;
 /// <reference path="../lib/babylon.d.ts"/>
 class Main {
     static get cellShadingMaterial() {
@@ -1149,11 +1154,17 @@ class Draggable extends Selectionable {
 class Character extends Draggable {
     constructor(name = "", owner) {
         super(name);
-        this.moveSpeed = 1;
+        this._moveSpeed = 2;
         this.stamina = 20;
         this.currentHitPoint = 20;
         this.alive = true;
         this.owner = owner;
+    }
+    get moveSpeed() {
+        return Cheat.MasterWalker ? this._moveSpeed * 10 : this._moveSpeed;
+    }
+    set moveSpeed(v) {
+        this._moveSpeed = v;
     }
     wound(amount = 1) {
         if (this.alive) {
@@ -1304,8 +1315,8 @@ class DroneWorkerAnimator {
 class DroneWorker extends Character {
     constructor(owner) {
         super("droneWorker", owner);
-        this.harvestRate = 2;
-        this.buildRate = 1;
+        this._harvestRate = 2;
+        this._buildRate = 2;
         this.carriageCapacity = 10;
         this._inventory = 0;
         this._currentAction = "Doing nothing";
@@ -1323,6 +1334,12 @@ class DroneWorker extends Character {
         this.moveSpeed = 3;
         this.ui = new DroneWorkerUI(this);
         this.getScene().onBeforeRenderObservable.add(this._update);
+    }
+    get harvestRate() {
+        return Cheat.MasterHarvester ? this._harvestRate * 10 : this._harvestRate;
+    }
+    get buildRate() {
+        return Cheat.MasterBuilder ? this._buildRate * 10 : this._buildRate;
     }
     get carriedResource() {
         return this._carriedResource;
@@ -2777,35 +2794,6 @@ class WallNode extends Building {
                 points.push(new BABYLON.Vector2(Math.cos(Math2D.LerpFromToCircular(d, dNext, 0.5)), Math.sin(Math2D.LerpFromToCircular(d, dNext, 0.5))));
             }
         }
-        /*
-        for (let i = 0; i < points.length; i++) {
-            BABYLON.MeshBuilder.CreateSphere(
-                "p",
-                { diameter: 0.2 },
-                Main.Scene)
-                .position.copyFromFloats(
-                    points[i].x + this.position2D.x,
-                    - 0.2,
-                    points[i].y + this.position2D.y
-                );
-        }
-        */
-        /*
-        let shape = points;
-        let points3D: BABYLON.Vector3[] = [];
-        let colors: BABYLON.Color4[] = [];
-        let r = Math.random();
-        let g = Math.random();
-        let b = Math.random();
-        for (let i = 0; i < shape.length; i++) {
-            let p = shape[i];
-            points3D.push(new BABYLON.Vector3(p.x + this.position2D.x, 0.1, p.y + this.position2D.y));
-            colors.push(new BABYLON.Color4(1, 0, 0, 1));
-        }
-        points3D.push(new BABYLON.Vector3(shape[0].x + this.position2D.x, 0.1, shape[0].y + this.position2D.y));
-        colors.push(new BABYLON.Color4(1, 0, 0, 1));
-        BABYLON.MeshBuilder.CreateLines("shape", { points: points3D, colors: colors }, Main.Scene);
-        */
         this.obstacle = Obstacle.CreatePolygon(this.position2D.x, this.position2D.y, points);
     }
     static BuildVertexData(radius = 1, ...directions) {
