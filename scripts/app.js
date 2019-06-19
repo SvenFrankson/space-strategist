@@ -2714,6 +2714,10 @@ class WallNode extends Building {
         this.position.x = this.position2D.x;
         this.position.z = this.position2D.y;
         this.updateDirs();
+        if (this.dirs.length === 0) {
+            let vertexData = await VertexDataLoader.instance.get("wallNode");
+            vertexData.applyToMesh(this);
+        }
         if (this.dirs.length >= 1) {
             let dirs = [];
             for (let i = 0; i < this.dirs.length; i++) {
