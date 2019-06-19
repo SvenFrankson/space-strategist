@@ -41,9 +41,12 @@ abstract class Building extends Prop {
         this.position.y = this.currentCompletion - this.completionRequired;
         if (this.currentCompletion === this.completionRequired) {
             this._areaMesh.dispose();
+            this.onBuildCompleted();
             this.addToScene();
         }
     }
+
+    protected onBuildCompleted(): void {};
 
     public gather(resource: number, type: ResourceType): void {
         let rAQ = this.resourcesAvailableRequired.get(resource);

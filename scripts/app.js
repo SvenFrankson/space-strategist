@@ -1957,11 +1957,11 @@ class DroneWorkerUI {
                             this._ghostProps[i].isPickable = true;
                         }
                         if (this._newWallOriginNeedsBuild) {
-                            await this._newWallOrigin.instantiateBuilding();
+                            this._newWallOrigin.position.y = -100;
                         }
                         await _ghostWall.instantiateBuilding();
                         if (this._newWallEndNeedsBuild) {
-                            await newWallEnd.instantiateBuilding();
+                            newWallEnd.position.y = -100;
                         }
                         this.target.currentTask = new BuildTask(this.target, _ghostWall);
                         console.log(_ghostWall);
@@ -2177,9 +2177,12 @@ class Building extends Prop {
         this.position.y = this.currentCompletion - this.completionRequired;
         if (this.currentCompletion === this.completionRequired) {
             this._areaMesh.dispose();
+            this.onBuildCompleted();
             this.addToScene();
         }
     }
+    onBuildCompleted() { }
+    ;
     gather(resource, type) {
         let rAQ = this.resourcesAvailableRequired.get(resource);
         rAQ.available += resource;
@@ -2673,6 +2676,10 @@ class Wall extends Building {
         this.position2D.x = (this.node1.position2D.x + this.node2.position2D.x) * 0.5;
         this.position2D.y = (this.node1.position2D.y + this.node2.position2D.y) * 0.5;
     }
+    onBuildCompleted() {
+        this.wallSystem.instantiate();
+        this.wallSystem.addToScene();
+    }
     addToScene() {
         this.isActive = true;
     }
@@ -2715,9 +2722,9 @@ class WallNode extends Building {
         this.dirs = [];
         this.walls = [];
         this.wallSystem.nodes.push(this);
-        this.resourcesAvailableRequired.get(ResourceType.Steel).required = 10;
-        this.resourcesAvailableRequired.get(ResourceType.Rock).required = 10;
-        this.completionRequired = 10;
+        this.resourcesAvailableRequired.get(ResourceType.Steel).required = 0;
+        this.resourcesAvailableRequired.get(ResourceType.Rock).required = 0;
+        this.completionRequired = 0;
         this.ui = new WallNodeUI(this);
     }
     dispose(doNotRecurse, disposeMaterialAndTextures) {
@@ -2732,6 +2739,7 @@ class WallNode extends Building {
     }
     async instantiate() {
         this.position.x = this.position2D.x;
+        this.position.y = 0;
         this.position.z = this.position2D.y;
         this.updateDirs();
         if (this.dirs.length === 0) {

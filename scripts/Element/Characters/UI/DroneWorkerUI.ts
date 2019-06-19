@@ -121,11 +121,11 @@ class DroneWorkerUI {
                                 this._ghostProps[i].isPickable = true;
                             }
                             if (this._newWallOriginNeedsBuild) {
-                                await this._newWallOrigin.instantiateBuilding();
+                                this._newWallOrigin.position.y = -100;
                             }
                             await _ghostWall.instantiateBuilding();
                             if (this._newWallEndNeedsBuild) {
-                                await newWallEnd.instantiateBuilding();
+                                newWallEnd.position.y = -100;
                             }
                             this.target.currentTask = new BuildTask(this.target, _ghostWall);
                             console.log(_ghostWall);

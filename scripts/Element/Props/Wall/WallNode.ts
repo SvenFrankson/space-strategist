@@ -21,9 +21,9 @@ class WallNode extends Building {
         super("wallnode", wallSystem.owner, position2D);
         this.wallSystem.nodes.push(this);
 
-        this.resourcesAvailableRequired.get(ResourceType.Steel).required = 10;
-        this.resourcesAvailableRequired.get(ResourceType.Rock).required = 10;
-        this.completionRequired = 10;
+        this.resourcesAvailableRequired.get(ResourceType.Steel).required = 0;
+        this.resourcesAvailableRequired.get(ResourceType.Rock).required = 0;
+        this.completionRequired = 0;
 
         this.ui = new WallNodeUI(this);
     }
@@ -41,6 +41,7 @@ class WallNode extends Building {
 
     public async instantiate(): Promise<void> {
         this.position.x = this.position2D.x;
+        this.position.y = 0;
         this.position.z = this.position2D.y;
         this.updateDirs();
         if (this.dirs.length === 0) {

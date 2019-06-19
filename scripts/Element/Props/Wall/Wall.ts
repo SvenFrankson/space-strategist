@@ -87,6 +87,11 @@ class Wall extends Building {
         this.position2D.y = (this.node1.position2D.y + this.node2.position2D.y) * 0.5;
     }
 
+    protected onBuildCompleted(): void {
+        this.wallSystem.instantiate();
+        this.wallSystem.addToScene();
+    }
+
     public addToScene(): void {
         this.isActive = true;
     }
