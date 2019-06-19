@@ -87,6 +87,10 @@ class Wall extends Building {
         this.position2D.y = (this.node1.position2D.y + this.node2.position2D.y) * 0.5;
     }
 
+    public addToScene(): void {
+        this.isActive = true;
+    }
+
     public onSelected(): void {
         this.ui.enable();
     }

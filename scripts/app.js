@@ -154,11 +154,11 @@ class Main {
         navGraphConsole.enable();
         let performanceConsole = new PerformanceConsole(Main.Scene);
         performanceConsole.enable();
-        let fongus = new Fongus();
-        fongus.position2D = new BABYLON.Vector2(0, -10);
-        fongus.instantiate();
+        //let fongus = new Fongus();
+        //fongus.position2D = new BABYLON.Vector2(0, -10);
+        //fongus.instantiate();
         let worker = new DroneWorker(player);
-        worker.position2D = new BABYLON.Vector2(0, -10);
+        worker.position2D = new BABYLON.Vector2(0, -5);
         worker.instantiate();
     }
     animate() {
@@ -2673,6 +2673,9 @@ class Wall extends Building {
         this.position2D.x = (this.node1.position2D.x + this.node2.position2D.x) * 0.5;
         this.position2D.y = (this.node1.position2D.y + this.node2.position2D.y) * 0.5;
     }
+    addToScene() {
+        this.isActive = true;
+    }
     onSelected() {
         this.ui.enable();
     }
@@ -3186,6 +3189,7 @@ class NavGraph {
         this.points = [];
         let counter = 2;
         this.obstacles.forEach((o) => {
+            console.log(o);
             o.computePath(this.offset);
         });
         for (let i = 0; i < this.obstacles.length; i++) {

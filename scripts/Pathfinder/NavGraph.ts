@@ -26,6 +26,7 @@ class NavGraph {
         let counter = 2;
         this.obstacles.forEach(
             (o) => {
+                console.log(o);
                 o.computePath(this.offset);
             }
         )
