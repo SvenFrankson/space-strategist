@@ -1411,9 +1411,9 @@ class DroneWorker extends Character {
                 return this.moveOnPath();
             }
             let stepToNext = next.subtract(this.position2D).normalize();
-            this.targetRotation2D = Math2D.AngleFromTo(new BABYLON.Vector2(0, 1), stepToNext);
             stepToNext.scaleInPlace(Math.min(distanceToNext, this.moveSpeed * Main.Engine.getDeltaTime() / 1000));
             this.position2D.addInPlace(stepToNext);
+            this.targetRotation2D = Math2D.AngleFromTo(new BABYLON.Vector2(0, 1), stepToNext);
         }
     }
 }
@@ -1853,8 +1853,6 @@ class DroneWorkerUI {
         this.target = target;
         this._isEnabled = false;
         this._ghostProps = [];
-        this._newWallOriginNeedsBuild = false;
-        this._newWallEndNeedsBuild = false;
         this._update = () => {
             if (this._selector) {
                 this._selector.position.copyFromFloats(this.target.position2D.x, 0.1, this.target.position2D.y);
@@ -1865,7 +1863,12 @@ class DroneWorkerUI {
         return this._ghostProps[0];
     }
     set _ghostProp(p) {
-        this._ghostProps = [p];
+        if (p) {
+            this._ghostProps = [p];
+        }
+        else {
+            this._ghostProps = [];
+        }
     }
     enable() {
         this._panel = SpacePanel.CreateSpacePanel();
@@ -1921,50 +1924,53 @@ class DroneWorkerUI {
             this._onRightClickOverride = (pickedPoint, pickedTarget) => {
                 this._ghostProp.dispose();
                 this._ghostProp = undefined;
+                let newWallOrigin;
+                let newWallOriginNeedsBuild = false;
                 if (pickedTarget && pickedTarget instanceof WallNode) {
                     console.log("First Build Wall click, use existing WallNode.");
-                    this._newWallOrigin = pickedTarget;
-                    this._newWallOriginNeedsBuild = false;
+                    newWallOrigin = pickedTarget;
                 }
                 else {
                     console.log("First Build Wall click, create new WallNode.");
-                    this._newWallOrigin = new WallNode(pickedPoint, Main.WallSystem);
-                    this._newWallOrigin.instantiate();
-                    this._ghostProp = this._newWallOrigin;
-                    this._newWallOriginNeedsBuild = true;
+                    newWallOrigin = new WallNode(pickedPoint, Main.WallSystem);
+                    newWallOrigin.instantiate();
+                    this._ghostProp = newWallOrigin;
+                    newWallOriginNeedsBuild = true;
                 }
                 // Go to second WallNode next frame. TODO.
                 let newWallEnd = new WallNode(BABYLON.Vector2.Zero(), Main.WallSystem);
                 newWallEnd.setVisibility(0);
                 newWallEnd.isPickable = false;
-                let _ghostWall = new Wall(this._newWallOrigin, newWallEnd);
-                this._ghostProps.splice(0, 0, newWallEnd, _ghostWall);
+                let newWall = new Wall(newWallOrigin, newWallEnd);
+                this._ghostProps.splice(0, 0, newWallEnd, newWall);
+                console.log(this._ghostProps);
                 requestAnimationFrame(() => {
                     this._onRightClickOverride = async (pickedPoint, pickedTarget) => {
+                        let newWallEndNeedsBuild = false;
                         if (pickedTarget && pickedTarget instanceof WallNode) {
                             console.log("Second Build Wall click, use existing WallNode.");
+                            newWallEnd.dispose();
                             newWallEnd = pickedTarget;
-                            _ghostWall.dispose();
-                            _ghostWall = new Wall(this._newWallOrigin, newWallEnd);
-                            this._newWallEndNeedsBuild = false;
+                            newWall.dispose();
+                            newWall = new Wall(newWallOrigin, newWallEnd);
+                            newWallEndNeedsBuild = false;
                         }
                         else {
                             console.log("Second Build Wall click, use ghost WallNode.");
-                            this._newWallEndNeedsBuild = true;
+                            newWallEndNeedsBuild = true;
                         }
                         for (let i = 0; i < this._ghostProps.length; i++) {
                             this._ghostProps[i].setVisibility(1);
                             this._ghostProps[i].isPickable = true;
                         }
-                        if (this._newWallOriginNeedsBuild) {
-                            this._newWallOrigin.position.y = -100;
+                        if (newWallOriginNeedsBuild) {
+                            newWallOrigin.position.y = -100;
                         }
-                        await _ghostWall.instantiateBuilding();
-                        if (this._newWallEndNeedsBuild) {
+                        await newWall.instantiateBuilding();
+                        if (newWallEndNeedsBuild) {
                             newWallEnd.position.y = -100;
                         }
-                        this.target.currentTask = new BuildTask(this.target, _ghostWall);
-                        console.log(_ghostWall);
+                        this.target.currentTask = new BuildTask(this.target, newWall);
                         this._ghostProp = undefined;
                     };
                 });
@@ -3197,7 +3203,6 @@ class NavGraph {
         this.points = [];
         let counter = 2;
         this.obstacles.forEach((o) => {
-            console.log(o);
             o.computePath(this.offset);
         });
         for (let i = 0; i < this.obstacles.length; i++) {

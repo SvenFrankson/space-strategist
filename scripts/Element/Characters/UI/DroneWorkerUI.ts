@@ -6,12 +6,14 @@ class DroneWorkerUI {
         return this._ghostProps[0];
     }
     private set _ghostProp(p: Prop) {
-        this._ghostProps = [p];
+        if (p) {
+            this._ghostProps = [p];
+        }
+        else {
+            this._ghostProps = [];
+        }
     }
     private _ghostProps: Prop[] = [];
-    private _newWallOriginNeedsBuild: boolean = false;
-    private _newWallOrigin: WallNode;
-    private _newWallEndNeedsBuild: boolean = false;
 
     private _onMouseMoveOverride: (currentPoint: BABYLON.Vector2) => void;
     private _onRightClickOverride: (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => void;
@@ -82,53 +84,56 @@ class DroneWorkerUI {
             this._onRightClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
                 this._ghostProp.dispose();
                 this._ghostProp = undefined;
+                let newWallOrigin: WallNode;
+                let newWallOriginNeedsBuild: boolean = false;
                 if (pickedTarget && pickedTarget instanceof WallNode) {
                     console.log("First Build Wall click, use existing WallNode.");
-                    this._newWallOrigin = pickedTarget;
-                    this._newWallOriginNeedsBuild = false;
+                    newWallOrigin = pickedTarget;
                 }
                 else {
                     console.log("First Build Wall click, create new WallNode.");
-                    this._newWallOrigin = new WallNode(pickedPoint, Main.WallSystem);
-                    this._newWallOrigin.instantiate();
-                    this._ghostProp = this._newWallOrigin;
-                    this._newWallOriginNeedsBuild = true;
+                    newWallOrigin = new WallNode(pickedPoint, Main.WallSystem);
+                    newWallOrigin.instantiate();
+                    this._ghostProp = newWallOrigin;
+                    newWallOriginNeedsBuild = true;
                 }
                 // Go to second WallNode next frame. TODO.
                 let newWallEnd = new WallNode(BABYLON.Vector2.Zero(), Main.WallSystem);
                 newWallEnd.setVisibility(0);
                 newWallEnd.isPickable = false;
 
-                let _ghostWall = new Wall(this._newWallOrigin, newWallEnd);
+                let newWall = new Wall(newWallOrigin, newWallEnd);
 
-                this._ghostProps.splice(0, 0, newWallEnd, _ghostWall);
+                this._ghostProps.splice(0, 0, newWallEnd, newWall);
+                console.log(this._ghostProps);
                 requestAnimationFrame(
                     () => {
                         this._onRightClickOverride = async (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
+                            let newWallEndNeedsBuild: boolean = false;
                             if (pickedTarget && pickedTarget instanceof WallNode) {
                                 console.log("Second Build Wall click, use existing WallNode.");
+                                newWallEnd.dispose();
                                 newWallEnd = pickedTarget;
-                                _ghostWall.dispose();
-                                _ghostWall = new Wall(this._newWallOrigin, newWallEnd);
-                                this._newWallEndNeedsBuild = false;
+                                newWall.dispose();
+                                newWall = new Wall(newWallOrigin, newWallEnd);
+                                newWallEndNeedsBuild = false;
                             }
                             else {
                                 console.log("Second Build Wall click, use ghost WallNode.");
-                                this._newWallEndNeedsBuild = true;
+                                newWallEndNeedsBuild = true;
                             }
                             for (let i = 0; i < this._ghostProps.length; i++) {
                                 this._ghostProps[i].setVisibility(1);
                                 this._ghostProps[i].isPickable = true;
                             }
-                            if (this._newWallOriginNeedsBuild) {
-                                this._newWallOrigin.position.y = -100;
+                            if (newWallOriginNeedsBuild) {
+                                newWallOrigin.position.y = - 100;
                             }
-                            await _ghostWall.instantiateBuilding();
-                            if (this._newWallEndNeedsBuild) {
-                                newWallEnd.position.y = -100;
+                            await newWall.instantiateBuilding();
+                            if (newWallEndNeedsBuild) {
+                                newWallEnd.position.y = - 100;
                             }
-                            this.target.currentTask = new BuildTask(this.target, _ghostWall);
-                            console.log(_ghostWall);
+                            this.target.currentTask = new BuildTask(this.target, newWall);
                             this._ghostProp = undefined;
                         }
                     }
