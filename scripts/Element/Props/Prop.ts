@@ -74,6 +74,27 @@ abstract class Prop extends Draggable {
 
     public abstract async instantiate(): Promise<void>;
 
+    public async elasticBounce(duration: number = 1): Promise<void> {
+        return new Promise<void>(
+            resolve => {
+                let timer = 0;
+                let update = () => {
+                    timer += Main.Engine.getDeltaTime() / 1000;
+                    let s = 1;
+                    if (timer < duration) {
+                        s = SpaceMath.easeOutElastic(timer / duration);
+                    }
+                    this.scaling.copyFromFloats(s, s, s);
+                    if (timer > duration) {
+                        Main.Scene.onBeforeRenderObservable.removeCallback(update);
+                        resolve();
+                    }
+                }
+                Main.Scene.onBeforeRenderObservable.add(update);
+            }
+        )
+    }
+
     public setVisibility(v: number): void {
         let children = this.getChildMeshes();
         if (v === 0) {

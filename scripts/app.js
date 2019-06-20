@@ -1919,6 +1919,24 @@ class Prop extends Draggable {
         }
         return undefined;
     }
+    async elasticBounce(duration = 1) {
+        return new Promise(resolve => {
+            let timer = 0;
+            let update = () => {
+                timer += Main.Engine.getDeltaTime() / 1000;
+                let s = 1;
+                if (timer < duration) {
+                    s = SpaceMath.easeOutElastic(timer / duration);
+                }
+                this.scaling.copyFromFloats(s, s, s);
+                if (timer > duration) {
+                    Main.Scene.onBeforeRenderObservable.removeCallback(update);
+                    resolve();
+                }
+            };
+            Main.Scene.onBeforeRenderObservable.add(update);
+        });
+    }
     setVisibility(v) {
         let children = this.getChildMeshes();
         if (v === 0) {
@@ -1940,6 +1958,27 @@ class Prop extends Draggable {
         return "Prop";
     }
 }
+/// <reference path="Prop.ts"/>
+class Banner extends Prop {
+    constructor(name, position2D, rotation2D, size = 1) {
+        super(name, position2D, rotation2D);
+        this.size = size;
+        if (this.name === "") {
+            let bannerCount = this.getScene().meshes.filter((m) => { return m instanceof Banner; }).length;
+            this.name = "banner-" + bannerCount;
+        }
+    }
+    async instantiate() {
+        let vertexData = await VertexDataLoader.instance.getColorized("banner-" + Banner.SizeToName[this.size], "#007fff", "#383838");
+        this.groundWidth = 0.5;
+        vertexData.applyToMesh(this);
+        this.material = Main.cellShadingMaterial;
+    }
+    elementName() {
+        return "Banner";
+    }
+}
+Banner.SizeToName = ["small", "medium", "large"];
 class PropEditor {
     static Select(prop) {
     }
@@ -2909,8 +2948,8 @@ class VertexDataLoader {
         return vertexData;
     }
     async getColorized(name, baseColorHex = "#FFFFFF", frameColorHex = "", color1Hex = "", // Replace red
-    color2Hex = "", // Replace green
-    color3Hex = "" // Replace blue
+        color2Hex = "", // Replace green
+        color3Hex = "" // Replace blue
     ) {
         let baseColor;
         if (baseColorHex !== "") {
@@ -3248,6 +3287,7 @@ class Maze extends Main {
                     worker.position2D = new BABYLON.Vector2(0, 0);
                     await worker.instantiate();
                     let targetPosition = BABYLON.Vector2.Zero();
+                    let targetBanner;
                     Main.Scene.onBeforeRenderObservable.add(() => {
                         if (BABYLON.Vector2.DistanceSquared(worker.position2D, targetPosition) < 0.1) {
                             if (targetPosition.lengthSquared() < 0.1) {
@@ -3257,6 +3297,12 @@ class Maze extends Main {
                             else {
                                 targetPosition = BABYLON.Vector2.Zero();
                             }
+                            if (targetBanner) {
+                                targetBanner.dispose();
+                            }
+                            targetBanner = new Banner("", targetPosition, Math.random() * Math.PI * 2, 1);
+                            targetBanner.instantiate();
+                            targetBanner.elasticBounce(2);
                             worker.currentTask = new GoToTask(worker, targetPosition);
                         }
                     });
