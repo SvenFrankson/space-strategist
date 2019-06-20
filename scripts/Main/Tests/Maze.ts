@@ -127,8 +127,10 @@ class Maze extends Main {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-    let maze: Maze = new Maze("render-canvas");
-    maze.initializeScene();
-    maze.initialize();
-    maze.animate();
+	if (window.location.href.indexOf("maze-1.html") > -1) {
+		let maze: Maze = new Maze("render-canvas");
+		maze.initializeScene();
+		maze.initialize();
+		maze.animate();
+	}
 });

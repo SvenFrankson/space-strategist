@@ -2900,8 +2900,8 @@ class VertexDataLoader {
         return vertexData;
     }
     async getColorized(name, baseColorHex = "#FFFFFF", frameColorHex = "", color1Hex = "", // Replace red
-        color2Hex = "", // Replace green
-        color3Hex = "" // Replace blue
+    color2Hex = "", // Replace green
+    color3Hex = "" // Replace blue
     ) {
         let baseColor;
         if (baseColorHex !== "") {
@@ -3259,10 +3259,12 @@ class Maze extends Main {
     }
 }
 window.addEventListener("DOMContentLoaded", () => {
-    let maze = new Maze("render-canvas");
-    maze.initializeScene();
-    maze.initialize();
-    maze.animate();
+    if (window.location.href.indexOf("maze-1.html") > -1) {
+        let maze = new Maze("render-canvas");
+        maze.initializeScene();
+        maze.initialize();
+        maze.animate();
+    }
 });
 class SpaceshipMaterial {
     constructor(scene) {
