@@ -158,6 +158,22 @@ class Main {
 		
 		Main.Scene.activeCameras.push(Main.Camera, noPostProcessCamera);
 
+		// Skybox seed : 1vt3h8rxhb28
+		let skybox: BABYLON.Mesh = BABYLON.MeshBuilder.CreateBox("skyBox", { size: 2000.0 }, Main.Scene);
+		skybox.layerMask = 1;
+		skybox.rotation.y = Math.PI / 2;
+		skybox.infiniteDistance = true;
+		let skyboxMaterial: BABYLON.StandardMaterial = new BABYLON.StandardMaterial("skyBox", Main.Scene);
+		skyboxMaterial.backFaceCulling = false;
+		skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture(
+			"./datas/skyboxes/sky",
+			Main.Scene,
+			["-px.png", "-py.png", "-pz.png", "-nx.png", "-ny.png", "-nz.png"]);
+		skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
+		skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
+		skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
+		skybox.material = skyboxMaterial;
+
         new VertexDataLoader(Main.Scene);
         new NavGraphManager();
 
