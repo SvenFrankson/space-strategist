@@ -1,4 +1,4 @@
-/// <reference path="../lib/babylon.d.ts"/>
+/// <reference path="../../lib/babylon.d.ts"/>
 
 class Main {
 
@@ -9,6 +9,7 @@ class Main {
 	public static Camera: BABYLON.ArcRotateCamera;
 	public static CameraTarget: BABYLON.Mesh;
 	public static Ground: Ground;
+	public static Player: Player;
 	public static WallSystem: WallSystem;
 
     public static _cellShadingMaterial: BABYLON.CellMaterial;
@@ -35,7 +36,7 @@ class Main {
         Main.Engine = new BABYLON.Engine(Main.Canvas, true);
     }
 
-    public async createScene(): Promise<void> {
+    public async initializeScene(): Promise<void> {
         Main.Scene = new BABYLON.Scene(Main.Engine);
 
         Main.Light = new BABYLON.HemisphericLight("AmbientLight", new BABYLON.Vector3(1, 3, 2), Main.Scene);
@@ -44,7 +45,7 @@ class Main {
         Main.Camera.setPosition(new BABYLON.Vector3(0, 5, - 10));
 		Main.Camera.attachControl(Main.Canvas, true);
 		Main.Camera.lowerRadiusLimit = 6;
-		Main.Camera.upperRadiusLimit = 20;
+		Main.Camera.upperRadiusLimit = 40;
 		Main.Camera.radius = Main.Camera.upperRadiusLimit;
 		Main.Camera.upperBetaLimit = 2 * Math.PI / 5;
 		Main.Camera.wheelPrecision *= 8;
@@ -164,19 +165,12 @@ class Main {
         new VertexDataLoader(Main.Scene);
         new NavGraphManager();
 
-		let player = new Player();
+		Main.Player = new Player();
 
-        Main.WallSystem = new WallSystem();
-        if (window.localStorage.getItem("scene-data")) {
-            let data = JSON.parse(window.localStorage.getItem("scene-data"));
-            await Serializer.Deserialize(Main.Scene, data, player);
-        }
+		Main.WallSystem = new WallSystem();
 
-        //let sceneEditor = new SceneEditor(wallSystem, player, Main.Scene);
+        //let sceneEditor = new SceneEditor(Main.WallSystem, player, Main.Scene);
 		//sceneEditor.enable();
-		
-		let playerControl = new PlayerControl(Main.Scene);
-		playerControl.enable();
 
         let navGraphConsole = new NavGraphConsole(Main.Scene);
 		navGraphConsole.enable();
@@ -187,10 +181,6 @@ class Main {
         //let fongus = new Fongus();
         //fongus.position2D = new BABYLON.Vector2(0, -10);
         //fongus.instantiate();
-
-        let worker = new DroneWorker(player);
-        worker.position2D = new BABYLON.Vector2(0, -5);
-		worker.instantiate();
     }
 
     public animate(): void {
@@ -203,9 +193,3 @@ class Main {
         });
     }
 }
-
-window.addEventListener("DOMContentLoaded", () => {
-    let game: Main = new Main("render-canvas");
-    game.createScene();
-    game.animate();
-});

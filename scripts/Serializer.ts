@@ -15,7 +15,9 @@ class Serializer {
         for (let i = 0; i < scene.meshes.length; i++) {
             let mesh = scene.meshes[i];
             if (mesh instanceof Prop) {
-                props.push(mesh);
+                if (!(mesh instanceof Wall || mesh instanceof WallNode)) {
+                    props.push(mesh);
+                }
             }
         }
         return props;
