@@ -2577,8 +2577,14 @@ class WallNode extends Building {
         if (this.dirs.length === 0) {
             let vertexData = await VertexDataLoader.instance.get("wallNode");
             vertexData.applyToMesh(this);
+            this.rotation2D = 0;
         }
-        if (this.dirs.length >= 1) {
+        else if (this.dirs.length === 1) {
+            let vertexData = await VertexDataLoader.instance.getColorized("wallNode-1Wall", "#383838");
+            vertexData.applyToMesh(this);
+            this.rotation2D = this.dirs[0].dir;
+        }
+        else if (this.dirs.length > 1) {
             let dirs = [];
             for (let i = 0; i < this.dirs.length; i++) {
                 dirs.push(this.dirs[i].dir);
@@ -2597,8 +2603,9 @@ class WallNode extends Building {
             }
             this.groundWidth = max - min;
             vertexData.applyToMesh(this);
-            this.material = Main.cellShadingMaterial;
+            this.rotation2D = 0;
         }
+        this.material = Main.cellShadingMaterial;
     }
     updateDirs() {
         this.dirs = [];
