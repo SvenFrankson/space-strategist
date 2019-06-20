@@ -158,12 +158,12 @@ class Main {
 		
 		Main.Scene.activeCameras.push(Main.Camera, noPostProcessCamera);
 
-        Main.Ground = new Ground(100, 100);
-        await Main.Ground.instantiate();
-        Main.Ground.material = Main.groundMaterial;
-
         new VertexDataLoader(Main.Scene);
         new NavGraphManager();
+
+        Main.Ground = new Ground(100, GroundShape.Disc);
+        await Main.Ground.instantiate();
+        Main.Ground.material = Main.groundMaterial;
 
 		Main.Player = new Player();
 
