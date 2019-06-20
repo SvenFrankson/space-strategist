@@ -2,7 +2,7 @@ class Cheat {
 }
 Cheat.MasterHarvester = true;
 Cheat.MasterBuilder = true;
-Cheat.MasterWalker = true;
+Cheat.MasterWalker = false;
 class Math2D {
     static AreEqualsCircular(a1, a2, epsilon = Math.PI / 60) {
         while (a1 < 0) {
@@ -1164,6 +1164,7 @@ class DroneWorker extends Character {
                 this.rotation2D = Math2D.StepFromToCirular(this.rotation2D, this.targetRotation2D, Math.PI / 60);
             }
             this.position.x = this.position2D.x;
+            this.position.y = Main.Ground.getHeightAt(this.position2D);
             this.position.z = this.position2D.y;
             this.rotation.y = -this.rotation2D;
         };
@@ -1875,6 +1876,9 @@ class Prop extends Draggable {
         this._updatePosition = () => {
             if (this.position.x !== this.position2D.x || this.position.z !== this.position2D.y || this.rotation.y !== -this.rotation2D) {
                 this.position.x = this.position2D.x;
+                if (!(this instanceof Wall)) {
+                    this.position.y = Main.Ground.getHeightAt(this.position2D);
+                }
                 this.position.z = this.position2D.y;
                 this.rotation.y = -this.rotation2D;
                 this.onPositionChanged();
@@ -2410,7 +2414,7 @@ class Cristal extends ResourceSpot {
     }
     onPositionChanged() {
         this.instantiate();
-        Main.Ground.instantiate();
+        Main.Ground.instantiateOld();
     }
     elementName() {
         return "Cristal";
@@ -2473,7 +2477,7 @@ class Rock extends ResourceSpot {
     }
     onPositionChanged() {
         this.instantiate();
-        Main.Ground.instantiate();
+        Main.Ground.instantiateOld();
     }
     elementName() {
         return "Rock";
@@ -2526,14 +2530,22 @@ class Wall extends Building {
     async instantiate() {
         let vertexData = await VertexDataLoader.instance.getColorized("wall", "#6d6d6d", "#383838", "#ce7633");
         vertexData = VertexDataLoader.clone(vertexData);
-        let d = this.node1.position2D.subtract(this.node2.position2D);
+        let d = this.node2.position2D.subtract(this.node1.position2D);
         let l = d.length() - 2;
         d.scaleInPlace(1 / l);
         let dir = Math2D.AngleFromTo(new BABYLON.Vector2(1, 0), d, true);
         let cosDir = Math.cos(dir);
         let sinDir = Math.sin(dir);
+        let hNode1 = Main.Ground.getHeightAt(this.node1.position2D);
+        let hNode2 = Main.Ground.getHeightAt(this.node2.position2D);
         for (let i = 0; i < vertexData.positions.length / 3; i++) {
             let x = vertexData.positions[3 * i] * l;
+            if (x > 0) {
+                vertexData.positions[3 * i + 1] += hNode2;
+            }
+            else {
+                vertexData.positions[3 * i + 1] += hNode1;
+            }
             let z = vertexData.positions[3 * i + 2];
             vertexData.positions[3 * i] = cosDir * x - sinDir * z;
             vertexData.positions[3 * i + 2] = sinDir * x + cosDir * z;
@@ -2611,9 +2623,6 @@ class WallNode extends Building {
         super.dispose(doNotRecurse, disposeMaterialAndTextures);
     }
     async instantiate() {
-        this.position.x = this.position2D.x;
-        this.position.y = 0;
-        this.position.z = this.position2D.y;
         this.updateDirs();
         if (this.dirs.length === 0) {
             let vertexData = await VertexDataLoader.instance.get("wallNode");
@@ -3043,9 +3052,9 @@ class Main {
     }
     static get groundMaterial() {
         if (!Main._groundMaterial) {
-            Main._groundMaterial = new BABYLON.CellMaterial("CellMaterial", Main.Scene);
+            Main._groundMaterial = new BABYLON.StandardMaterial("StandardMaterial", Main.Scene);
             Main._groundMaterial.diffuseTexture = new BABYLON.Texture("/img/ground.jpg", Main.Scene);
-            Main._groundMaterial.computeHighLevel = true;
+            Main._groundMaterial.specularColor.copyFromFloats(0, 0, 0);
         }
         return Main._groundMaterial;
     }
@@ -3164,8 +3173,8 @@ class Main {
         noPostProcessCamera.parent = Main.Camera;
         noPostProcessCamera.layerMask = 0x10000000;
         Main.Scene.activeCameras.push(Main.Camera, noPostProcessCamera);
-        Main.Ground = new Ground(50, 50);
-        Main.Ground.instantiate();
+        Main.Ground = new Ground(100, 100);
+        await Main.Ground.instantiate();
         Main.Ground.material = Main.groundMaterial;
         new VertexDataLoader(Main.Scene);
         new NavGraphManager();
@@ -3180,6 +3189,7 @@ class Main {
         //let fongus = new Fongus();
         //fongus.position2D = new BABYLON.Vector2(0, -10);
         //fongus.instantiate();
+        console.log("Scene Initialized");
     }
     animate() {
         Main.Engine.runRenderLoop(() => {
@@ -3306,6 +3316,7 @@ class Maze extends Main {
                             worker.currentTask = new GoToTask(worker, targetPosition);
                         }
                     });
+                    console.log("Maze Initialized");
                     resolve();
                 }
             };
@@ -3313,11 +3324,11 @@ class Maze extends Main {
         });
     }
 }
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
     if (window.location.href.indexOf("maze-1.html") > -1) {
         let maze = new Maze("render-canvas");
-        maze.initializeScene();
-        maze.initialize();
+        await maze.initializeScene();
+        await maze.initialize();
         maze.animate();
     }
 });
@@ -4019,16 +4030,99 @@ class Ground extends BABYLON.Mesh {
         super("ground");
         this.width = width;
         this.height = height;
+        this.heightMap = [];
         this.stepCountW = 1;
         this.stepZeroW = 1;
         this.stepCountH = 1;
         this.stepZeroH = 1;
-        this.stepCountW = Math.ceil(this.width / 5) + 1;
+        this.stepCountW = Math.ceil(this.width / 2) + 1;
         this.stepZeroW = Math.ceil(-this.stepCountW / 2);
-        this.stepCountH = Math.ceil(this.height / 5) + 1;
+        this.stepCountH = Math.ceil(this.height / 2) + 1;
         this.stepZeroH = Math.ceil(-this.stepCountH / 2);
     }
-    instantiate() {
+    heightFunction(i, j) {
+        return Math.cos(3207 * i + 10001 * j);
+    }
+    getHeightAt(position) {
+        let i0 = Math.floor((position.x + this.width / 2) / this.width * 256);
+        let j0 = Math.floor((position.y + this.width / 2) / this.width * 256);
+        let h00 = this.heightMap[i0][j0];
+        let h10 = this.heightMap[i0 + 1][j0];
+        let h01 = this.heightMap[i0][j0 + 1];
+        let h11 = this.heightMap[i0 + 1][j0 + 1];
+        let di = (position.x + this.width / 2) / this.width * 256 - i0;
+        let dj = (position.y + this.width / 2) / this.width * 256 - j0;
+        let h0 = h00 * (1 - di) + h10 * di;
+        let h1 = h01 * (1 - di) + h11 * di;
+        return h0 * (1 - dj) + h1 * dj;
+    }
+    async instantiate() {
+        return new Promise((resolve) => {
+            let data = new BABYLON.VertexData();
+            let positions = [];
+            let colors = [];
+            let indices = [];
+            let uvs = [];
+            let normals = [];
+            let img = document.createElement("img");
+            img.src = "datas/heightmaps/ground.png";
+            img.onload = () => {
+                let c = document.createElement("canvas");
+                c.width = 256;
+                c.height = 256;
+                let ctx = c.getContext("2d");
+                ctx.drawImage(img, 0, 0, 256, 256);
+                let pixels = ctx.getImageData(0, 0, 256, 256).data;
+                this.heightMap = [];
+                for (let i = 0; i < 256; i++) {
+                    this.heightMap[i] = [];
+                    for (let j = 0; j < 256; j++) {
+                        this.heightMap[i][j] = (pixels[(i + 256 * (255 - j)) * 4] / 256) * 8 - 4;
+                    }
+                }
+                for (let j = 0; j < this.stepCountH; j++) {
+                    for (let i = 0; i < this.stepCountW; i++) {
+                        let x = (this.stepZeroW + i) * 2;
+                        let y = (this.stepZeroH + j) * 2;
+                        let h = this.heightMap[Math.floor(i / this.stepCountW * 256)][Math.floor(j / this.stepCountH * 256)];
+                        positions.push(x, h, y);
+                        uvs.push(i * 0.25, j * 0.25);
+                        if (i + 1 < this.stepCountW && j + 1 < this.stepCountH) {
+                            let index = i + j * this.stepCountW;
+                            indices.push(index, index + 1, index + 1 + this.stepCountW);
+                            indices.push(index, index + 1 + this.stepCountW, index + this.stepCountW);
+                        }
+                    }
+                }
+                data.positions = positions;
+                data.indices = indices;
+                data.uvs = uvs;
+                BABYLON.VertexData.ComputeNormals(positions, indices, normals);
+                for (let i = 0; i < normals.length / 3; i++) {
+                    let ny = normals[3 * i + 1];
+                    let c = 0.8;
+                    if (ny < 0.95) {
+                        c = 0.2;
+                    }
+                    else if (ny < 0.97) {
+                        c = 0.3;
+                    }
+                    else if (ny < 0.99) {
+                        c = 0.4;
+                    }
+                    else if (ny < 0.995) {
+                        c = 0.5;
+                    }
+                    colors.push(c, c, c, 1);
+                }
+                data.colors = colors;
+                data.normals = normals;
+                data.applyToMesh(this);
+                resolve();
+            };
+        });
+    }
+    instantiateOld() {
         let cristals = this.getScene().meshes.filter((m) => { return m instanceof Cristal; });
         let data = new BABYLON.VertexData();
         let positions = [];
@@ -4049,8 +4143,7 @@ class Ground extends BABYLON.Mesh {
                 let x = (this.stepZeroW + i) * 5;
                 let y = (this.stepZeroH + j) * 5;
                 positions.push(x, 0, y);
-                let c = (Math.cos(i * 43 + j * 3201) + 1) * 0.25 + 0.5;
-                colors.push(c, c, c, 1);
+                colors.push(1, 1, 1, 1);
                 uvs.push(i, j);
                 normals.push(0, 1, 0);
                 if (i + 1 < this.stepCountW && j + 1 < this.stepCountH) {

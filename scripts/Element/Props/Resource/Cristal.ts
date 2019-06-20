@@ -65,7 +65,7 @@ class Cristal extends ResourceSpot {
 
     protected onPositionChanged(): void {
         this.instantiate();
-        Main.Ground.instantiate();
+        Main.Ground.instantiateOld();
     }
 
     public elementName(): string {

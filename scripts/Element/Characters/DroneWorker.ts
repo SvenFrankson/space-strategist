@@ -271,6 +271,7 @@ class DroneWorker extends Character {
             this.rotation2D = Math2D.StepFromToCirular(this.rotation2D, this.targetRotation2D, Math.PI / 60);
         }
         this.position.x = this.position2D.x;
+        this.position.y = Main.Ground.getHeightAt(this.position2D);
         this.position.z = this.position2D.y;
         this.rotation.y = - this.rotation2D;
     }

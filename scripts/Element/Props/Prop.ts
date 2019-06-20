@@ -29,6 +29,9 @@ abstract class Prop extends Draggable {
     private _updatePosition = () => {
         if (this.position.x !== this.position2D.x || this.position.z !== this.position2D.y || this.rotation.y !== - this.rotation2D) {
             this.position.x = this.position2D.x;
+            if (!(this instanceof Wall)) {
+                this.position.y = Main.Ground.getHeightAt(this.position2D);
+            }
             this.position.z = this.position2D.y;
             this.rotation.y = - this.rotation2D;
             this.onPositionChanged();

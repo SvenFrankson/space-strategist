@@ -59,15 +59,24 @@ class Wall extends Building {
         let vertexData = await VertexDataLoader.instance.getColorized("wall", "#6d6d6d", "#383838", "#ce7633");
         vertexData = VertexDataLoader.clone(vertexData);
 
-        let d = this.node1.position2D.subtract(this.node2.position2D);
+        let d = this.node2.position2D.subtract(this.node1.position2D);
         let l = d.length() - 2;
         d.scaleInPlace(1 / l);
         let dir = Math2D.AngleFromTo(new BABYLON.Vector2(1, 0), d, true);
         let cosDir = Math.cos(dir);
         let sinDir = Math.sin(dir);
 
+        let hNode1 = Main.Ground.getHeightAt(this.node1.position2D);
+        let hNode2 = Main.Ground.getHeightAt(this.node2.position2D);
+
         for (let i = 0; i < vertexData.positions.length / 3; i++) {
             let x = vertexData.positions[3 * i] * l;
+            if (x > 0) {
+                vertexData.positions[3 * i + 1] += hNode2;
+            }
+            else {
+                vertexData.positions[3 * i + 1] += hNode1;
+            }
             let z = vertexData.positions[3 * i + 2];
 
             vertexData.positions[3 * i] = cosDir * x - sinDir * z;

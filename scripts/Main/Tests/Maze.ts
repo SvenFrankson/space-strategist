@@ -123,6 +123,7 @@ class Maze extends Main {
                             }
                         });
 
+						console.log("Maze Initialized");
                         resolve();
                     } 
                 };
@@ -133,11 +134,11 @@ class Maze extends Main {
     }
 }
 
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
 	if (window.location.href.indexOf("maze-1.html") > -1) {
 		let maze: Maze = new Maze("render-canvas");
-		maze.initializeScene();
-		maze.initialize();
+		await maze.initializeScene();
+		await maze.initialize();
 		maze.animate();
 	}
 });

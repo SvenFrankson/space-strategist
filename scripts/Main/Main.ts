@@ -21,12 +21,12 @@ class Main {
 		return Main._cellShadingMaterial;
 	}
 
-    public static _groundMaterial: BABYLON.CellMaterial;
-	public static get groundMaterial(): BABYLON.CellMaterial {
+    public static _groundMaterial: BABYLON.StandardMaterial;
+	public static get groundMaterial(): BABYLON.StandardMaterial {
 		if (!Main._groundMaterial) {
-            Main._groundMaterial = new BABYLON.CellMaterial("CellMaterial", Main.Scene);
+            Main._groundMaterial = new BABYLON.StandardMaterial("StandardMaterial", Main.Scene);
             Main._groundMaterial.diffuseTexture = new BABYLON.Texture("/img/ground.jpg", Main.Scene);
-			Main._groundMaterial.computeHighLevel = true;
+			Main._groundMaterial.specularColor.copyFromFloats(0, 0, 0);
 		}
 		return Main._groundMaterial;
 	}
@@ -158,8 +158,8 @@ class Main {
 		
 		Main.Scene.activeCameras.push(Main.Camera, noPostProcessCamera);
 
-        Main.Ground = new Ground(50, 50);
-        Main.Ground.instantiate();
+        Main.Ground = new Ground(100, 100);
+        await Main.Ground.instantiate();
         Main.Ground.material = Main.groundMaterial;
 
         new VertexDataLoader(Main.Scene);
@@ -180,7 +180,9 @@ class Main {
 
         //let fongus = new Fongus();
         //fongus.position2D = new BABYLON.Vector2(0, -10);
-        //fongus.instantiate();
+		//fongus.instantiate();
+		
+		console.log("Scene Initialized");
     }
 
     public animate(): void {

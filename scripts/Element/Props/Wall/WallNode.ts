@@ -40,9 +40,6 @@ class WallNode extends Building {
     }
 
     public async instantiate(): Promise<void> {
-        this.position.x = this.position2D.x;
-        this.position.y = 0;
-        this.position.z = this.position2D.y;
         this.updateDirs();
         if (this.dirs.length === 0) {
             let vertexData = await VertexDataLoader.instance.get("wallNode");
