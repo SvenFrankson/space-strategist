@@ -52,8 +52,10 @@ class PerformanceConsole {
     private _lastT: number = NaN;
     private _update = () => {
         let fps = this.scene.getEngine().getFps();
-        this._fps *= 0.9;
-        this._fps += fps * 0.1;
+        if (isFinite(fps)) {
+            this._fps *= 0.9;
+            this._fps += fps * 0.1;
+        }
         this._fpsInput.value = this._fps.toFixed(0);
 
         if (isNaN(this._lastT)) {
