@@ -2909,15 +2909,26 @@ class VertexDataLoader {
         }
         let vertexData = undefined;
         let loadedFile = await BABYLON.SceneLoader.ImportMeshAsync("", "./datas/" + name + ".babylon", "", Main.Scene);
-        let loadedMesh = loadedFile.meshes[0];
-        if (loadedMesh instanceof BABYLON.Mesh) {
-            vertexData = BABYLON.VertexData.ExtractFromMesh(loadedMesh);
+        let vertexDatas = [];
+        for (let i = 0; i < loadedFile.meshes.length; i++) {
+            let loadedMesh = loadedFile.meshes[0];
+            if (loadedMesh instanceof BABYLON.Mesh) {
+                vertexData = BABYLON.VertexData.ExtractFromMesh(loadedMesh);
+                vertexDatas.push(vertexData);
+            }
         }
         loadedFile.meshes.forEach(m => { m.dispose(); });
         loadedFile.skeletons.forEach(s => { s.dispose(); });
-        return vertexData;
+        return vertexDatas;
     }
     async getColorized(name, baseColorHex = "#FFFFFF", frameColorHex = "", color1Hex = "", // Replace red
+        color2Hex = "", // Replace green
+        color3Hex = "" // Replace blue
+    ) {
+        let vertexDatas = await this.getColorizedMultiple(name, baseColorHex, frameColorHex, color1Hex, color2Hex, color3Hex);
+        return vertexDatas[0];
+    }
+    async getColorizedMultiple(name, baseColorHex = "#FFFFFF", frameColorHex = "", color1Hex = "", // Replace red
         color2Hex = "", // Replace green
         color3Hex = "" // Replace blue
     ) {
@@ -2941,65 +2952,71 @@ class VertexDataLoader {
         if (color3Hex !== "") {
             color3 = BABYLON.Color3.FromHexString(color3Hex);
         }
-        let data = VertexDataLoader.clone(await VertexDataLoader.instance.get(name));
-        if (data.colors) {
-            for (let i = 0; i < data.colors.length / 4; i++) {
-                let r = data.colors[4 * i];
-                let g = data.colors[4 * i + 1];
-                let b = data.colors[4 * i + 2];
-                if (baseColor) {
-                    if (r === 1 && g === 1 && b === 1) {
-                        data.colors[4 * i] = baseColor.r;
-                        data.colors[4 * i + 1] = baseColor.g;
-                        data.colors[4 * i + 2] = baseColor.b;
-                        continue;
+        let vertexDatas = await VertexDataLoader.instance.get(name);
+        let colorizedVertexDatas = [];
+        for (let d = 0; d < vertexDatas.length; d++) {
+            let vertexData = vertexDatas[d];
+            let colorizedVertexData = VertexDataLoader.clone(vertexData);
+            if (colorizedVertexData.colors) {
+                for (let i = 0; i < colorizedVertexData.colors.length / 4; i++) {
+                    let r = colorizedVertexData.colors[4 * i];
+                    let g = colorizedVertexData.colors[4 * i + 1];
+                    let b = colorizedVertexData.colors[4 * i + 2];
+                    if (baseColor) {
+                        if (r === 1 && g === 1 && b === 1) {
+                            colorizedVertexData.colors[4 * i] = baseColor.r;
+                            colorizedVertexData.colors[4 * i + 1] = baseColor.g;
+                            colorizedVertexData.colors[4 * i + 2] = baseColor.b;
+                            continue;
+                        }
                     }
-                }
-                if (frameColor) {
-                    if (r === 0.502 && g === 0.502 && b === 0.502) {
-                        data.colors[4 * i] = frameColor.r;
-                        data.colors[4 * i + 1] = frameColor.g;
-                        data.colors[4 * i + 2] = frameColor.b;
-                        continue;
+                    if (frameColor) {
+                        if (r === 0.502 && g === 0.502 && b === 0.502) {
+                            colorizedVertexData.colors[4 * i] = frameColor.r;
+                            colorizedVertexData.colors[4 * i + 1] = frameColor.g;
+                            colorizedVertexData.colors[4 * i + 2] = frameColor.b;
+                            continue;
+                        }
                     }
-                }
-                if (color1) {
-                    if (r === 1 && g === 0 && b === 0) {
-                        data.colors[4 * i] = color1.r;
-                        data.colors[4 * i + 1] = color1.g;
-                        data.colors[4 * i + 2] = color1.b;
-                        continue;
+                    if (color1) {
+                        if (r === 1 && g === 0 && b === 0) {
+                            colorizedVertexData.colors[4 * i] = color1.r;
+                            colorizedVertexData.colors[4 * i + 1] = color1.g;
+                            colorizedVertexData.colors[4 * i + 2] = color1.b;
+                            continue;
+                        }
                     }
-                }
-                if (color2) {
-                    if (r === 0 && g === 1 && b === 0) {
-                        data.colors[4 * i] = color2.r;
-                        data.colors[4 * i + 1] = color2.g;
-                        data.colors[4 * i + 2] = color2.b;
-                        continue;
+                    if (color2) {
+                        if (r === 0 && g === 1 && b === 0) {
+                            colorizedVertexData.colors[4 * i] = color2.r;
+                            colorizedVertexData.colors[4 * i + 1] = color2.g;
+                            colorizedVertexData.colors[4 * i + 2] = color2.b;
+                            continue;
+                        }
                     }
-                }
-                if (color3) {
-                    if (r === 0 && g === 0 && b === 1) {
-                        data.colors[4 * i] = color3.r;
-                        data.colors[4 * i + 1] = color3.g;
-                        data.colors[4 * i + 2] = color3.b;
-                        continue;
+                    if (color3) {
+                        if (r === 0 && g === 0 && b === 1) {
+                            colorizedVertexData.colors[4 * i] = color3.r;
+                            colorizedVertexData.colors[4 * i + 1] = color3.g;
+                            colorizedVertexData.colors[4 * i + 2] = color3.b;
+                            continue;
+                        }
                     }
                 }
             }
-        }
-        else {
-            let colors = [];
-            for (let i = 0; i < data.positions.length / 3; i++) {
-                colors[4 * i] = baseColor.r;
-                colors[4 * i + 1] = baseColor.g;
-                colors[4 * i + 2] = baseColor.b;
-                colors[4 * i + 3] = 1;
+            else {
+                let colors = [];
+                for (let i = 0; i < colorizedVertexData.positions.length / 3; i++) {
+                    colors[4 * i] = baseColor.r;
+                    colors[4 * i + 1] = baseColor.g;
+                    colors[4 * i + 2] = baseColor.b;
+                    colors[4 * i + 3] = 1;
+                }
+                colorizedVertexData.colors = colors;
             }
-            data.colors = colors;
+            colorizedVertexDatas.push(colorizedVertexData);
         }
-        return data;
+        return colorizedVertexDatas;
     }
 }
 /// <reference path="../../lib/babylon.d.ts"/>
