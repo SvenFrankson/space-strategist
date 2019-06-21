@@ -8,6 +8,7 @@ class MazeConsole {
 
     public enable() {
         this._panel = SpacePanel.CreateSpacePanel();
+        this._panel.style.position = "fixed";
         this._panel.addTitle1("MAZE");
         this._panel.addTitle2("PATHFINDING DEMO");
         this._panel.addLargeButton(

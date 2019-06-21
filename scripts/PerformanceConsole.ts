@@ -35,8 +35,7 @@ class PerformanceConsole {
         this._panel.addTitle2("POINTER");
         this._pointerPosInput = this._panel.addTextInput("POINTER", this._pointerPos);
 
-        this._panel.style.right = "10px";
-        this._panel.style.top = "10px";
+        document.getElementById("space-panel-top-right-container").appendChild(this._panel);
         this._panel.hide();
 
         this.scene.onBeforeRenderObservable.add(this._update);

@@ -10,6 +10,7 @@ class PropEditor {
         onCloneCallback?: (clone: Prop) => void
     ): SpacePanel {
         let panel = SpacePanel.CreateSpacePanel();
+        panel.style.position = "fixed";
         panel.setTarget(prop);
         panel.addTitle1(prop.elementName().toLocaleUpperCase());
         panel.addTitle2(prop.name.toLocaleUpperCase());

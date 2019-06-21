@@ -427,8 +427,7 @@ class PerformanceConsole {
         this._fongisCountInput = this._panel.addNumberInput("FONGIS", this._fongisCount);
         this._panel.addTitle2("POINTER");
         this._pointerPosInput = this._panel.addTextInput("POINTER", this._pointerPos);
-        this._panel.style.right = "10px";
-        this._panel.style.top = "10px";
+        document.getElementById("space-panel-top-right-container").appendChild(this._panel);
         this._panel.hide();
         this.scene.onBeforeRenderObservable.add(this._update);
     }
@@ -1997,6 +1996,7 @@ class PropEditor {
     }
     static CreatePanel(prop, onDisposeCallback, onCloneCallback) {
         let panel = SpacePanel.CreateSpacePanel();
+        panel.style.position = "fixed";
         panel.setTarget(prop);
         panel.addTitle1(prop.elementName().toLocaleUpperCase());
         panel.addTitle2(prop.name.toLocaleUpperCase());
@@ -2977,8 +2977,8 @@ class VertexDataLoader {
         return vertexData;
     }
     async getColorized(name, baseColorHex = "#FFFFFF", frameColorHex = "", color1Hex = "", // Replace red
-        color2Hex = "", // Replace green
-        color3Hex = "" // Replace blue
+    color2Hex = "", // Replace green
+    color3Hex = "" // Replace blue
     ) {
         let baseColor;
         if (baseColorHex !== "") {
@@ -3398,6 +3398,7 @@ class MazeConsole {
     }
     enable() {
         this._panel = SpacePanel.CreateSpacePanel();
+        this._panel.style.position = "fixed";
         this._panel.addTitle1("MAZE");
         this._panel.addTitle2("PATHFINDING DEMO");
         this._panel.addLargeButton("RANDOMIZE", async () => {
@@ -3740,8 +3741,7 @@ class NavGraphConsole {
                 this._navGraph.displayPath(this.scene);
             }
         });
-        this._panel.style.left = "10px";
-        this._panel.style.bottom = "10px";
+        document.getElementById("space-panel-top-right-container").appendChild(this._panel);
         this._panel.hide();
     }
     disable() {
@@ -4350,6 +4350,7 @@ class Ground extends BABYLON.Mesh {
 class SpacePanel extends HTMLElement {
     constructor() {
         super();
+        this._initialized = false;
         this._htmlLines = [];
         this._isVisible = true;
         this._update = () => {
@@ -4376,6 +4377,9 @@ class SpacePanel extends HTMLElement {
         return panel;
     }
     connectedCallback() {
+        if (this._initialized) {
+            return;
+        }
         this._innerBorder = document.createElement("div");
         this._innerBorder.classList.add("space-panel-inner-border");
         this.appendChild(this._innerBorder);
@@ -4391,6 +4395,7 @@ class SpacePanel extends HTMLElement {
             }
         });
         this._innerBorder.appendChild(this._toggleVisibilityInput);
+        this._initialized = true;
     }
     dispose() {
         if (this._target) {

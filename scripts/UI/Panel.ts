@@ -5,6 +5,7 @@ interface IMeshWithGroundWidth {
 
 class SpacePanel extends HTMLElement {
 
+    private _initialized: boolean = false;
     private _innerBorder: HTMLDivElement;
     private _htmlLines: HTMLElement[] = [];
     private _toggleVisibilityInput: HTMLButtonElement;
@@ -21,9 +22,12 @@ class SpacePanel extends HTMLElement {
     }
 
     public connectedCallback(): void {
-       this._innerBorder = document.createElement("div");
-       this._innerBorder.classList.add("space-panel-inner-border");
-       this.appendChild(this._innerBorder);
+        if (this._initialized) {
+            return;
+        }
+        this._innerBorder = document.createElement("div");
+        this._innerBorder.classList.add("space-panel-inner-border");
+        this.appendChild(this._innerBorder);
 
         this._toggleVisibilityInput = document.createElement("button");
         this._toggleVisibilityInput.classList.add("space-panel-toggle-visibility");
@@ -37,6 +41,7 @@ class SpacePanel extends HTMLElement {
             }
         });
         this._innerBorder.appendChild(this._toggleVisibilityInput);
+        this._initialized = true;
     }
 
     public dispose(): void {

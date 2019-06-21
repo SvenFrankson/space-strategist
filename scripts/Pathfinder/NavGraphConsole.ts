@@ -59,8 +59,7 @@ class NavGraphConsole {
                 }
             }
         );
-        this._panel.style.left = "10px";
-        this._panel.style.bottom = "10px";
+        document.getElementById("space-panel-top-right-container").appendChild(this._panel);
         this._panel.hide();
     }
 
