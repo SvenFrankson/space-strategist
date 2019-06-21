@@ -39,7 +39,7 @@ class VertexDataLoader {
         let loadedFile = await BABYLON.SceneLoader.ImportMeshAsync("", "./datas/" + name + ".babylon", "", Main.Scene);
         let vertexDatas: BABYLON.VertexData[] = [];
         for (let i = 0; i < loadedFile.meshes.length; i++) {
-            let loadedMesh = loadedFile.meshes[0];
+            let loadedMesh = loadedFile.meshes[i];
             if (loadedMesh instanceof BABYLON.Mesh) {
                 vertexData =  BABYLON.VertexData.ExtractFromMesh(loadedMesh);
                 vertexDatas.push(vertexData);
