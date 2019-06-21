@@ -106,6 +106,7 @@ class Wall extends Building {
     }
 
     public onSelected(): void {
+        console.log("!");
         this.ui.enable();
     }
 

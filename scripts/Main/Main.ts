@@ -191,9 +191,6 @@ class Main {
 
 		Main.WallSystem = new WallSystem();
 
-        //let sceneEditor = new SceneEditor(Main.WallSystem, player, Main.Scene);
-		//sceneEditor.enable();
-
         let navGraphConsole = new NavGraphConsole(Main.Scene);
 		navGraphConsole.enable();
 
@@ -204,7 +201,7 @@ class Main {
         //fongus.position2D = new BABYLON.Vector2(0, -10);
 		//fongus.instantiate();
 		
-		console.log("Scene Initialized");
+		console.log("Main scene Initialized.");
     }
 
     public animate(): void {
