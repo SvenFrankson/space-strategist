@@ -12,10 +12,11 @@ class MazeConsole {
         this._panel.addTitle2("PATHFINDING DEMO");
         this._panel.addLargeButton(
             "RANDOMIZE",
-            () => {
+            async () => {
                 Main.WallSystem.dispose();
                 Main.WallSystem = new WallSystem();
-                this.maze.createRandomMaze();
+                await this.maze.createRandomMaze();
+                this.maze.initializeDroneWorker();
             }
         );
         this._panel.style.left = "10px";

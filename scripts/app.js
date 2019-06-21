@@ -3318,6 +3318,11 @@ class Maze extends Main {
         await Main.WallSystem.instantiate();
         Main.WallSystem.addToScene();
     }
+    async initializeDroneWorker() {
+        this._worker.position2D = new BABYLON.Vector2(0, 0);
+        this._worker.currentTask = undefined;
+        this._targetPosition = BABYLON.Vector2.Zero();
+    }
     async initialize() {
         return new Promise(resolve => {
             let request = new XMLHttpRequest();
@@ -3328,27 +3333,25 @@ class Maze extends Main {
                     await Serializer.Deserialize(Main.Scene, data, Main.Player);
                     let playerControl = new PlayerControl(Main.Scene);
                     playerControl.enable();
-                    let worker = new DroneWorker(Main.Player);
-                    worker.position2D = new BABYLON.Vector2(0, 0);
-                    await worker.instantiate();
-                    let targetPosition = BABYLON.Vector2.Zero();
-                    let targetBanner;
+                    this._worker = new DroneWorker(Main.Player);
+                    await this._worker.instantiate();
+                    await this.initializeDroneWorker();
                     Main.Scene.onBeforeRenderObservable.add(() => {
-                        if (BABYLON.Vector2.DistanceSquared(worker.position2D, targetPosition) < 0.1) {
-                            if (targetPosition.lengthSquared() < 0.1) {
+                        if (BABYLON.Vector2.DistanceSquared(this._worker.position2D, this._targetPosition) < 1) {
+                            if (this._targetPosition.lengthSquared() < 0.1) {
                                 let a = Math.random() * Math.PI * 2;
-                                targetPosition = new BABYLON.Vector2(Math.cos(a) * 22.5, Math.sin(a) * 22.5);
+                                this._targetPosition = new BABYLON.Vector2(Math.cos(a) * 22.5, Math.sin(a) * 22.5);
                             }
                             else {
-                                targetPosition = BABYLON.Vector2.Zero();
+                                this._targetPosition = BABYLON.Vector2.Zero();
                             }
-                            if (targetBanner) {
-                                targetBanner.dispose();
+                            if (this._banner) {
+                                this._banner.dispose();
                             }
-                            targetBanner = new Banner("", targetPosition, Math.random() * Math.PI * 2, 1);
-                            targetBanner.instantiate();
-                            targetBanner.elasticBounce(2);
-                            worker.currentTask = new GoToTask(worker, targetPosition);
+                            this._banner = new Banner("", this._targetPosition, Math.random() * Math.PI * 2, 1);
+                            this._banner.instantiate();
+                            this._banner.elasticBounce(2);
+                            this._worker.currentTask = new GoToTask(this._worker, this._targetPosition);
                         }
                     });
                     console.log("Maze Initialized");
@@ -3376,10 +3379,11 @@ class MazeConsole {
         this._panel = SpacePanel.CreateSpacePanel();
         this._panel.addTitle1("MAZE");
         this._panel.addTitle2("PATHFINDING DEMO");
-        this._panel.addLargeButton("RANDOMIZE", () => {
+        this._panel.addLargeButton("RANDOMIZE", async () => {
             Main.WallSystem.dispose();
             Main.WallSystem = new WallSystem();
-            this.maze.createRandomMaze();
+            await this.maze.createRandomMaze();
+            this.maze.initializeDroneWorker();
         });
         this._panel.style.left = "10px";
         this._panel.style.top = "10px";
