@@ -100,6 +100,12 @@ class Main {
 					groundRight.scaleInPlace(Main.Engine.getDeltaTime() / 1000 * 20 * (50 - pointerRight) / 50);
 					Main.Camera.target.addInPlace(groundRight);
 				}
+				if (Main.Ground.shape === GroundShape.Disc) {
+					let halfSizeSquared = (Main.Ground.size * 0.5 - 5) * (Main.Ground.size * 0.5 - 5);
+					if (Main.Camera.target.lengthSquared() > halfSizeSquared) {
+						Main.Camera.target.normalize().scaleInPlace(Main.Ground.size* 0.5 - 5);
+					}
+				}
 			}
 		)
 

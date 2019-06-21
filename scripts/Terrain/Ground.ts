@@ -6,8 +6,10 @@ enum GroundShape {
 class Ground extends BABYLON.Mesh {
 
     public heightMap: number[][] = [];
-    public stepCount = 1;
-    public stepZero = 1;
+    public posYMap: number[][] = [];
+    public normalMap: BABYLON.Vector3[][] = [];
+    public vertexSize = 1;
+    public offset = 1;
 
     private _border: BABYLON.Mesh;
 
@@ -16,8 +18,9 @@ class Ground extends BABYLON.Mesh {
         public shape: GroundShape = GroundShape.None
     ) {
         super("ground");
-        this.stepCount = Math.ceil(this.size / 2) + 1;
-        this.stepZero = Math.ceil(- this.stepCount / 2);
+        this.size = Math.round(this.size / 4) * 4;
+        this.vertexSize = Math.round(this.size / 2) + 1;
+        this.offset = - this.size / 2;
     }
 
     public heightFunction(i: number, j: number): number {
@@ -25,21 +28,45 @@ class Ground extends BABYLON.Mesh {
     }
 
     public getHeightAt(position: BABYLON.Vector2): number {
-        let i0 = Math.floor((position.x + this.size / 2) / this.size * 256);
-        let j0 = Math.floor((position.y + this.size / 2) / this.size * 256);
+        let i0 = Math.floor(position.x / 2 - this.offset / 2);
+        let j0 = Math.floor(position.y / 2 - this.offset / 2);
 
-        let h00 = this.heightMap[i0][j0];
-        let h10 = this.heightMap[i0 + 1][j0];
-        let h01 = this.heightMap[i0][j0 + 1];
-        let h11 = this.heightMap[i0 + 1][j0 + 1];
+        let h00 = this.posYMap[i0][j0];
+        let h10 = this.posYMap[i0 + 1][j0];
+        let h01 = this.posYMap[i0][j0 + 1];
+        let h11 = this.posYMap[i0 + 1][j0 + 1];
 
-        let di = (position.x + this.size / 2) / this.size * 256 - i0;
-        let dj = (position.y + this.size / 2) / this.size * 256 - j0;
+        let di = position.x / 2 - Math.floor(position.x / 2);
+        let dj = position.y / 2 - Math.floor(position.y / 2);
 
         let h0 = h00 * (1 - di) + h10 * di;
         let h1 = h01 * (1 - di) + h11 * di;
 
         return h0 * (1 - dj) + h1 * dj;
+    }
+
+    public getNormalAtToRef(position: BABYLON.Vector2, normal: BABYLON.Vector3): void {
+        let i0 = Math.floor(position.x / 2 - this.offset / 2);
+        let j0 = Math.floor(position.y / 2 - this.offset / 2);
+
+        let n00 = this.normalMap[i0][j0];
+        let n10 = this.normalMap[i0 + 1][j0];
+        let n01 = this.normalMap[i0][j0 + 1];
+        let n11 = this.normalMap[i0 + 1][j0 + 1];
+
+        let di = position.x / 2 - Math.floor(position.x / 2);
+        let dj = position.y / 2 - Math.floor(position.y / 2);
+
+        let n0x = n00.x * (1 - di) + n10.x * di;
+        let n0y = n00.y * (1 - di) + n10.y * di;
+        let n0z = n00.z * (1 - di) + n10.z * di;
+        let n1x = n01.x * (1 - di) + n11.x * di;
+        let n1y = n01.y * (1 - di) + n11.y * di;
+        let n1z = n01.z * (1 - di) + n11.z * di;
+
+        BABYLON.Tmp.Vector3[0].copyFromFloats(n0x, n0y, n0z).scaleInPlace(1 - dj);
+        BABYLON.Tmp.Vector3[1].copyFromFloats(n1x, n1y, n1z).scaleInPlace(dj);
+        normal.copyFrom(BABYLON.Tmp.Vector3[0]).addInPlace(BABYLON.Tmp.Vector3[1]).normalize();
     }
 
     public async instantiate(): Promise<void> {
@@ -81,24 +108,24 @@ class Ground extends BABYLON.Mesh {
                     }
         
                     let halfSizeSquared = this.size * 0.5 * this.size * 0.5;
-                    for (let j = 0; j < this.stepCount; j++) {
-                        for (let i = 0; i < this.stepCount; i++) {
-                            let x = (this.stepZero + i) * 2;
-                            let y = (this.stepZero + j) * 2;
-                            let h = this.heightMap[Math.floor(i / this.stepCount * 256)][Math.floor(j / this.stepCount * 256)];
+                    for (let j = 0; j < this.vertexSize; j++) {
+                        for (let i = 0; i < this.vertexSize; i++) {
+                            let x = i * 2 + this.offset;
+                            let y = j * 2 + this.offset;
+                            let h = this.heightMap[Math.floor(i / this.vertexSize * 256)][Math.floor(j / this.vertexSize * 256)];
                             positions.push(x, h, y);
                             uvs.push(i * 0.25, j * 0.25);
-                            if (i + 1 < this.stepCount && j + 1 < this.stepCount) {
-                                let index = i + j * this.stepCount;
+                            if (i + 1 < this.vertexSize && j + 1 < this.vertexSize) {
+                                let index = i + j * this.vertexSize;
                                 if (this.shape === GroundShape.None) {
-                                    indices.push(index, index + 1, index + 1 + this.stepCount);
-                                    indices.push(index, index + 1 + this.stepCount, index + this.stepCount);
+                                    indices.push(index, index + 1, index + 1 + this.vertexSize);
+                                    indices.push(index, index + 1 + this.vertexSize, index + this.vertexSize);
                                 }
                                 else if (this.shape === GroundShape.Disc) {
                                     let lSquared = (x + 1) * (x + 1) + (y + 1) * (y + 1);
                                     if (lSquared < halfSizeSquared) {
-                                        indices.push(index, index + 1, index + 1 + this.stepCount);
-                                        indices.push(index, index + 1 + this.stepCount, index + this.stepCount);
+                                        indices.push(index, index + 1, index + 1 + this.vertexSize);
+                                        indices.push(index, index + 1 + this.vertexSize, index + this.vertexSize);
                                     }
                                 }
                             }
@@ -109,6 +136,18 @@ class Ground extends BABYLON.Mesh {
                     data.indices = indices;
                     data.uvs = uvs;
                     BABYLON.VertexData.ComputeNormals(positions, indices, normals);
+                    for (let i = 0; i < this.vertexSize; i++) {
+                        this.posYMap[i] = [];
+                        this.normalMap[i] = [];
+                        for (let j = 0; j < this.vertexSize; j++) {
+                            this.posYMap[i][j] = positions[3 * (i + this.vertexSize * j) + 1];
+                            this.normalMap[i][j] = new BABYLON.Vector3(
+                                normals[3 * (i + this.vertexSize * j)],
+                                normals[3 * (i + this.vertexSize * j) + 1],
+                                normals[3 * (i + this.vertexSize * j) + 2]
+                            );
+                        }
+                    }
                     for (let i = 0; i < normals.length / 3; i++) {
                         let ny = normals[3 * i + 1];
                         let c = 0.8;
@@ -166,8 +205,8 @@ class Ground extends BABYLON.Mesh {
 
         let holes: BABYLON.Vector2[] = [];
         for (let i = 0; i < cristals.length; i++) {
-            let iHole0 = Math.round(cristals[i].position2D.x / 5) - this.stepZero;
-            let jHole0 = Math.round(cristals[i].position2D.y / 5) - this.stepZero;
+            let iHole0 = Math.round(cristals[i].position2D.x / 5) - this.offset;
+            let jHole0 = Math.round(cristals[i].position2D.y / 5) - this.offset;
             let iHole1 = iHole0 - 1;
             let jHole1 = jHole0 - 1;
             holes.push(
@@ -178,19 +217,19 @@ class Ground extends BABYLON.Mesh {
             );
         }
 
-        for (let j = 0; j < this.stepCount; j++) {
-            for (let i = 0; i < this.stepCount; i++) {
-                let x = (this.stepZero + i) * 5;
-                let y = (this.stepZero + j) * 5;
+        for (let j = 0; j < this.vertexSize; j++) {
+            for (let i = 0; i < this.vertexSize; i++) {
+                let x = (this.offset + i) * 5;
+                let y = (this.offset + j) * 5;
                 positions.push(x, 0, y);
                 colors.push(1, 1, 1, 1);
                 uvs.push(i, j);
                 normals.push(0, 1, 0);
-                if (i + 1 < this.stepCount && j + 1 < this.stepCount) {
+                if (i + 1 < this.vertexSize && j + 1 < this.vertexSize) {
                     if (!holes.find(h => { return h.x === i && h.y === j; })) {
-                        let index = i + j * this.stepCount;
-                        indices.push(index, index + 1, index + 1 + this.stepCount);
-                        indices.push(index, index + 1 + this.stepCount, index + this.stepCount);
+                        let index = i + j * this.vertexSize;
+                        indices.push(index, index + 1, index + 1 + this.vertexSize);
+                        indices.push(index, index + 1 + this.vertexSize, index + this.vertexSize);
                     }
                 }
             }

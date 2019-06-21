@@ -19,15 +19,15 @@ class Cristal extends ResourceSpot {
             vertexData.positions[i] *= 0.5;
         }
 
-        let iHole0 = Math.round(this.position2D.x / 5) - Main.Ground.stepZero;
-        let jHole0 = Math.round(this.position2D.y / 5) - Main.Ground.stepZero;
+        let iHole0 = Math.round(this.position2D.x / 5) - Main.Ground.offset;
+        let jHole0 = Math.round(this.position2D.y / 5) - Main.Ground.offset;
         let iHole1 = iHole0 - 1;
         let jHole1 = jHole0 - 1;
 
-        let seamXMin = (Main.Ground.stepZero + iHole1) * 5;
-        let seamXMax = (Main.Ground.stepZero + iHole0 + 1) * 5;
-        let seamZMin = (Main.Ground.stepZero + jHole1) * 5;
-        let seamZMax = (Main.Ground.stepZero + jHole0 + 1) * 5;
+        let seamXMin = (Main.Ground.offset + iHole1) * 5;
+        let seamXMax = (Main.Ground.offset + iHole0 + 1) * 5;
+        let seamZMin = (Main.Ground.offset + jHole1) * 5;
+        let seamZMax = (Main.Ground.offset + jHole0 + 1) * 5;
 
         for (let i = 0; i < vertexData.positions.length / 3; i++) {
             let x = vertexData.positions[3 * i];

@@ -260,6 +260,9 @@ class DroneWorker extends Character {
         return this.ui.onLeftClick(pickedPoint, pickedTarget);
     };
 
+    private _targetX: BABYLON.Vector3 = BABYLON.Vector3.Zero();
+    private _targetY: BABYLON.Vector3 = BABYLON.Vector3.Zero();
+    private _targetZ: BABYLON.Vector3 = BABYLON.Vector3.Zero();
     private _update = () => {
         if (this.currentTask) {
             this.currentTask.update();
@@ -274,7 +277,16 @@ class DroneWorker extends Character {
         this.position.x = this.position2D.x;
         this.position.y = Main.Ground.getHeightAt(this.position2D);
         this.position.z = this.position2D.y;
-        this.rotation.y = - this.rotation2D;
+        this._targetX.copyFromFloats(Math.cos(this.rotation2D), 0, Math.sin(this.rotation2D));
+        Main.Ground.getNormalAtToRef(this.position2D, this._targetY);
+        BABYLON.Vector3.CrossToRef(this._targetX, this._targetY, this._targetZ);
+        BABYLON.Vector3.CrossToRef(this._targetY, this._targetZ, this._targetX);
+        BABYLON.Vector3.RotationFromAxisToRef(
+            this._targetX,
+            this._targetY,
+            this._targetZ,
+            this.rotation
+        );
     }
 
     public moveOnPath(): void {

@@ -1154,6 +1154,9 @@ class DroneWorker extends Character {
         this.carriageCapacity = 10;
         this._inventory = 0;
         this._currentAction = "Doing nothing";
+        this._targetX = BABYLON.Vector3.Zero();
+        this._targetY = BABYLON.Vector3.Zero();
+        this._targetZ = BABYLON.Vector3.Zero();
         this._update = () => {
             if (this.currentTask) {
                 this.currentTask.update();
@@ -1167,7 +1170,11 @@ class DroneWorker extends Character {
             this.position.x = this.position2D.x;
             this.position.y = Main.Ground.getHeightAt(this.position2D);
             this.position.z = this.position2D.y;
-            this.rotation.y = -this.rotation2D;
+            this._targetX.copyFromFloats(Math.cos(this.rotation2D), 0, Math.sin(this.rotation2D));
+            Main.Ground.getNormalAtToRef(this.position2D, this._targetY);
+            BABYLON.Vector3.CrossToRef(this._targetX, this._targetY, this._targetZ);
+            BABYLON.Vector3.CrossToRef(this._targetY, this._targetZ, this._targetX);
+            BABYLON.Vector3.RotationFromAxisToRef(this._targetX, this._targetY, this._targetZ, this.rotation);
         };
         this.moveSpeed = 3;
         this.ui = new DroneWorkerUI(this);
@@ -2374,14 +2381,14 @@ class Cristal extends ResourceSpot {
         for (let i = 0; i < vertexData.positions.length; i++) {
             vertexData.positions[i] *= 0.5;
         }
-        let iHole0 = Math.round(this.position2D.x / 5) - Main.Ground.stepZero;
-        let jHole0 = Math.round(this.position2D.y / 5) - Main.Ground.stepZero;
+        let iHole0 = Math.round(this.position2D.x / 5) - Main.Ground.offset;
+        let jHole0 = Math.round(this.position2D.y / 5) - Main.Ground.offset;
         let iHole1 = iHole0 - 1;
         let jHole1 = jHole0 - 1;
-        let seamXMin = (Main.Ground.stepZero + iHole1) * 5;
-        let seamXMax = (Main.Ground.stepZero + iHole0 + 1) * 5;
-        let seamZMin = (Main.Ground.stepZero + jHole1) * 5;
-        let seamZMax = (Main.Ground.stepZero + jHole0 + 1) * 5;
+        let seamXMin = (Main.Ground.offset + iHole1) * 5;
+        let seamXMax = (Main.Ground.offset + iHole0 + 1) * 5;
+        let seamZMin = (Main.Ground.offset + jHole1) * 5;
+        let seamZMax = (Main.Ground.offset + jHole0 + 1) * 5;
         for (let i = 0; i < vertexData.positions.length / 3; i++) {
             let x = vertexData.positions[3 * i];
             if (x === 2.5) {
@@ -2437,14 +2444,14 @@ class Rock extends ResourceSpot {
         for (let i = 0; i < vertexData.positions.length; i++) {
             vertexData.positions[i] *= 0.5;
         }
-        let iHole0 = Math.round(this.position2D.x / 5) - Main.Ground.stepZero;
-        let jHole0 = Math.round(this.position2D.y / 5) - Main.Ground.stepZero;
+        let iHole0 = Math.round(this.position2D.x / 5) - Main.Ground.offset;
+        let jHole0 = Math.round(this.position2D.y / 5) - Main.Ground.offset;
         let iHole1 = iHole0 - 1;
         let jHole1 = jHole0 - 1;
-        let seamXMin = (Main.Ground.stepZero + iHole1) * 5;
-        let seamXMax = (Main.Ground.stepZero + iHole0 + 1) * 5;
-        let seamZMin = (Main.Ground.stepZero + jHole1) * 5;
-        let seamZMax = (Main.Ground.stepZero + jHole0 + 1) * 5;
+        let seamXMin = (Main.Ground.offset + iHole1) * 5;
+        let seamXMax = (Main.Ground.offset + iHole0 + 1) * 5;
+        let seamZMin = (Main.Ground.offset + jHole1) * 5;
+        let seamZMax = (Main.Ground.offset + jHole0 + 1) * 5;
         for (let i = 0; i < vertexData.positions.length / 3; i++) {
             let x = vertexData.positions[3 * i];
             if (x === 2.5) {
@@ -3121,6 +3128,12 @@ class Main {
                 groundRight.normalize();
                 groundRight.scaleInPlace(Main.Engine.getDeltaTime() / 1000 * 20 * (50 - pointerRight) / 50);
                 Main.Camera.target.addInPlace(groundRight);
+            }
+            if (Main.Ground.shape === GroundShape.Disc) {
+                let halfSizeSquared = (Main.Ground.size * 0.5 - 5) * (Main.Ground.size * 0.5 - 5);
+                if (Main.Camera.target.lengthSquared() > halfSizeSquared) {
+                    Main.Camera.target.normalize().scaleInPlace(Main.Ground.size * 0.5 - 5);
+                }
             }
         });
         BABYLON.Effect.ShadersStore["EdgeFragmentShader"] = `
@@ -4050,26 +4063,48 @@ class Ground extends BABYLON.Mesh {
         this.size = size;
         this.shape = shape;
         this.heightMap = [];
-        this.stepCount = 1;
-        this.stepZero = 1;
-        this.stepCount = Math.ceil(this.size / 2) + 1;
-        this.stepZero = Math.ceil(-this.stepCount / 2);
+        this.posYMap = [];
+        this.normalMap = [];
+        this.vertexSize = 1;
+        this.offset = 1;
+        this.size = Math.round(this.size / 4) * 4;
+        this.vertexSize = Math.round(this.size / 2) + 1;
+        this.offset = -this.size / 2;
     }
     heightFunction(i, j) {
         return Math.cos(3207 * i + 10001 * j);
     }
     getHeightAt(position) {
-        let i0 = Math.floor((position.x + this.size / 2) / this.size * 256);
-        let j0 = Math.floor((position.y + this.size / 2) / this.size * 256);
-        let h00 = this.heightMap[i0][j0];
-        let h10 = this.heightMap[i0 + 1][j0];
-        let h01 = this.heightMap[i0][j0 + 1];
-        let h11 = this.heightMap[i0 + 1][j0 + 1];
-        let di = (position.x + this.size / 2) / this.size * 256 - i0;
-        let dj = (position.y + this.size / 2) / this.size * 256 - j0;
+        let i0 = Math.floor(position.x / 2 - this.offset / 2);
+        let j0 = Math.floor(position.y / 2 - this.offset / 2);
+        let h00 = this.posYMap[i0][j0];
+        let h10 = this.posYMap[i0 + 1][j0];
+        let h01 = this.posYMap[i0][j0 + 1];
+        let h11 = this.posYMap[i0 + 1][j0 + 1];
+        let di = position.x / 2 - Math.floor(position.x / 2);
+        let dj = position.y / 2 - Math.floor(position.y / 2);
         let h0 = h00 * (1 - di) + h10 * di;
         let h1 = h01 * (1 - di) + h11 * di;
         return h0 * (1 - dj) + h1 * dj;
+    }
+    getNormalAtToRef(position, normal) {
+        let i0 = Math.floor(position.x / 2 - this.offset / 2);
+        let j0 = Math.floor(position.y / 2 - this.offset / 2);
+        let n00 = this.normalMap[i0][j0];
+        let n10 = this.normalMap[i0 + 1][j0];
+        let n01 = this.normalMap[i0][j0 + 1];
+        let n11 = this.normalMap[i0 + 1][j0 + 1];
+        let di = position.x / 2 - Math.floor(position.x / 2);
+        let dj = position.y / 2 - Math.floor(position.y / 2);
+        let n0x = n00.x * (1 - di) + n10.x * di;
+        let n0y = n00.y * (1 - di) + n10.y * di;
+        let n0z = n00.z * (1 - di) + n10.z * di;
+        let n1x = n01.x * (1 - di) + n11.x * di;
+        let n1y = n01.y * (1 - di) + n11.y * di;
+        let n1z = n01.z * (1 - di) + n11.z * di;
+        BABYLON.Tmp.Vector3[0].copyFromFloats(n0x, n0y, n0z).scaleInPlace(1 - dj);
+        BABYLON.Tmp.Vector3[1].copyFromFloats(n1x, n1y, n1z).scaleInPlace(dj);
+        normal.copyFrom(BABYLON.Tmp.Vector3[0]).addInPlace(BABYLON.Tmp.Vector3[1]).normalize();
     }
     async instantiate() {
         return new Promise((resolve) => {
@@ -4107,24 +4142,24 @@ class Ground extends BABYLON.Mesh {
                     }
                 }
                 let halfSizeSquared = this.size * 0.5 * this.size * 0.5;
-                for (let j = 0; j < this.stepCount; j++) {
-                    for (let i = 0; i < this.stepCount; i++) {
-                        let x = (this.stepZero + i) * 2;
-                        let y = (this.stepZero + j) * 2;
-                        let h = this.heightMap[Math.floor(i / this.stepCount * 256)][Math.floor(j / this.stepCount * 256)];
+                for (let j = 0; j < this.vertexSize; j++) {
+                    for (let i = 0; i < this.vertexSize; i++) {
+                        let x = i * 2 + this.offset;
+                        let y = j * 2 + this.offset;
+                        let h = this.heightMap[Math.floor(i / this.vertexSize * 256)][Math.floor(j / this.vertexSize * 256)];
                         positions.push(x, h, y);
                         uvs.push(i * 0.25, j * 0.25);
-                        if (i + 1 < this.stepCount && j + 1 < this.stepCount) {
-                            let index = i + j * this.stepCount;
+                        if (i + 1 < this.vertexSize && j + 1 < this.vertexSize) {
+                            let index = i + j * this.vertexSize;
                             if (this.shape === GroundShape.None) {
-                                indices.push(index, index + 1, index + 1 + this.stepCount);
-                                indices.push(index, index + 1 + this.stepCount, index + this.stepCount);
+                                indices.push(index, index + 1, index + 1 + this.vertexSize);
+                                indices.push(index, index + 1 + this.vertexSize, index + this.vertexSize);
                             }
                             else if (this.shape === GroundShape.Disc) {
                                 let lSquared = (x + 1) * (x + 1) + (y + 1) * (y + 1);
                                 if (lSquared < halfSizeSquared) {
-                                    indices.push(index, index + 1, index + 1 + this.stepCount);
-                                    indices.push(index, index + 1 + this.stepCount, index + this.stepCount);
+                                    indices.push(index, index + 1, index + 1 + this.vertexSize);
+                                    indices.push(index, index + 1 + this.vertexSize, index + this.vertexSize);
                                 }
                             }
                         }
@@ -4134,6 +4169,14 @@ class Ground extends BABYLON.Mesh {
                 data.indices = indices;
                 data.uvs = uvs;
                 BABYLON.VertexData.ComputeNormals(positions, indices, normals);
+                for (let i = 0; i < this.vertexSize; i++) {
+                    this.posYMap[i] = [];
+                    this.normalMap[i] = [];
+                    for (let j = 0; j < this.vertexSize; j++) {
+                        this.posYMap[i][j] = positions[3 * (i + this.vertexSize * j) + 1];
+                        this.normalMap[i][j] = new BABYLON.Vector3(normals[3 * (i + this.vertexSize * j)], normals[3 * (i + this.vertexSize * j) + 1], normals[3 * (i + this.vertexSize * j) + 2]);
+                    }
+                }
                 for (let i = 0; i < normals.length / 3; i++) {
                     let ny = normals[3 * i + 1];
                     let c = 0.8;
@@ -4185,25 +4228,25 @@ class Ground extends BABYLON.Mesh {
         let normals = [];
         let holes = [];
         for (let i = 0; i < cristals.length; i++) {
-            let iHole0 = Math.round(cristals[i].position2D.x / 5) - this.stepZero;
-            let jHole0 = Math.round(cristals[i].position2D.y / 5) - this.stepZero;
+            let iHole0 = Math.round(cristals[i].position2D.x / 5) - this.offset;
+            let jHole0 = Math.round(cristals[i].position2D.y / 5) - this.offset;
             let iHole1 = iHole0 - 1;
             let jHole1 = jHole0 - 1;
             holes.push(new BABYLON.Vector2(iHole0, jHole0), new BABYLON.Vector2(iHole0, jHole1), new BABYLON.Vector2(iHole1, jHole0), new BABYLON.Vector2(iHole1, jHole1));
         }
-        for (let j = 0; j < this.stepCount; j++) {
-            for (let i = 0; i < this.stepCount; i++) {
-                let x = (this.stepZero + i) * 5;
-                let y = (this.stepZero + j) * 5;
+        for (let j = 0; j < this.vertexSize; j++) {
+            for (let i = 0; i < this.vertexSize; i++) {
+                let x = (this.offset + i) * 5;
+                let y = (this.offset + j) * 5;
                 positions.push(x, 0, y);
                 colors.push(1, 1, 1, 1);
                 uvs.push(i, j);
                 normals.push(0, 1, 0);
-                if (i + 1 < this.stepCount && j + 1 < this.stepCount) {
+                if (i + 1 < this.vertexSize && j + 1 < this.vertexSize) {
                     if (!holes.find(h => { return h.x === i && h.y === j; })) {
-                        let index = i + j * this.stepCount;
-                        indices.push(index, index + 1, index + 1 + this.stepCount);
-                        indices.push(index, index + 1 + this.stepCount, index + this.stepCount);
+                        let index = i + j * this.vertexSize;
+                        indices.push(index, index + 1, index + 1 + this.vertexSize);
+                        indices.push(index, index + 1 + this.vertexSize, index + this.vertexSize);
                     }
                 }
             }
