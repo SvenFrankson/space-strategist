@@ -124,6 +124,7 @@ class Maze extends Main {
                         });
 
 						console.log("Maze Initialized");
+						new MazeConsole(this).enable();
                         resolve();
                     } 
                 };

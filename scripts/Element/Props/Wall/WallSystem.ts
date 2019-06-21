@@ -71,6 +71,13 @@ class WallSystem extends BABYLON.TransformNode {
         }
     }
 
+    public dispose(doNotRecurse?: boolean, disposeMaterialAndTextures?: boolean): void {
+        while (this.nodes.length > 0) {
+            this.nodes[0].dispose(doNotRecurse, disposeMaterialAndTextures);
+        }
+        super.dispose(doNotRecurse, disposeMaterialAndTextures);
+    }
+
     public addToScene(): void {
         for (let i = 0; i < this.nodes.length; i++) {
             NavGraphManager.RemoveObstacle(this.nodes[i].obstacle);

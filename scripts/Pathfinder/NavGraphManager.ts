@@ -31,10 +31,16 @@ class NavGraphManager {
     }
 
     public static AddObstacle(obstacle: Obstacle): void {
+        if (!obstacle) {
+            return;
+        }
         return NavGraphManager.Instance.addObstacle(obstacle);
     }
 
     public addObstacle(obstacle: Obstacle): void {
+        if (!obstacle) {
+            return;
+        }
         this._navGraphs.forEach(
             (navGraph) => {
                 navGraph.obstacles.push(obstacle);

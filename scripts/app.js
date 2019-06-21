@@ -1898,6 +1898,7 @@ class Prop extends Draggable {
     }
     dispose(doNotRecurse, disposeMaterialAndTextures) {
         this.getScene().onBeforeRenderObservable.removeCallback(this._updatePosition);
+        NavGraphManager.RemoveObstacle(this.obstacle);
         super.dispose(doNotRecurse, disposeMaterialAndTextures);
     }
     onPositionChanged() { }
@@ -2702,7 +2703,9 @@ class WallNode extends Building {
                 points.push(new BABYLON.Vector2(Math.cos(Math2D.LerpFromToCircular(d, dNext, 0.5)), Math.sin(Math2D.LerpFromToCircular(d, dNext, 0.5))));
             }
         }
-        this.obstacle = Obstacle.CreatePolygon(this.position2D.x, this.position2D.y, points);
+        if (points.length > 0) {
+            this.obstacle = Obstacle.CreatePolygon(this.position2D.x, this.position2D.y, points);
+        }
     }
     static BuildVertexData(radius = 1, ...directions) {
         let data = new BABYLON.VertexData();
@@ -2880,6 +2883,12 @@ class WallSystem extends BABYLON.TransformNode {
         for (let i = 0; i < this.walls.length; i++) {
             await this.walls[i].instantiate();
         }
+    }
+    dispose(doNotRecurse, disposeMaterialAndTextures) {
+        while (this.nodes.length > 0) {
+            this.nodes[0].dispose(doNotRecurse, disposeMaterialAndTextures);
+        }
+        super.dispose(doNotRecurse, disposeMaterialAndTextures);
     }
     addToScene() {
         for (let i = 0; i < this.nodes.length; i++) {
@@ -3343,6 +3352,7 @@ class Maze extends Main {
                         }
                     });
                     console.log("Maze Initialized");
+                    new MazeConsole(this).enable();
                     resolve();
                 }
             };
@@ -3358,6 +3368,26 @@ window.addEventListener("DOMContentLoaded", async () => {
         maze.animate();
     }
 });
+class MazeConsole {
+    constructor(maze) {
+        this.maze = maze;
+    }
+    enable() {
+        this._panel = SpacePanel.CreateSpacePanel();
+        this._panel.addTitle1("MAZE");
+        this._panel.addTitle2("PATHFINDING DEMO");
+        this._panel.addLargeButton("RANDOMIZE", () => {
+            Main.WallSystem.dispose();
+            Main.WallSystem = new WallSystem();
+            this.maze.createRandomMaze();
+        });
+        this._panel.style.left = "10px";
+        this._panel.style.top = "10px";
+    }
+    disable() {
+        this._panel.dispose();
+    }
+}
 class SpaceshipMaterial {
     constructor(scene) {
         this.scene = scene;
@@ -3717,9 +3747,15 @@ class NavGraphManager {
         return navGraph;
     }
     static AddObstacle(obstacle) {
+        if (!obstacle) {
+            return;
+        }
         return NavGraphManager.Instance.addObstacle(obstacle);
     }
     addObstacle(obstacle) {
+        if (!obstacle) {
+            return;
+        }
         this._navGraphs.forEach((navGraph) => {
             navGraph.obstacles.push(obstacle);
         });

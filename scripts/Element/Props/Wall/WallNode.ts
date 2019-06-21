@@ -114,7 +114,9 @@ class WallNode extends Building {
             }
         }
 
-        this.obstacle = Obstacle.CreatePolygon(this.position2D.x, this.position2D.y, points);
+        if (points.length > 0) {
+            this.obstacle = Obstacle.CreatePolygon(this.position2D.x, this.position2D.y, points);
+        }
     }
 
     public static BuildVertexData(radius: number = 1, ...directions: number[]): BABYLON.VertexData {

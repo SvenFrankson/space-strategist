@@ -23,6 +23,7 @@ abstract class Prop extends Draggable {
 
     public dispose(doNotRecurse?: boolean, disposeMaterialAndTextures?: boolean): void {
         this.getScene().onBeforeRenderObservable.removeCallback(this._updatePosition);
+        NavGraphManager.RemoveObstacle(this.obstacle);
         super.dispose(doNotRecurse, disposeMaterialAndTextures);
     }
 
