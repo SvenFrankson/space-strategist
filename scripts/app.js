@@ -2633,8 +2633,10 @@ class WallNode extends Building {
     }
     async instantiate() {
         this.updateDirs();
+        this.height = 3;
+        this.groundWidth = 1;
         if (this.dirs.length === 0) {
-            let vertexData = await VertexDataLoader.instance.get("wallNode");
+            let vertexData = await VertexDataLoader.instance.getColorized("wallNode", "#383838");
             vertexData.applyToMesh(this);
             this.rotation2D = 0;
         }
