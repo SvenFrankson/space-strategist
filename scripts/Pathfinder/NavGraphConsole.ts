@@ -30,7 +30,6 @@ class NavGraphConsole {
                 return "SHOW";
             },
             () => {
-                this._navGraph.update();
                 for (let i = 0; i < this._navGraph.obstacles.length; i++) {
                     let o = this._navGraph.obstacles[i];
                     if (o.isDisplayed()) {
@@ -51,12 +50,12 @@ class NavGraphConsole {
                 return "SHOW";
             },
             () => {
-                this._navGraph.update();
                 if (this._navGraph.isDisplayed()) {
                     this._navGraph.hide();
                 }
                 else {
-                    this._navGraph.display(this.scene);
+                    this._navGraph.displayGraph(this.scene);
+                    this._navGraph.displayPath(this.scene);
                 }
             }
         );

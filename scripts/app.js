@@ -3488,6 +3488,7 @@ class NavGraph {
                 }
             }
         }
+        this.refreshDisplayGraph(Main.Scene);
     }
     computePathFromTo(from, to) {
         let toObstacle = undefined;
@@ -3555,60 +3556,87 @@ class NavGraph {
         this.end.remove();
         this.points.pop();
         this.points.pop();
+        this.refreshDisplayPath(Main.Scene);
         return this.path;
     }
     isDisplayed() {
-        return this._devLineMeshes !== undefined;
+        return this._devGraphMesh !== undefined || this._devPathMesh !== undefined;
+    }
+    refreshDisplayGraph(scene) {
+        if (this.isDisplayed()) {
+            this.displayGraph(scene);
+        }
+    }
+    refreshDisplayPath(scene) {
+        if (this.isDisplayed()) {
+            this.displayPath(scene);
+        }
     }
     toggleDisplay(scene) {
         if (this.isDisplayed()) {
             this.hide();
         }
         else {
-            this.display(scene);
+            this.displayGraph(scene);
+            this.displayPath(scene);
         }
     }
-    display(scene) {
-        this.hide();
-        this._devLineMeshes = new BABYLON.TransformNode("NavGraphDevLinesMeshes", scene);
+    displayGraph(scene) {
+        console.log("DISPLAY GRAPH");
+        this.hideGraph();
+        this._devGraphMesh = new BABYLON.TransformNode("dev-graph-mesh");
         for (let i = 0; i < this.points.length; i++) {
             let p = this.points[i];
-            BABYLON.MeshBuilder.CreateSphere("p-" + i, { diameter: 0.1 }, scene).position.copyFromFloats(p.position.x, -0.2, p.position.y);
             for (let j = 0; j < p.links.length; j++) {
                 let p2 = p.links[j].other(p);
                 if (p.index < p2.index) {
-                    let devLinesMesh = BABYLON.MeshBuilder.CreateLines("line", {
+                    let devGraphMesh = BABYLON.MeshBuilder.CreateLines("line", {
                         points: [
-                            new BABYLON.Vector3(p.position.x, 0.1, p.position.y),
-                            new BABYLON.Vector3(p2.position.x, 0.1, p2.position.y)
+                            new BABYLON.Vector3(p.position.x, 0.1 + Main.Ground.getHeightAt(p.position), p.position.y),
+                            new BABYLON.Vector3(p2.position.x, 0.1 + +Main.Ground.getHeightAt(p2.position), p2.position.y)
                         ],
                         colors: [
                             new BABYLON.Color4(0, 0, 1, 1),
                             new BABYLON.Color4(0, 0, 1, 1)
                         ]
                     }, scene);
-                    devLinesMesh.renderingGroupId = 1;
-                    devLinesMesh.parent = this._devLineMeshes;
+                    devGraphMesh.renderingGroupId = 1;
+                    devGraphMesh.layerMask = 0x10000000;
+                    devGraphMesh.parent = this._devGraphMesh;
                 }
             }
         }
+    }
+    displayPath(scene) {
+        this.hidePath();
         if (this.path) {
             let points = [];
             let colors = [];
             for (let i = 0; i < this.path.length; i++) {
                 let p = this.path[i];
-                points.push(new BABYLON.Vector3(p.x, 0.3, p.y));
+                points.push(new BABYLON.Vector3(p.x, 0.3 + Main.Ground.getHeightAt(p), p.y));
                 colors.push(new BABYLON.Color4(0, 1, 0, 1));
             }
-            let devLinesMesh = BABYLON.MeshBuilder.CreateLines("shape", { points: points, colors: colors }, scene);
-            devLinesMesh.renderingGroupId = 1;
-            devLinesMesh.parent = this._devLineMeshes;
+            this._devPathMesh = BABYLON.MeshBuilder.CreateLines("shape", { points: points, colors: colors }, scene);
+            this._devPathMesh.renderingGroupId = 1;
+            this._devPathMesh.layerMask = 0x10000000;
         }
     }
     hide() {
-        if (this._devLineMeshes) {
-            this._devLineMeshes.dispose();
-            this._devLineMeshes = undefined;
+        this.hideGraph();
+        this.hidePath();
+    }
+    hideGraph() {
+        if (this._devGraphMesh) {
+            console.log("HIDE GRAPH");
+            this._devGraphMesh.dispose();
+            this._devGraphMesh = undefined;
+        }
+    }
+    hidePath() {
+        if (this._devPathMesh) {
+            this._devPathMesh.dispose();
+            this._devPathMesh = undefined;
         }
     }
 }
@@ -3633,7 +3661,6 @@ class NavGraphConsole {
             }
             return "SHOW";
         }, () => {
-            this._navGraph.update();
             for (let i = 0; i < this._navGraph.obstacles.length; i++) {
                 let o = this._navGraph.obstacles[i];
                 if (o.isDisplayed()) {
@@ -3650,12 +3677,12 @@ class NavGraphConsole {
             }
             return "SHOW";
         }, () => {
-            this._navGraph.update();
             if (this._navGraph.isDisplayed()) {
                 this._navGraph.hide();
             }
             else {
-                this._navGraph.display(this.scene);
+                this._navGraph.displayGraph(this.scene);
+                this._navGraph.displayPath(this.scene);
             }
         });
         this._panel.style.left = "10px";

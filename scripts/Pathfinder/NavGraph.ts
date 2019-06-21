@@ -130,6 +130,7 @@ class NavGraph {
                 }
             }
         }
+        this.refreshDisplayGraph(Main.Scene);
     }
 
     public computePathFromTo(from: BABYLON.Vector2, to: BABYLON.Vector2): BABYLON.Vector2[]
@@ -204,35 +205,52 @@ class NavGraph {
         this.points.pop();
         this.points.pop();
 
+        this.refreshDisplayPath(Main.Scene);
         return this.path;
     }
-    private _devLineMeshes: BABYLON.TransformNode;
+    private _devGraphMesh: BABYLON.TransformNode;
+    private _devPathMesh: BABYLON.LinesMesh;
     public isDisplayed(): boolean {
-        return this._devLineMeshes !== undefined;
+        return this._devGraphMesh !== undefined || this._devPathMesh !== undefined;
     }
+
+    public refreshDisplayGraph(scene: BABYLON.Scene): void {
+        if (this.isDisplayed()) {
+            this.displayGraph(scene);
+        }
+    }
+
+    public refreshDisplayPath(scene: BABYLON.Scene): void {
+        if (this.isDisplayed()) {
+            this.displayPath(scene);
+        }
+    }
+
     public toggleDisplay(scene: BABYLON.Scene): void {
         if (this.isDisplayed()) {
             this.hide();
         }
         else {
-            this.display(scene);
+            this.displayGraph(scene);
+            this.displayPath(scene);
         }
     }
-    public display(scene: BABYLON.Scene): void {
-        this.hide();
-        this._devLineMeshes = new BABYLON.TransformNode("NavGraphDevLinesMeshes", scene);
+
+    public displayGraph(scene: BABYLON.Scene): void {
+        console.log("DISPLAY GRAPH");
+        this.hideGraph();
+        this._devGraphMesh = new BABYLON.TransformNode("dev-graph-mesh");
         for (let i = 0; i < this.points.length; i++) {
             let p = this.points[i];
-            BABYLON.MeshBuilder.CreateSphere("p-" + i, { diameter: 0.1 }, scene).position.copyFromFloats(p.position.x, - 0.2, p.position.y);
             for (let j = 0; j < p.links.length; j++) {
                 let p2 = p.links[j].other(p);
                 if (p.index < p2.index) {
-                    let devLinesMesh = BABYLON.MeshBuilder.CreateLines(
+                    let devGraphMesh = BABYLON.MeshBuilder.CreateLines(
                         "line",
                         { 
                             points: [
-                                new BABYLON.Vector3(p.position.x, 0.1, p.position.y),
-                                new BABYLON.Vector3(p2.position.x, 0.1, p2.position.y)
+                                new BABYLON.Vector3(p.position.x, 0.1 + Main.Ground.getHeightAt(p.position), p.position.y),
+                                new BABYLON.Vector3(p2.position.x, 0.1 + + Main.Ground.getHeightAt(p2.position), p2.position.y)
                             ],
                             colors: [
                                 new BABYLON.Color4(0, 0, 1, 1),
@@ -241,28 +259,47 @@ class NavGraph {
                         },
                         scene
                     );
-                    devLinesMesh.renderingGroupId = 1;
-                    devLinesMesh.parent = this._devLineMeshes;
+                    devGraphMesh.renderingGroupId = 1;
+                    devGraphMesh.layerMask = 0x10000000;
+                    devGraphMesh.parent = this._devGraphMesh;
                 }
             }
         }
+    }
+
+    public displayPath(scene: BABYLON.Scene): void {
+        this.hidePath();
         if (this.path) {
             let points: BABYLON.Vector3[] = [];
             let colors: BABYLON.Color4[] = [];
             for (let i = 0; i < this.path.length; i++) {
                 let p = this.path[i];
-                points.push(new BABYLON.Vector3(p.x, 0.3, p.y));
+                points.push(new BABYLON.Vector3(p.x, 0.3 + Main.Ground.getHeightAt(p), p.y));
                 colors.push(new BABYLON.Color4(0, 1, 0, 1));
             }
-            let devLinesMesh = BABYLON.MeshBuilder.CreateLines("shape", { points: points, colors: colors }, scene);
-            devLinesMesh.renderingGroupId = 1;
-            devLinesMesh.parent = this._devLineMeshes;
+            this._devPathMesh = BABYLON.MeshBuilder.CreateLines("shape", { points: points, colors: colors }, scene);
+            this._devPathMesh.renderingGroupId = 1;
+            this._devPathMesh.layerMask = 0x10000000;
         }
     }
+
     public hide(): void {
-        if (this._devLineMeshes) {
-            this._devLineMeshes.dispose();
-            this._devLineMeshes = undefined;
+        this.hideGraph();
+        this.hidePath();
+    }
+
+    public hideGraph(): void {
+        if (this._devGraphMesh) {
+            console.log("HIDE GRAPH");
+            this._devGraphMesh.dispose();
+            this._devGraphMesh = undefined;
+        }
+    }
+
+    public hidePath(): void {
+        if (this._devPathMesh) {
+            this._devPathMesh.dispose();
+            this._devPathMesh = undefined;
         }
     }
 }
