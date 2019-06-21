@@ -1057,6 +1057,7 @@ class DroneWorkerAnimator {
         this._resourcePiece = new BABYLON.Mesh(this.target.name + "-resources-piece");
         let vertexDataPiece = await VertexDataLoader.instance.getColorized("steel-piece", "#dadada");
         vertexDataPiece.applyToMesh(this._resourcePiece);
+        this._resourcePiece.scaling.copyFromFloats(0, 0, 0);
         this._armR = this.target.skeleton.bones.find(b => { return b.name === "ArmR"; });
         this._handR = this.target.skeleton.bones.find(b => { return b.name === "HandR"; });
         this.target.getScene().onBeforeRenderObservable.add(this._update);
