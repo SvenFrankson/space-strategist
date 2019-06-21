@@ -11,6 +11,7 @@ class WallNodeUI {
     }
 
     public enable(): void {
+        console.log("WallNodeUI enable !");
         this._panel = SpacePanel.CreateSpacePanel();
         this._panel.setTarget(this.target);
         this._panel.addTitle1(this.target.elementName().toLocaleUpperCase());

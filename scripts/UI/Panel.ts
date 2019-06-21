@@ -79,6 +79,7 @@ class SpacePanel extends HTMLElement {
     private _line: BABYLON.LinesMesh;
     private _target: BABYLON.Mesh & IMeshWithGroundWidth;
     public setTarget(mesh: BABYLON.Mesh & IMeshWithGroundWidth): void {
+        this.style.position = "fixed";
         this._target = mesh;
         this._line = BABYLON.MeshBuilder.CreateLines(
             "line",

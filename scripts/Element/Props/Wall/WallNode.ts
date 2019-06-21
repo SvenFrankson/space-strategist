@@ -249,6 +249,7 @@ class WallNode extends Building {
     }
 
     public onSelected(): void {
+        console.log("IG Selected");
         this.ui.enable();
     }
 

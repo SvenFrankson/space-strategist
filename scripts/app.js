@@ -894,7 +894,7 @@ class SceneEditor {
                     this.selectedElement = undefined;
                 });
             }
-            if (this.selectedElement instanceof Wall) {
+            else if (this.selectedElement instanceof Wall) {
                 this._selectedElementPanel = WallEditor.CreatePanel(this.selectedElement, () => {
                     this.selectedElement = undefined;
                 });
@@ -930,8 +930,9 @@ class SceneEditor {
             this.wallSystem.instantiate();
         });
         this.addEventListenerDrag();
-        this._panel.style.left = "10px";
-        this._panel.style.top = "10px";
+        this._panel.style.position = "fixed";
+        this._panel.style.left = "15px";
+        this._panel.style.top = "15px";
     }
     disable() {
         this.removeEventListenerDrag();
@@ -2799,6 +2800,7 @@ class WallNode extends Building {
         return data;
     }
     onSelected() {
+        console.log("IG Selected");
         this.ui.enable();
     }
     onUnselected() {
@@ -2906,6 +2908,7 @@ class WallNodeUI {
         this.target = target;
     }
     enable() {
+        console.log("WallNodeUI enable !");
         this._panel = SpacePanel.CreateSpacePanel();
         this._panel.setTarget(this.target);
         this._panel.addTitle1(this.target.elementName().toLocaleUpperCase());
@@ -4423,6 +4426,7 @@ class SpacePanel extends HTMLElement {
         });
     }
     setTarget(mesh) {
+        this.style.position = "fixed";
         this._target = mesh;
         this._line = BABYLON.MeshBuilder.CreateLines("line", {
             points: [

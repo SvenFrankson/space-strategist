@@ -25,7 +25,7 @@ class SceneEditor {
                     }
                 );
             }
-            if (this.selectedElement instanceof Wall) {
+            else if (this.selectedElement instanceof Wall) {
                 this._selectedElementPanel = WallEditor.CreatePanel(
                     this.selectedElement,
                     () => {
@@ -91,8 +91,9 @@ class SceneEditor {
 
         this.addEventListenerDrag();
 
-        this._panel.style.left = "10px";
-        this._panel.style.top = "10px";
+        this._panel.style.position = "fixed";
+        this._panel.style.left = "15px";
+        this._panel.style.top = "15px";
     }
 
     public disable() {
