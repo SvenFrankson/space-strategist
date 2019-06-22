@@ -18,3 +18,14 @@ html, body {
     top: 10px;
     left: 10px;
 }
+
+#credit {
+  position: absolute;
+  width: 256px;
+  height: 40px;
+  bottom: 0px;
+  right: 0px;
+  font-size: 24px;
+  color: white;
+  font-family: "Orbitron Light";
+}
