@@ -2003,7 +2003,7 @@ class Banner extends Prop {
         }
     }
     async instantiate() {
-        let vertexData = await VertexDataLoader.instance.getColorizedMultiple("banner-" + Banner.SizeToName[this.size], "#007fff", "#383838");
+        let vertexData = await VertexDataLoader.instance.getColorizedMultiple("banner-" + Banner.SizeToName[this.size], "#ffffff", "#383838");
         this.height = 4;
         this.groundWidth = 0.5;
         vertexData[0].applyToMesh(this);
@@ -2013,7 +2013,15 @@ class Banner extends Prop {
             this._flagMesh.parent = this;
         }
         vertexData[1].applyToMesh(this._flagMesh);
-        this._flagMesh.material = Main.cellShadingMaterial;
+        if (this.size === 0) {
+            this._flagMesh.material = Main.kongoFlagSMaterial;
+        }
+        else if (this.size === 2) {
+            this._flagMesh.material = Main.kongoFlagLMaterial;
+        }
+        else {
+            this._flagMesh.material = Main.kongoFlagMMaterial;
+        }
     }
     serialize() {
         let data = super.serialize();
@@ -3095,6 +3103,33 @@ class Main {
             Main._groundMaterial.specularColor.copyFromFloats(0, 0, 0);
         }
         return Main._groundMaterial;
+    }
+    static get kongoFlagSMaterial() {
+        if (!Main._kongoFlagSMaterial) {
+            Main._kongoFlagSMaterial = new BABYLON.StandardMaterial("StandardMaterial", Main.Scene);
+            Main._kongoFlagSMaterial.diffuseTexture = new BABYLON.Texture("datas/textures/flags/kongo-small.png", Main.Scene);
+            Main._kongoFlagSMaterial.emissiveColor.copyFromFloats(0.5, 0.5, 0.5);
+            Main._kongoFlagSMaterial.specularColor.copyFromFloats(0, 0, 0);
+        }
+        return Main._kongoFlagSMaterial;
+    }
+    static get kongoFlagMMaterial() {
+        if (!Main._kongoFlagMMaterial) {
+            Main._kongoFlagMMaterial = new BABYLON.StandardMaterial("StandardMaterial", Main.Scene);
+            Main._kongoFlagMMaterial.diffuseTexture = new BABYLON.Texture("datas/textures/flags/kongo-medium.png", Main.Scene);
+            Main._kongoFlagMMaterial.emissiveColor.copyFromFloats(0.5, 0.5, 0.5);
+            Main._kongoFlagMMaterial.specularColor.copyFromFloats(0, 0, 0);
+        }
+        return Main._kongoFlagMMaterial;
+    }
+    static get kongoFlagLMaterial() {
+        if (!Main._kongoFlagLMaterial) {
+            Main._kongoFlagLMaterial = new BABYLON.StandardMaterial("StandardMaterial", Main.Scene);
+            Main._kongoFlagLMaterial.diffuseTexture = new BABYLON.Texture("datas/textures/flags/kongo-large.png", Main.Scene);
+            Main._kongoFlagLMaterial.emissiveColor.copyFromFloats(0.25, 0.25, 0.25);
+            Main._kongoFlagLMaterial.specularColor.copyFromFloats(0, 0, 0);
+        }
+        return Main._kongoFlagLMaterial;
     }
     constructor(canvasElement) {
         Main.Canvas = document.getElementById(canvasElement);

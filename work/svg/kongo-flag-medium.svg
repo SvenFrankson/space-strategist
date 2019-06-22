@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="140mm"
+   height="135mm"
+   viewBox="0 0 140 135"
+   version="1.1"
+   id="svg8"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"
+   sodipodi:docname="kongo-flag-medium.svg"
+   inkscape:export-filename="C:\Users\Sven\Documents\SvenFrankson\space-strategist\datas\textures\flags\kongo-medium.png"
+   inkscape:export-xdpi="23.222858"
+   inkscape:export-ydpi="23.222858">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="1.4"
+     inkscape:cx="293.59871"
+     inkscape:cy="290.50034"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     units="mm"
+     inkscape:window-width="1920"
+     inkscape:window-height="1017"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1" />
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Calque 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-162)">
+    <rect
+       style="opacity:1;fill:#007fff;fill-opacity:1;stroke:none;stroke-width:0.29423222;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="rect876"
+       width="140"
+       height="135"
+       x="-8.8817842e-016"
+       y="162.00002" />
+    <path
+       style="opacity:1;fill:#f7d618;fill-opacity:1;stroke:none;stroke-width:1.0618372;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 529.13477 34.904297 L 0 349.93945 L 0 462.04492 L 529.13477 147.00977 L 529.13477 34.904297 z "
+       transform="matrix(0.26458333,0,0,0.26458333,0,162)"
+       id="rect855" />
+    <path
+       style="opacity:1;fill:#ce1021;fill-opacity:1;stroke:none;stroke-width:1.11420941;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 529.13477 52.654297 L 0 367.68945 L 0 445.19141 L 529.13477 130.15625 L 529.13477 52.654297 z "
+       id="rect836"
+       transform="matrix(0.26458333,0,0,0.26458333,0,162)" />
+    <path
+       sodipodi:type="star"
+       style="opacity:1;fill:#f7d618;fill-opacity:1;stroke:none;stroke-width:0.37745848;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="path853"
+       sodipodi:sides="5"
+       sodipodi:cx="26.59078"
+       sodipodi:cy="202.9975"
+       sodipodi:r1="20.945799"
+       sodipodi:r2="8.3783197"
+       sodipodi:arg1="-1.5707963"
+       sodipodi:arg2="-0.9424778"
+       inkscape:flatsided="false"
+       inkscape:rounded="0"
+       inkscape:randomized="0"
+       d="m 26.590781,182.0517 4.924652,14.16759 14.995986,0.3056 -11.952383,9.06165 4.343375,14.35647 -12.311631,-8.56719 -12.311632,8.56718 4.343377,-14.35646 -11.9523831,-9.06165 14.9959851,-0.3056 z"
+       inkscape:transform-center-y="-2.0001461" />
+  </g>
+</svg>

@@ -15,7 +15,7 @@ class Banner extends Prop {
     }
 
     public async instantiate(): Promise<void> {
-        let vertexData = await VertexDataLoader.instance.getColorizedMultiple("banner-" + Banner.SizeToName[this.size], "#007fff", "#383838");
+        let vertexData = await VertexDataLoader.instance.getColorizedMultiple("banner-" + Banner.SizeToName[this.size], "#ffffff", "#383838");
 
         this.height = 4;
         this.groundWidth = 0.5;
@@ -28,7 +28,15 @@ class Banner extends Prop {
             this._flagMesh.parent = this;
         }
         vertexData[1].applyToMesh(this._flagMesh);
-        this._flagMesh.material = Main.cellShadingMaterial;
+        if (this.size === 0) {
+            this._flagMesh.material = Main.kongoFlagSMaterial;
+        }
+        else if (this.size === 2) {
+            this._flagMesh.material = Main.kongoFlagLMaterial;
+        }
+        else {
+            this._flagMesh.material = Main.kongoFlagMMaterial;
+        }
     }
 
     public serialize(): PropData {
