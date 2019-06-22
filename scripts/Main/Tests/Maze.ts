@@ -6,7 +6,7 @@ class Maze extends Main {
 	private _banner: Banner;
 	private _targetPosition: BABYLON.Vector2;
 
-    public async createRandomMaze(): Promise<void> {
+    public async createRandomMazeWall(): Promise<void> {
         let wallNode5: WallNode[] = [];
 		for (let i = 0; i < 6; i++) {
 			let cosa = Math.cos(i * (2 * Math.PI / 6));
@@ -87,6 +87,40 @@ class Maze extends Main {
 		await Main.WallSystem.instantiate();
 		Main.WallSystem.addToScene();
 	}
+
+	public async createRandomMazeContainers(): Promise<void> {
+		for (let i = 0; i < 25; i++) {
+			let p = BABYLON.Vector2.Zero();
+			let others = Main.Scene.meshes.filter(m => { return m instanceof Container; });
+			let isPosValid = false;
+			let attempts = 0;
+			while (!isPosValid && attempts < 20) {
+				attempts++;
+				let a = Math.random() * Math.PI * 2;
+				let r = Math.random() * 15 + 5;
+				p = new BABYLON.Vector2(Math.cos(a) * r, Math.sin(a) * r);
+				isPosValid = true;
+				for (let j = 0; j < others.length; j++) {
+					let other = others[j] as Prop;
+					let distanceSquared = BABYLON.Vector2.DistanceSquared(p, other.position2D);
+					if (distanceSquared < 16) {
+						isPosValid = false;
+						break;
+					}
+				}
+			}
+			if (isPosValid) {
+				let container = new Container(
+					"",
+					Main.Player,
+					p,
+					Math.random() * Math.PI * 2
+				);
+				container.instantiate();
+				container.addToScene();
+			}
+		}
+	}
 	
 	public async initializeDroneWorker(): Promise<void> {
 		this._worker.position2D = new BABYLON.Vector2(0, 0);
@@ -95,6 +129,23 @@ class Maze extends Main {
 	}
 
     public async initialize(): Promise<void> {
+
+		Main.Scene.onBeforeRenderObservable.add(
+			() => {
+				if (Main.CameraTarget) {
+					Main.Camera.target.x = Main.Camera.target.x * 0.9 + Main.CameraTarget.position.x * 0.1;
+					Main.Camera.target.y = Main.Camera.target.y * 0.9 + Main.CameraTarget.position.y * 0.1;
+					Main.Camera.target.z = Main.Camera.target.z * 0.9 + Main.CameraTarget.position.z * 0.1;
+				}
+				if (Main.Ground.shape === GroundShape.Disc) {
+					let halfSizeSquared = (Main.Ground.size * 0.5 - 5) * (Main.Ground.size * 0.5 - 5);
+					if (Main.Camera.target.lengthSquared() > halfSizeSquared) {
+						Main.Camera.target.normalize().scaleInPlace(Main.Ground.size* 0.5 - 5);
+					}
+				}
+			}
+		)
+
         return new Promise<void>(
             resolve => {
                 let request = new XMLHttpRequest();
@@ -104,12 +155,12 @@ class Maze extends Main {
                     if (request.status >= 200 && request.status < 400) {
                         var data = JSON.parse(request.responseText);
                         await Serializer.Deserialize(Main.Scene, data, Main.Player);
-                
-                        let playerControl = new PlayerControl(Main.Scene);
-                        playerControl.enable();
                         
                         this._worker = new DroneWorker(Main.Player);
 						await this._worker.instantiate();
+
+						Main.CameraTarget = this._worker;
+						Main.Camera.radius = 18;
 						
 						await this.initializeDroneWorker();
 						

@@ -2021,7 +2021,7 @@ class Banner extends Prop {
         }
     }
     async instantiate() {
-        let vertexData = await VertexDataLoader.instance.getColorizedMultiple("banner-" + Banner.SizeToName[this.size], "#ffffff", "#383838");
+        let vertexData = await VertexDataLoader.instance.getColorizedMultiple("banner-" + Banner.SizeToName[this.size], "#ce7633", "#383838");
         this.height = 4;
         this.groundWidth = 0.5;
         vertexData[0].applyToMesh(this);
@@ -2031,15 +2031,7 @@ class Banner extends Prop {
             this._flagMesh.parent = this;
         }
         vertexData[1].applyToMesh(this._flagMesh);
-        if (this.size === 0) {
-            this._flagMesh.material = Main.kongoFlagSMaterial;
-        }
-        else if (this.size === 2) {
-            this._flagMesh.material = Main.kongoFlagLMaterial;
-        }
-        else {
-            this._flagMesh.material = Main.kongoFlagMMaterial;
-        }
+        this._flagMesh.material = Main.cellShadingMaterial;
     }
     serialize() {
         let data = super.serialize();
@@ -3229,64 +3221,9 @@ class Main {
         Main.Camera.attachControl(Main.Canvas, true);
         Main.Camera.lowerRadiusLimit = 6;
         Main.Camera.upperRadiusLimit = 40;
-        Main.Camera.radius = Main.Camera.upperRadiusLimit;
+        Main.Camera.radius = (Main.Camera.upperRadiusLimit + Main.Camera.lowerRadiusLimit) * 0.5;
         Main.Camera.upperBetaLimit = 2 * Math.PI / 5;
         Main.Camera.wheelPrecision *= 8;
-        let canvasHasFocus = false;
-        Main.Canvas.addEventListener("pointerleave", () => { canvasHasFocus = false; });
-        Main.Canvas.addEventListener("pointerenter", () => { canvasHasFocus = true; });
-        Main.Scene.onBeforeRenderObservable.add(() => {
-            if (Main.CameraTarget) {
-                Main.Camera.target.x = Main.Camera.target.x * 0.9 + Main.CameraTarget.position.x * 0.1;
-                Main.Camera.target.z = Main.Camera.target.z * 0.9 + Main.CameraTarget.position.z * 0.1;
-            }
-            Main.Camera.target.y = 0;
-            if (!canvasHasFocus) {
-                return;
-            }
-            let pointerTop = Main.Scene.pointerY;
-            let pointerLeft = Main.Scene.pointerX;
-            let pointerBottom = Main.Canvas.height - Main.Scene.pointerY;
-            let pointerRight = Main.Canvas.width - Main.Scene.pointerX;
-            if (pointerTop < 50) {
-                Main.CameraTarget = undefined;
-                let groundForward = Main.Camera.getDirection(BABYLON.Axis.Z);
-                groundForward.y = 0;
-                groundForward.normalize();
-                groundForward.scaleInPlace(Main.Engine.getDeltaTime() / 1000 * 20 * (50 - pointerTop) / 50);
-                Main.Camera.target.addInPlace(groundForward);
-            }
-            if (pointerBottom < 50) {
-                Main.CameraTarget = undefined;
-                let groundBackward = Main.Camera.getDirection(BABYLON.Axis.Z);
-                groundBackward.y = 0;
-                groundBackward.normalize();
-                groundBackward.scaleInPlace(-Main.Engine.getDeltaTime() / 1000 * 20 * (50 - pointerBottom) / 50);
-                Main.Camera.target.addInPlace(groundBackward);
-            }
-            if (pointerLeft < 50) {
-                Main.CameraTarget = undefined;
-                let groundLeft = Main.Camera.getDirection(BABYLON.Axis.X);
-                groundLeft.y = 0;
-                groundLeft.normalize();
-                groundLeft.scaleInPlace(-Main.Engine.getDeltaTime() / 1000 * 20 * (50 - pointerLeft) / 50);
-                Main.Camera.target.addInPlace(groundLeft);
-            }
-            if (pointerRight < 50) {
-                Main.CameraTarget = undefined;
-                let groundRight = Main.Camera.getDirection(BABYLON.Axis.X);
-                groundRight.y = 0;
-                groundRight.normalize();
-                groundRight.scaleInPlace(Main.Engine.getDeltaTime() / 1000 * 20 * (50 - pointerRight) / 50);
-                Main.Camera.target.addInPlace(groundRight);
-            }
-            if (Main.Ground.shape === GroundShape.Disc) {
-                let halfSizeSquared = (Main.Ground.size * 0.5 - 5) * (Main.Ground.size * 0.5 - 5);
-                if (Main.Camera.target.lengthSquared() > halfSizeSquared) {
-                    Main.Camera.target.normalize().scaleInPlace(Main.Ground.size * 0.5 - 5);
-                }
-            }
-        });
         BABYLON.Effect.ShadersStore["EdgeFragmentShader"] = `
 			#ifdef GL_ES
 			precision highp float;
@@ -3378,6 +3315,61 @@ class Main {
 /// <reference path="Main.ts"/>
 class Editor extends Main {
     async initialize() {
+        let canvasHasFocus = false;
+        Main.Canvas.addEventListener("pointerleave", () => { canvasHasFocus = false; });
+        Main.Canvas.addEventListener("pointerenter", () => { canvasHasFocus = true; });
+        Main.Scene.onBeforeRenderObservable.add(() => {
+            if (Main.CameraTarget) {
+                Main.Camera.target.x = Main.Camera.target.x * 0.9 + Main.CameraTarget.position.x * 0.1;
+                Main.Camera.target.z = Main.Camera.target.z * 0.9 + Main.CameraTarget.position.z * 0.1;
+            }
+            Main.Camera.target.y = 0;
+            if (!canvasHasFocus) {
+                return;
+            }
+            let pointerTop = Main.Scene.pointerY;
+            let pointerLeft = Main.Scene.pointerX;
+            let pointerBottom = Main.Canvas.height - Main.Scene.pointerY;
+            let pointerRight = Main.Canvas.width - Main.Scene.pointerX;
+            if (pointerTop < 50) {
+                Main.CameraTarget = undefined;
+                let groundForward = Main.Camera.getDirection(BABYLON.Axis.Z);
+                groundForward.y = 0;
+                groundForward.normalize();
+                groundForward.scaleInPlace(Main.Engine.getDeltaTime() / 1000 * 20 * (50 - pointerTop) / 50);
+                Main.Camera.target.addInPlace(groundForward);
+            }
+            if (pointerBottom < 50) {
+                Main.CameraTarget = undefined;
+                let groundBackward = Main.Camera.getDirection(BABYLON.Axis.Z);
+                groundBackward.y = 0;
+                groundBackward.normalize();
+                groundBackward.scaleInPlace(-Main.Engine.getDeltaTime() / 1000 * 20 * (50 - pointerBottom) / 50);
+                Main.Camera.target.addInPlace(groundBackward);
+            }
+            if (pointerLeft < 50) {
+                Main.CameraTarget = undefined;
+                let groundLeft = Main.Camera.getDirection(BABYLON.Axis.X);
+                groundLeft.y = 0;
+                groundLeft.normalize();
+                groundLeft.scaleInPlace(-Main.Engine.getDeltaTime() / 1000 * 20 * (50 - pointerLeft) / 50);
+                Main.Camera.target.addInPlace(groundLeft);
+            }
+            if (pointerRight < 50) {
+                Main.CameraTarget = undefined;
+                let groundRight = Main.Camera.getDirection(BABYLON.Axis.X);
+                groundRight.y = 0;
+                groundRight.normalize();
+                groundRight.scaleInPlace(Main.Engine.getDeltaTime() / 1000 * 20 * (50 - pointerRight) / 50);
+                Main.Camera.target.addInPlace(groundRight);
+            }
+            if (Main.Ground.shape === GroundShape.Disc) {
+                let halfSizeSquared = (Main.Ground.size * 0.5 - 5) * (Main.Ground.size * 0.5 - 5);
+                if (Main.Camera.target.lengthSquared() > halfSizeSquared) {
+                    Main.Camera.target.normalize().scaleInPlace(Main.Ground.size * 0.5 - 5);
+                }
+            }
+        });
         let sceneEditor = new SceneEditor(Main.WallSystem, Main.Player, Main.Scene);
         sceneEditor.enable();
         if (window.localStorage.getItem("scene-data")) {
@@ -3397,7 +3389,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 });
 /// <reference path="../Main.ts"/>
 class Maze extends Main {
-    async createRandomMaze() {
+    async createRandomMazeWall() {
         let wallNode5 = [];
         for (let i = 0; i < 6; i++) {
             let cosa = Math.cos(i * (2 * Math.PI / 6));
@@ -3478,12 +3470,53 @@ class Maze extends Main {
         await Main.WallSystem.instantiate();
         Main.WallSystem.addToScene();
     }
+    async createRandomMazeContainers() {
+        for (let i = 0; i < 25; i++) {
+            let p = BABYLON.Vector2.Zero();
+            let others = Main.Scene.meshes.filter(m => { return m instanceof Container; });
+            let isPosValid = false;
+            let attempts = 0;
+            while (!isPosValid && attempts < 20) {
+                attempts++;
+                let a = Math.random() * Math.PI * 2;
+                let r = Math.random() * 15 + 5;
+                p = new BABYLON.Vector2(Math.cos(a) * r, Math.sin(a) * r);
+                isPosValid = true;
+                for (let j = 0; j < others.length; j++) {
+                    let other = others[j];
+                    let distanceSquared = BABYLON.Vector2.DistanceSquared(p, other.position2D);
+                    if (distanceSquared < 16) {
+                        isPosValid = false;
+                        break;
+                    }
+                }
+            }
+            if (isPosValid) {
+                let container = new Container("", Main.Player, p, Math.random() * Math.PI * 2);
+                container.instantiate();
+                container.addToScene();
+            }
+        }
+    }
     async initializeDroneWorker() {
         this._worker.position2D = new BABYLON.Vector2(0, 0);
         this._worker.currentTask = undefined;
         this._targetPosition = BABYLON.Vector2.Zero();
     }
     async initialize() {
+        Main.Scene.onBeforeRenderObservable.add(() => {
+            if (Main.CameraTarget) {
+                Main.Camera.target.x = Main.Camera.target.x * 0.9 + Main.CameraTarget.position.x * 0.1;
+                Main.Camera.target.y = Main.Camera.target.y * 0.9 + Main.CameraTarget.position.y * 0.1;
+                Main.Camera.target.z = Main.Camera.target.z * 0.9 + Main.CameraTarget.position.z * 0.1;
+            }
+            if (Main.Ground.shape === GroundShape.Disc) {
+                let halfSizeSquared = (Main.Ground.size * 0.5 - 5) * (Main.Ground.size * 0.5 - 5);
+                if (Main.Camera.target.lengthSquared() > halfSizeSquared) {
+                    Main.Camera.target.normalize().scaleInPlace(Main.Ground.size * 0.5 - 5);
+                }
+            }
+        });
         return new Promise(resolve => {
             let request = new XMLHttpRequest();
             request.open("GET", "datas/scenes/maze.json", true);
@@ -3491,10 +3524,10 @@ class Maze extends Main {
                 if (request.status >= 200 && request.status < 400) {
                     var data = JSON.parse(request.responseText);
                     await Serializer.Deserialize(Main.Scene, data, Main.Player);
-                    let playerControl = new PlayerControl(Main.Scene);
-                    playerControl.enable();
                     this._worker = new DroneWorker(Main.Player);
                     await this._worker.instantiate();
+                    Main.CameraTarget = this._worker;
+                    Main.Camera.radius = 18;
                     await this.initializeDroneWorker();
                     Main.Scene.onBeforeRenderObservable.add(() => {
                         if (BABYLON.Vector2.DistanceSquared(this._worker.position2D, this._targetPosition) < 1) {
@@ -3540,10 +3573,22 @@ class MazeConsole {
         this._panel.style.position = "fixed";
         this._panel.addTitle1("MAZE");
         this._panel.addTitle2("PATHFINDING DEMO");
-        this._panel.addLargeButton("RANDOMIZE", async () => {
+        this._panel.addLargeButton("RANDOMIZE (WALLS)", async () => {
+            let props = Main.Scene.meshes.filter(m => { return m instanceof Prop; });
+            while (props.length > 0) {
+                props.pop().dispose();
+            }
             Main.WallSystem.dispose();
-            Main.WallSystem = new WallSystem();
-            await this.maze.createRandomMaze();
+            await this.maze.createRandomMazeWall();
+            this.maze.initializeDroneWorker();
+        });
+        this._panel.addLargeButton("RANDOMIZE (CONTAINERS)", async () => {
+            let props = Main.Scene.meshes.filter(m => { return m instanceof Prop; });
+            while (props.length > 0) {
+                props.pop().dispose();
+            }
+            Main.WallSystem.dispose();
+            await this.maze.createRandomMazeContainers();
             this.maze.initializeDroneWorker();
         });
         this._panel.style.left = "10px";

@@ -1,14 +1,10 @@
-Exporter version: 5.6.4, Blender version: 2.79 (sub 0)
+Exporter version: 5.4.2, Blender version: 2.78 (sub 0)
 ========= Conversion from Blender to Babylon.js =========
-	Scene settings used :
-		export scope        :  ALL
-		inline textures     :  false
-		Positions Precision :  4
-		Normals Precision   :  3
-		UVs Precision       :  3
-		Vert Color Precision:  3
-		Mat Weight Precision:  2
-		texture directory   :  C:\Users\staton\Documents\space-strategist\datas\
+	Scene settings used:
+		selected layers only:  true
+		flat shading entire scene:  false
+		inline textures:  false
+		texture directory:  C:\Users\Sven\Documents\SvenFrankson\space-strategist\datas\
 	Python World class constructor completed
 	WARNING: No active camera has been assigned, or is not in a currently selected Blender layer
 	processing begun of mesh:  wallNode.001
@@ -19,23 +15,7 @@ Exporter version: 5.6.4, Blender version: 2.79 (sub 0)
 		num uvs2           :  0
 		num colors         :  0
 		num indices        :  234
-	processing begun of mesh:  wallNode
-		WARNING: No materials have been assigned: 
-		num positions      :  57
-		num normals        :  57
-		num uvs            :  0
-		num uvs2           :  0
-		num colors         :  0
-		num indices        :  312
-	processing begun of mesh:  Cube
-		WARNING: No materials have been assigned: 
-		num positions      :  70
-		num normals        :  70
-		num uvs            :  0
-		num uvs2           :  0
-		num colors         :  280
-		num indices        :  186
 ========= Writing of scene file started =========
 ========= Writing of scene file completed =========
 ========= end of processing =========
-elapsed time:  0 min, 0.029 secs
+elapsed time:  0 min, 0.037 secs

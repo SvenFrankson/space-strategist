@@ -12,11 +12,26 @@ class MazeConsole {
         this._panel.addTitle1("MAZE");
         this._panel.addTitle2("PATHFINDING DEMO");
         this._panel.addLargeButton(
-            "RANDOMIZE",
+            "RANDOMIZE (WALLS)",
             async () => {
+                let props = Main.Scene.meshes.filter(m => { return m instanceof Prop; });
+                while (props.length > 0) {
+                    props.pop().dispose();
+                }
                 Main.WallSystem.dispose();
-                Main.WallSystem = new WallSystem();
-                await this.maze.createRandomMaze();
+                await this.maze.createRandomMazeWall();
+                this.maze.initializeDroneWorker();
+            }
+        );
+        this._panel.addLargeButton(
+            "RANDOMIZE (CONTAINERS)",
+            async () => {
+                let props = Main.Scene.meshes.filter(m => { return m instanceof Prop; });
+                while (props.length > 0) {
+                    props.pop().dispose();
+                }
+                Main.WallSystem.dispose();
+                await this.maze.createRandomMazeContainers();
                 this.maze.initializeDroneWorker();
             }
         );
