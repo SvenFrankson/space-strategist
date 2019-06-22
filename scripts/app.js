@@ -756,6 +756,11 @@ class SceneEditor {
             this._newProp = new Turret("", this.owner, BABYLON.Vector2.Zero(), 0);
             this._newProp.instantiate();
         };
+        this.createLandingPad = () => {
+            this.selectedElement = undefined;
+            this._newProp = new LandingPad("", this.owner, BABYLON.Vector2.Zero(), 0);
+            this._newProp.instantiate();
+        };
         this.createCristal = () => {
             this.selectedElement = undefined;
             this._newProp = new Cristal("", BABYLON.Vector2.Zero(), 0);
@@ -932,6 +937,7 @@ class SceneEditor {
         this._panel.addLargeButton("CONTAINER", this.createContainer);
         this._panel.addLargeButton("TANK", this.createTank);
         this._panel.addLargeButton("TURRET", this.createTurret);
+        this._panel.addLargeButton("LANDING PAD", this.createLandingPad);
         this._panel.addLargeButton("BANNER (S)", this.createSmallBanner);
         this._panel.addLargeButton("BANNER (M)", this.createMediumBanner);
         this._panel.addLargeButton("BANNER (L)", this.createLargeBanner);
@@ -1951,6 +1957,9 @@ class Prop extends Draggable {
         if (data.elementName === "Banner") {
             return new Banner(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D, data.size);
         }
+        if (data.elementName === "LandingPad") {
+            return new LandingPad(data.name, owner, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
+        }
         return undefined;
     }
     async elasticBounce(duration = 1) {
@@ -2156,6 +2165,40 @@ class Container extends Building {
     }
     elementName() {
         return "Container";
+    }
+}
+class LandingPad extends Building {
+    constructor(name, owner, position2D, rotation2D) {
+        super(name, owner, position2D, rotation2D);
+        if (this.name === "") {
+            let landingPadCount = this.getScene().meshes.filter((m) => { return m instanceof LandingPad; }).length;
+            this.name = "landing-pad-" + landingPadCount;
+        }
+        this.resourcesAvailableRequired.get(ResourceType.Steel).required = 20;
+        this.resourcesAvailableRequired.get(ResourceType.Rock).required = 10;
+        this.completionRequired = 10;
+        this.obstacle = Obstacle.CreateHexagonWithPosRotSource(this, 1.5);
+        this.obstacle.name = name + "-obstacle";
+    }
+    async instantiate() {
+        let vertexData = await VertexDataLoader.instance.getColorized("landing-pad", "#404040", "", "#e0e0e0");
+        let min = Infinity;
+        let max = -Infinity;
+        this.height = -Infinity;
+        for (let i = 0; i < vertexData.positions.length / 3; i++) {
+            let x = vertexData.positions[3 * i];
+            let y = vertexData.positions[3 * i + 1];
+            let z = vertexData.positions[3 * i + 2];
+            min = Math.min(min, x, z);
+            max = Math.max(max, x, z);
+            this.height = Math.max(this.height, y);
+        }
+        this.groundWidth = max - min;
+        vertexData.applyToMesh(this);
+        this.material = Main.cellShadingMaterial;
+    }
+    elementName() {
+        return "LandingPad";
     }
 }
 class Tank extends Building {

@@ -79,6 +79,9 @@ abstract class Prop extends Draggable {
         if(data.elementName === "Banner") {
             return new Banner(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D, data.size);
         }
+        if(data.elementName === "LandingPad") {
+            return new LandingPad(data.name, owner, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D,);
+        }
         return undefined;
     }
 

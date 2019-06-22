@@ -70,6 +70,7 @@ class SceneEditor {
         this._panel.addLargeButton("CONTAINER", this.createContainer);
         this._panel.addLargeButton("TANK", this.createTank);
         this._panel.addLargeButton("TURRET", this.createTurret);
+        this._panel.addLargeButton("LANDING PAD", this.createLandingPad);
         this._panel.addLargeButton("BANNER (S)", this.createSmallBanner);
         this._panel.addLargeButton("BANNER (M)", this.createMediumBanner);
         this._panel.addLargeButton("BANNER (L)", this.createLargeBanner);
@@ -120,6 +121,12 @@ class SceneEditor {
     private createTurret = () => {
         this.selectedElement = undefined;
         this._newProp = new Turret("", this.owner, BABYLON.Vector2.Zero(), 0);
+        this._newProp.instantiate();
+    }
+
+    private createLandingPad = () => {
+        this.selectedElement = undefined;
+        this._newProp = new LandingPad("", this.owner, BABYLON.Vector2.Zero(), 0);
         this._newProp.instantiate();
     }
 
