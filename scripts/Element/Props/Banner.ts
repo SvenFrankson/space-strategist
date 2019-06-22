@@ -2,6 +2,8 @@
 
 class Banner extends Prop {
 
+    private _flagMesh: BABYLON.Mesh;
+
     public static SizeToName: string[] = ["small", "medium", "large"];
 
     constructor(name: string, position2D: BABYLON.Vector2, rotation2D: number, public size: number = 1) {
@@ -13,12 +15,28 @@ class Banner extends Prop {
     }
 
     public async instantiate(): Promise<void> {
-        let vertexData = await VertexDataLoader.instance.getColorized("banner-" + Banner.SizeToName[this.size], "#007fff", "#383838");
+        let vertexData = await VertexDataLoader.instance.getColorizedMultiple("banner-" + Banner.SizeToName[this.size], "#007fff", "#383838");
 
+        this.height = 4;
         this.groundWidth = 0.5;
 
-        vertexData.applyToMesh(this);
+        vertexData[0].applyToMesh(this);
         this.material = Main.cellShadingMaterial;
+
+        if (!this._flagMesh) {
+            this._flagMesh = new BABYLON.Mesh("flag-mesh");
+            this._flagMesh.parent = this;
+        }
+        vertexData[1].applyToMesh(this._flagMesh);
+        this._flagMesh.material = Main.cellShadingMaterial;
+    }
+
+    public serialize(): PropData {
+        let data = super.serialize();
+
+        data.size = this.size;
+
+        return data;
     }
 
     public elementName(): string {

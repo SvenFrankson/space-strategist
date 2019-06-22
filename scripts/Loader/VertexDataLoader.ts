@@ -38,6 +38,17 @@ class VertexDataLoader {
         let vertexData: BABYLON.VertexData = undefined;
         let loadedFile = await BABYLON.SceneLoader.ImportMeshAsync("", "./datas/" + name + ".babylon", "", Main.Scene);
         let vertexDatas: BABYLON.VertexData[] = [];
+        loadedFile.meshes = loadedFile.meshes.sort(
+            (m1, m2) => {
+                if (m1.name < m2.name) {
+                    return -1;
+                }
+                else if (m1.name > m2.name) {
+                    return 1;
+                }
+                return 0;
+            }
+        )
         for (let i = 0; i < loadedFile.meshes.length; i++) {
             let loadedMesh = loadedFile.meshes[i];
             if (loadedMesh instanceof BABYLON.Mesh) {

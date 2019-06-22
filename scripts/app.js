@@ -766,6 +766,21 @@ class SceneEditor {
             this._newProp = new Rock("", BABYLON.Vector2.Zero(), 0);
             this._newProp.instantiate();
         };
+        this.createSmallBanner = () => {
+            this.selectedElement = undefined;
+            this._newProp = new Banner("", BABYLON.Vector2.Zero(), 0, 0);
+            this._newProp.instantiate();
+        };
+        this.createMediumBanner = () => {
+            this.selectedElement = undefined;
+            this._newProp = new Banner("", BABYLON.Vector2.Zero(), 0, 1);
+            this._newProp.instantiate();
+        };
+        this.createLargeBanner = () => {
+            this.selectedElement = undefined;
+            this._newProp = new Banner("", BABYLON.Vector2.Zero(), 0, 2);
+            this._newProp.instantiate();
+        };
         this.createNode = () => {
             this.selectedElement = undefined;
             this.removeEventListenerDrag();
@@ -917,6 +932,9 @@ class SceneEditor {
         this._panel.addLargeButton("CONTAINER", this.createContainer);
         this._panel.addLargeButton("TANK", this.createTank);
         this._panel.addLargeButton("TURRET", this.createTurret);
+        this._panel.addLargeButton("BANNER (S)", this.createSmallBanner);
+        this._panel.addLargeButton("BANNER (M)", this.createMediumBanner);
+        this._panel.addLargeButton("BANNER (L)", this.createLargeBanner);
         this._panel.addLargeButton("CRISTAL", this.createCristal);
         this._panel.addLargeButton("ROCK", this.createRock);
         this._panel.addLargeButton("WALL", this.createNode);
@@ -1930,6 +1948,9 @@ class Prop extends Draggable {
         if (data.elementName === "Turret") {
             return new Turret(data.name, owner, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
         }
+        if (data.elementName === "Banner") {
+            return new Banner(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D, data.size);
+        }
         return undefined;
     }
     async elasticBounce(duration = 1) {
@@ -1982,10 +2003,22 @@ class Banner extends Prop {
         }
     }
     async instantiate() {
-        let vertexData = await VertexDataLoader.instance.getColorized("banner-" + Banner.SizeToName[this.size], "#007fff", "#383838");
+        let vertexData = await VertexDataLoader.instance.getColorizedMultiple("banner-" + Banner.SizeToName[this.size], "#007fff", "#383838");
+        this.height = 4;
         this.groundWidth = 0.5;
-        vertexData.applyToMesh(this);
+        vertexData[0].applyToMesh(this);
         this.material = Main.cellShadingMaterial;
+        if (!this._flagMesh) {
+            this._flagMesh = new BABYLON.Mesh("flag-mesh");
+            this._flagMesh.parent = this;
+        }
+        vertexData[1].applyToMesh(this._flagMesh);
+        this._flagMesh.material = Main.cellShadingMaterial;
+    }
+    serialize() {
+        let data = super.serialize();
+        data.size = this.size;
+        return data;
     }
     elementName() {
         return "Banner";
@@ -2928,6 +2961,15 @@ class VertexDataLoader {
         let vertexData = undefined;
         let loadedFile = await BABYLON.SceneLoader.ImportMeshAsync("", "./datas/" + name + ".babylon", "", Main.Scene);
         let vertexDatas = [];
+        loadedFile.meshes = loadedFile.meshes.sort((m1, m2) => {
+            if (m1.name < m2.name) {
+                return -1;
+            }
+            else if (m1.name > m2.name) {
+                return 1;
+            }
+            return 0;
+        });
         for (let i = 0; i < loadedFile.meshes.length; i++) {
             let loadedMesh = loadedFile.meshes[i];
             if (loadedMesh instanceof BABYLON.Mesh) {

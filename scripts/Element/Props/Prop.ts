@@ -5,6 +5,9 @@ class PropData {
     public name: string;
     public position2D: IVector2;
     public rotation2D: number;
+
+    // Banner specific
+    public size: number;
 }
 
 abstract class Prop extends Draggable {
@@ -72,6 +75,9 @@ abstract class Prop extends Draggable {
         }
         if(data.elementName === "Turret") {
             return new Turret(data.name, owner, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
+        }
+        if(data.elementName === "Banner") {
+            return new Banner(data.name, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D, data.size);
         }
         return undefined;
     }
