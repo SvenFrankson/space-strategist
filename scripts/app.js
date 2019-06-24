@@ -776,19 +776,9 @@ class SceneEditor {
             this._newProp = new Rock("", BABYLON.Vector2.Zero(), 0);
             this._newProp.instantiate();
         };
-        this.createSmallBanner = () => {
-            this.selectedElement = undefined;
-            this._newProp = new Banner("", BABYLON.Vector2.Zero(), 0, 0);
-            this._newProp.instantiate();
-        };
-        this.createMediumBanner = () => {
+        this.createBanner = () => {
             this.selectedElement = undefined;
             this._newProp = new Banner("", BABYLON.Vector2.Zero(), 0, 1);
-            this._newProp.instantiate();
-        };
-        this.createLargeBanner = () => {
-            this.selectedElement = undefined;
-            this._newProp = new Banner("", BABYLON.Vector2.Zero(), 0, 2);
             this._newProp.instantiate();
         };
         this.createNode = () => {
@@ -944,9 +934,7 @@ class SceneEditor {
         this._panel.addLargeButton("TURRET", this.createTurret);
         this._panel.addLargeButton("LANDING PAD", this.createLandingPad);
         this._panel.addLargeButton("DOCK", this.createDock);
-        this._panel.addLargeButton("BANNER (S)", this.createSmallBanner);
-        this._panel.addLargeButton("BANNER (M)", this.createMediumBanner);
-        this._panel.addLargeButton("BANNER (L)", this.createLargeBanner);
+        this._panel.addLargeButton("BANNER", this.createBanner);
         this._panel.addLargeButton("CRISTAL", this.createCristal);
         this._panel.addLargeButton("ROCK", this.createRock);
         this._panel.addLargeButton("WALL", this.createNode);
@@ -2058,9 +2046,15 @@ class PropEditor {
         panel.addNumberInput("POS Y", prop.position2D.y, (v) => {
             prop.position2D.y = v;
         });
-        panel.addNumberInput("ROTATION", prop.rotation2D, (v) => {
+        panel.addNumberInput("ROTATION", prop.rotation2D / Math.PI * 180, (v) => {
             prop.rotation2D = v / 180 * Math.PI;
         });
+        if (prop instanceof Banner) {
+            panel.addNumberInput("SIZE", prop.size, (v) => {
+                prop.size = v;
+                prop.instantiate();
+            }, 0);
+        }
         panel.addMediumButtons("CLONE", () => {
             let data = prop.serialize();
             let splitName = data.name.split("-");
@@ -3068,15 +3062,15 @@ class VertexDataLoader {
         return vertexDatas;
     }
     async getColorized(name, baseColorHex = "#FFFFFF", frameColorHex = "", color1Hex = "", // Replace red
-        color2Hex = "", // Replace green
-        color3Hex = "" // Replace blue
+    color2Hex = "", // Replace green
+    color3Hex = "" // Replace blue
     ) {
         let vertexDatas = await this.getColorizedMultiple(name, baseColorHex, frameColorHex, color1Hex, color2Hex, color3Hex);
         return vertexDatas[0];
     }
     async getColorizedMultiple(name, baseColorHex = "#FFFFFF", frameColorHex = "", color1Hex = "", // Replace red
-        color2Hex = "", // Replace green
-        color3Hex = "" // Replace blue
+    color2Hex = "", // Replace green
+    color3Hex = "" // Replace blue
     ) {
         let baseColor;
         if (baseColorHex !== "") {

@@ -30,11 +30,22 @@ class PropEditor {
         );
         panel.addNumberInput(
             "ROTATION",
-            prop.rotation2D,
+            prop.rotation2D / Math.PI * 180,
             (v) => {
                 prop.rotation2D = v / 180 * Math.PI;
             }
         );
+        if (prop instanceof Banner) {
+            panel.addNumberInput(
+                "SIZE",
+                prop.size,
+                (v) => {
+                    prop.size = v;
+                    prop.instantiate();
+                },
+                0
+            )
+        }
         panel.addMediumButtons(
             "CLONE",
             () => {

@@ -72,9 +72,7 @@ class SceneEditor {
         this._panel.addLargeButton("TURRET", this.createTurret);
         this._panel.addLargeButton("LANDING PAD", this.createLandingPad);
         this._panel.addLargeButton("DOCK", this.createDock);
-        this._panel.addLargeButton("BANNER (S)", this.createSmallBanner);
-        this._panel.addLargeButton("BANNER (M)", this.createMediumBanner);
-        this._panel.addLargeButton("BANNER (L)", this.createLargeBanner);
+        this._panel.addLargeButton("BANNER", this.createBanner);
         this._panel.addLargeButton("CRISTAL", this.createCristal);
         this._panel.addLargeButton("ROCK", this.createRock);
         this._panel.addLargeButton("WALL", this.createNode);
@@ -149,21 +147,9 @@ class SceneEditor {
         this._newProp.instantiate();
     }
 
-    private createSmallBanner = () => {
-        this.selectedElement = undefined;
-        this._newProp = new Banner("", BABYLON.Vector2.Zero(), 0, 0);
-        this._newProp.instantiate();
-    }
-
-    private createMediumBanner = () => {
+    private createBanner = () => {
         this.selectedElement = undefined;
         this._newProp = new Banner("", BABYLON.Vector2.Zero(), 0, 1);
-        this._newProp.instantiate();
-    }
-
-    private createLargeBanner = () => {
-        this.selectedElement = undefined;
-        this._newProp = new Banner("", BABYLON.Vector2.Zero(), 0, 2);
         this._newProp.instantiate();
     }
 
