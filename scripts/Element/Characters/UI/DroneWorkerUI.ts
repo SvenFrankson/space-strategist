@@ -30,6 +30,50 @@ class DroneWorkerUI {
 
     }
 
+    public static GetPropBuildCallback(
+        ui: DroneWorkerUI,
+        PropCtor: new (name: string, position2D: BABYLON.Vector2, rotation2D: number) => Prop
+    ) {
+        return () => {
+            ui._ghostProp = new PropCtor("ghost", BABYLON.Vector2.Zero(), 0);
+            ui._ghostProp.instantiate();
+            ui._ghostProp.setVisibility(0);
+            ui._ghostProp.isPickable = false;
+            ui._onRightClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
+                let container = new PropCtor("", pickedPoint, 0);
+                container.addToScene();
+                container.instantiate();
+                ui._ghostProp.dispose();
+                ui._ghostProp = undefined;
+            }
+        }
+    }
+
+    public static GetBuildingBuildCallback(
+        ui: DroneWorkerUI,
+        BuildingCtor: new (name: string, owner: Player, position2D: BABYLON.Vector2, rotation2D: number) => Building
+    ): () => void {
+        return () => {
+            ui._ghostProp = new BuildingCtor("ghost", ui.target.owner, BABYLON.Vector2.Zero(), 0);
+            ui._ghostProp.instantiate();
+            ui._ghostProp.setVisibility(0);
+            ui._ghostProp.isPickable = false;
+            ui._onRightClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
+                let container = new BuildingCtor("", ui.target.owner, pickedPoint, 0);
+                if (Cheat.OmniBuilder) {
+                    container.addToScene();
+                    container.instantiate();
+                }
+                else {
+                    container.instantiateBuilding();
+                    ui.target.currentTask = new BuildTask(ui.target, container);
+                }
+                ui._ghostProp.dispose();
+                ui._ghostProp = undefined;
+            }
+        }
+    }
+
     public enable(): void {
         this._panel = SpacePanel.CreateSpacePanel();
         this._panel.setTarget(this.target);
@@ -37,45 +81,13 @@ class DroneWorkerUI {
         this._panel.addTitle2(this.target.name.toLocaleUpperCase());
         this._inventoryInput = this._panel.addTextInput("CRISTAL", this.target.inventory.toFixed(0) + "/" + this.target.carriageCapacity.toFixed(0));
         this._currentActionInput = this._panel.addTextInput("ACTION", this.target.currentAction);
-        this._panel.addLargeButton("BUILD CONTAINER", () => {
-            this._ghostProp = new Container("ghost", this.target.owner, BABYLON.Vector2.Zero(), 0);
-            this._ghostProp.instantiate();
-            this._ghostProp.setVisibility(0);
-            this._ghostProp.isPickable = false;
-            this._onRightClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
-                let container = new Container("", this.target.owner, pickedPoint, 0);
-                container.instantiateBuilding();
-                this.target.currentTask = new BuildTask(this.target, container);
-                this._ghostProp.dispose();
-                this._ghostProp = undefined;
-            }
-        });
-        this._panel.addLargeButton("BUILD TANK", () => {
-            this._ghostProp = new Tank("ghost", this.target.owner, BABYLON.Vector2.Zero(), 0);
-            this._ghostProp.instantiate();
-            this._ghostProp.setVisibility(0);
-            this._ghostProp.isPickable = false;
-            this._onRightClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
-                let tank = new Tank("", this.target.owner, pickedPoint, 0);
-                tank.instantiateBuilding();
-                this.target.currentTask = new BuildTask(this.target, tank);
-                this._ghostProp.dispose();
-                this._ghostProp = undefined;
-            }
-        });
-        this._panel.addLargeButton("BUILD TURRET", () => {
-            this._ghostProp = new Turret("ghost", this.target.owner, BABYLON.Vector2.Zero(), 0);
-            this._ghostProp.instantiate();
-            this._ghostProp.setVisibility(0);
-            this._ghostProp.isPickable = false;
-            this._onRightClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
-                let turret = new Turret("", this.target.owner, pickedPoint, 0);
-                turret.instantiateBuilding();
-                this.target.currentTask = new BuildTask(this.target, turret);
-                this._ghostProp.dispose();
-                this._ghostProp = undefined;
-            }
-        });
+        this._panel.addLargeButton("BUILD CONTAINER", DroneWorkerUI.GetBuildingBuildCallback(this, Container));
+        this._panel.addLargeButton("BUILD TANK", DroneWorkerUI.GetBuildingBuildCallback(this, Tank));
+        this._panel.addLargeButton("BUILD TURRET", DroneWorkerUI.GetBuildingBuildCallback(this, Turret));
+        if (Cheat.OmniBuilder) {
+            this._panel.addLargeButton("BUILD CRISTAL", DroneWorkerUI.GetPropBuildCallback(this, Cristal));
+            this._panel.addLargeButton("BUILD ROCK", DroneWorkerUI.GetPropBuildCallback(this, Rock));
+        }
         this._panel.addLargeButton("BUILD WALL", () => {
             this._ghostProp = new WallNode(BABYLON.Vector2.Zero(), Main.WallSystem);
             this._ghostProp.instantiate();

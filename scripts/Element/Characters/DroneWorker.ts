@@ -169,7 +169,7 @@ class DroneWorker extends Character {
     }
     private _buildRate: number = 2;
     public get buildRate(): number {
-        return Cheat.MasterBuilder?this._buildRate*10:this._buildRate;
+        return Cheat.QuickBuilder?this._buildRate*10:this._buildRate;
     }
     public carriageCapacity: number = 10;
     private _carriedResource: ResourceType;

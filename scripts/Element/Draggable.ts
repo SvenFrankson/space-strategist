@@ -2,7 +2,7 @@
 
 abstract class Draggable extends Selectionable {
 
-    public position2D: BABYLON.Vector2;
+    public position2D: BABYLON.Vector2 = BABYLON.Vector2.Zero();
     private _rotation2D: number = 0;
     public get rotation2D(): number {
         return this._rotation2D;

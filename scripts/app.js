@@ -1,7 +1,8 @@
 class Cheat {
 }
-Cheat.MasterHarvester = true;
-Cheat.MasterBuilder = true;
+Cheat.MasterHarvester = false;
+Cheat.QuickBuilder = false;
+Cheat.OmniBuilder = false;
 Cheat.MasterWalker = false;
 class Math2D {
     static AreEqualsCircular(a1, a2, epsilon = Math.PI / 60) {
@@ -984,6 +985,7 @@ class Selectionable extends BABYLON.Mesh {
 class Draggable extends Selectionable {
     constructor() {
         super(...arguments);
+        this.position2D = BABYLON.Vector2.Zero();
         this._rotation2D = 0;
         this._forward2D = new BABYLON.Vector2(0, 1);
     }
@@ -1202,7 +1204,7 @@ class DroneWorker extends Character {
         return Cheat.MasterHarvester ? this._harvestRate * 10 : this._harvestRate;
     }
     get buildRate() {
-        return Cheat.MasterBuilder ? this._buildRate * 10 : this._buildRate;
+        return Cheat.QuickBuilder ? this._buildRate * 10 : this._buildRate;
     }
     get carriedResource() {
         return this._carriedResource;
@@ -1730,6 +1732,42 @@ class DroneWorkerUI {
             this._ghostProps = [];
         }
     }
+    static GetPropBuildCallback(ui, PropCtor) {
+        return () => {
+            ui._ghostProp = new PropCtor("ghost", BABYLON.Vector2.Zero(), 0);
+            ui._ghostProp.instantiate();
+            ui._ghostProp.setVisibility(0);
+            ui._ghostProp.isPickable = false;
+            ui._onRightClickOverride = (pickedPoint, pickedTarget) => {
+                let container = new PropCtor("", pickedPoint, 0);
+                container.addToScene();
+                container.instantiate();
+                ui._ghostProp.dispose();
+                ui._ghostProp = undefined;
+            };
+        };
+    }
+    static GetBuildingBuildCallback(ui, BuildingCtor) {
+        return () => {
+            ui._ghostProp = new BuildingCtor("ghost", ui.target.owner, BABYLON.Vector2.Zero(), 0);
+            ui._ghostProp.instantiate();
+            ui._ghostProp.setVisibility(0);
+            ui._ghostProp.isPickable = false;
+            ui._onRightClickOverride = (pickedPoint, pickedTarget) => {
+                let container = new BuildingCtor("", ui.target.owner, pickedPoint, 0);
+                if (Cheat.OmniBuilder) {
+                    container.addToScene();
+                    container.instantiate();
+                }
+                else {
+                    container.instantiateBuilding();
+                    ui.target.currentTask = new BuildTask(ui.target, container);
+                }
+                ui._ghostProp.dispose();
+                ui._ghostProp = undefined;
+            };
+        };
+    }
     enable() {
         this._panel = SpacePanel.CreateSpacePanel();
         this._panel.setTarget(this.target);
@@ -1737,45 +1775,13 @@ class DroneWorkerUI {
         this._panel.addTitle2(this.target.name.toLocaleUpperCase());
         this._inventoryInput = this._panel.addTextInput("CRISTAL", this.target.inventory.toFixed(0) + "/" + this.target.carriageCapacity.toFixed(0));
         this._currentActionInput = this._panel.addTextInput("ACTION", this.target.currentAction);
-        this._panel.addLargeButton("BUILD CONTAINER", () => {
-            this._ghostProp = new Container("ghost", this.target.owner, BABYLON.Vector2.Zero(), 0);
-            this._ghostProp.instantiate();
-            this._ghostProp.setVisibility(0);
-            this._ghostProp.isPickable = false;
-            this._onRightClickOverride = (pickedPoint, pickedTarget) => {
-                let container = new Container("", this.target.owner, pickedPoint, 0);
-                container.instantiateBuilding();
-                this.target.currentTask = new BuildTask(this.target, container);
-                this._ghostProp.dispose();
-                this._ghostProp = undefined;
-            };
-        });
-        this._panel.addLargeButton("BUILD TANK", () => {
-            this._ghostProp = new Tank("ghost", this.target.owner, BABYLON.Vector2.Zero(), 0);
-            this._ghostProp.instantiate();
-            this._ghostProp.setVisibility(0);
-            this._ghostProp.isPickable = false;
-            this._onRightClickOverride = (pickedPoint, pickedTarget) => {
-                let tank = new Tank("", this.target.owner, pickedPoint, 0);
-                tank.instantiateBuilding();
-                this.target.currentTask = new BuildTask(this.target, tank);
-                this._ghostProp.dispose();
-                this._ghostProp = undefined;
-            };
-        });
-        this._panel.addLargeButton("BUILD TURRET", () => {
-            this._ghostProp = new Turret("ghost", this.target.owner, BABYLON.Vector2.Zero(), 0);
-            this._ghostProp.instantiate();
-            this._ghostProp.setVisibility(0);
-            this._ghostProp.isPickable = false;
-            this._onRightClickOverride = (pickedPoint, pickedTarget) => {
-                let turret = new Turret("", this.target.owner, pickedPoint, 0);
-                turret.instantiateBuilding();
-                this.target.currentTask = new BuildTask(this.target, turret);
-                this._ghostProp.dispose();
-                this._ghostProp = undefined;
-            };
-        });
+        this._panel.addLargeButton("BUILD CONTAINER", DroneWorkerUI.GetBuildingBuildCallback(this, Container));
+        this._panel.addLargeButton("BUILD TANK", DroneWorkerUI.GetBuildingBuildCallback(this, Tank));
+        this._panel.addLargeButton("BUILD TURRET", DroneWorkerUI.GetBuildingBuildCallback(this, Turret));
+        if (Cheat.OmniBuilder) {
+            this._panel.addLargeButton("BUILD CRISTAL", DroneWorkerUI.GetPropBuildCallback(this, Cristal));
+            this._panel.addLargeButton("BUILD ROCK", DroneWorkerUI.GetPropBuildCallback(this, Rock));
+        }
         this._panel.addLargeButton("BUILD WALL", () => {
             this._ghostProp = new WallNode(BABYLON.Vector2.Zero(), Main.WallSystem);
             this._ghostProp.instantiate();
@@ -3364,12 +3370,10 @@ class Editor extends Main {
                 }
             }
         });
-        let sceneEditor = new SceneEditor(Main.WallSystem, Main.Player, Main.Scene);
-        sceneEditor.enable();
-        if (window.localStorage.getItem("scene-data")) {
-            let data = JSON.parse(window.localStorage.getItem("scene-data"));
-            await Serializer.Deserialize(Main.Scene, data, Main.Player);
-        }
+        let worker = new DroneWorker(Main.Player);
+        worker.instantiate();
+        new PlayerControl(Main.Scene);
+        Cheat.OmniBuilder = true;
         console.log("Editor initialized.");
     }
 }

@@ -62,14 +62,13 @@ class Editor extends Main {
 				}
 			}
 		)
+		
+		let worker = new DroneWorker(Main.Player);
+		worker.instantiate();
 
-        let sceneEditor = new SceneEditor(Main.WallSystem, Main.Player, Main.Scene);
-        sceneEditor.enable();
+		new PlayerControl(Main.Scene);
 
-        if (window.localStorage.getItem("scene-data")) {
-            let data = JSON.parse(window.localStorage.getItem("scene-data"));
-            await Serializer.Deserialize(Main.Scene, data, Main.Player);
-        }
+		Cheat.OmniBuilder = true;
         
         console.log("Editor initialized.");
     }
