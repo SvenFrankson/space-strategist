@@ -2,8 +2,6 @@
 
 class Container extends Building {
 
-    public ui: ContainerUI;
-
     constructor(name: string, owner: Player, position2D: BABYLON.Vector2, rotation2D: number) {
         super(name, owner, position2D, rotation2D);
         if (this.name === "") {

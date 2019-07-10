@@ -17,17 +17,29 @@ abstract class Prop extends Draggable {
     public isActive = false;
     public obstacle: Obstacle;
 
+    public ui: PropUI;
+
     constructor(name: string, position2D: BABYLON.Vector2 = BABYLON.Vector2.Zero(), rotation2D: number = 0) {
         super(name);
         this.position2D = position2D;
         this.rotation2D = rotation2D;
         this.getScene().onBeforeRenderObservable.add(this._updatePosition);
+
+        this.ui = new PropUI(this);
     }
 
     public dispose(doNotRecurse?: boolean, disposeMaterialAndTextures?: boolean): void {
         this.getScene().onBeforeRenderObservable.removeCallback(this._updatePosition);
         NavGraphManager.RemoveObstacle(this.obstacle);
         super.dispose(doNotRecurse, disposeMaterialAndTextures);
+    }
+
+    public onSelected(): void {
+        this.ui.enable();
+    }
+
+    public onUnselected(): void {
+        this.ui.disable();
     }
 
     private _updatePosition = () => {

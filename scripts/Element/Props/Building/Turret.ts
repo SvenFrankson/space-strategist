@@ -1,7 +1,5 @@
 class Turret extends Building {
 
-    public ui: TurretUI;
-
     public static Instances: Turret[] = [];
 
     public fireRate: number = 15; // Rounds per minute.
@@ -34,8 +32,6 @@ class Turret extends Building {
         this.resourcesAvailableRequired.get(ResourceType.Steel).required = 30;
         this.resourcesAvailableRequired.get(ResourceType.Cristal).required = 20;
         this.completionRequired = 20;
-
-        this.ui = new TurretUI(this);
 
         this._headBase = new BABYLON.Mesh("turret-canonBase");
         this._headBase.parent = this;
@@ -79,14 +75,6 @@ class Turret extends Building {
 
         this.groundWidth = 2;
         this.height = 3;
-    }
-
-    public onSelected(): void {
-        this.ui.enable();
-    }
-
-    public onUnselected(): void {
-        this.ui.disable();
     }
 
     private _dirToTarget: BABYLON.Vector2 = BABYLON.Vector2.Zero();

@@ -970,6 +970,11 @@ class SceneEditor {
     }
 }
 class Selectionable extends BABYLON.Mesh {
+    constructor() {
+        super(...arguments);
+        this.groundWidth = 1;
+        this.height = 1;
+    }
     onSelected() { }
     ;
     onUnselected() { }
@@ -1778,6 +1783,8 @@ class DroneWorkerUI {
         this._panel.addLargeButton("BUILD CONTAINER", DroneWorkerUI.GetBuildingBuildCallback(this, Container));
         this._panel.addLargeButton("BUILD TANK", DroneWorkerUI.GetBuildingBuildCallback(this, Tank));
         this._panel.addLargeButton("BUILD TURRET", DroneWorkerUI.GetBuildingBuildCallback(this, Turret));
+        this._panel.addLargeButton("BUILD LANDING PAD", DroneWorkerUI.GetBuildingBuildCallback(this, LandingPad));
+        this._panel.addLargeButton("BUILD DOCK", DroneWorkerUI.GetBuildingBuildCallback(this, Dock));
         if (Cheat.OmniBuilder) {
             this._panel.addLargeButton("BUILD CRISTAL", DroneWorkerUI.GetPropBuildCallback(this, Cristal));
             this._panel.addLargeButton("BUILD ROCK", DroneWorkerUI.GetPropBuildCallback(this, Rock));
@@ -1919,11 +1926,18 @@ class Prop extends Draggable {
         this.position2D = position2D;
         this.rotation2D = rotation2D;
         this.getScene().onBeforeRenderObservable.add(this._updatePosition);
+        this.ui = new PropUI(this);
     }
     dispose(doNotRecurse, disposeMaterialAndTextures) {
         this.getScene().onBeforeRenderObservable.removeCallback(this._updatePosition);
         NavGraphManager.RemoveObstacle(this.obstacle);
         super.dispose(doNotRecurse, disposeMaterialAndTextures);
+    }
+    onSelected() {
+        this.ui.enable();
+    }
+    onUnselected() {
+        this.ui.disable();
     }
     onPositionChanged() { }
     addToScene() {
@@ -2246,7 +2260,6 @@ class Tank extends Building {
         this.resourcesAvailableRequired.get(ResourceType.Steel).required = 20;
         this.resourcesAvailableRequired.get(ResourceType.Rock).required = 10;
         this.completionRequired = 10;
-        this.ui = new TankUI(this);
         this.obstacle = Obstacle.CreateHexagonWithPosRotSource(this, 1.5);
         this.obstacle.name = name + "-obstacle";
     }
@@ -2266,12 +2279,6 @@ class Tank extends Building {
         this.groundWidth = max - min;
         vertexData.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
-    }
-    onSelected() {
-        this.ui.enable();
-    }
-    onUnselected() {
-        this.ui.disable();
     }
     elementName() {
         return "Tank";
@@ -2330,7 +2337,6 @@ class Turret extends Building {
         this.resourcesAvailableRequired.get(ResourceType.Steel).required = 30;
         this.resourcesAvailableRequired.get(ResourceType.Cristal).required = 20;
         this.completionRequired = 20;
-        this.ui = new TurretUI(this);
         this._headBase = new BABYLON.Mesh("turret-canonBase");
         this._headBase.parent = this;
         this._headBase.position.copyFromFloats(0, 2.1, 0);
@@ -2371,12 +2377,6 @@ class Turret extends Building {
         this.groundWidth = 2;
         this.height = 3;
     }
-    onSelected() {
-        this.ui.enable();
-    }
-    onUnselected() {
-        this.ui.disable();
-    }
     async _fire() {
         this._fireCooldown -= this.getScene().getEngine().getDeltaTime() / 1000;
         if (this._fireCooldown > 0) {
@@ -2416,68 +2416,48 @@ class Turret extends Building {
     }
 }
 Turret.Instances = [];
-class ContainerUI {
+class PropUI {
     constructor(target) {
         this.target = target;
+    }
+    enable() {
+        this._panel = SpacePanel.CreateSpacePanel();
+        this._panel.setTarget(this.target);
+        this._panel.addTitle1(this.target.elementName().toLocaleUpperCase());
+        this._panel.addTitle2(this.target.name.toLocaleUpperCase());
+        this._onEnable();
+        this._panel.addLargeButton("LOOK AT", () => { Main.CameraTarget = this.target; });
+        this._selector = ShapeDraw.CreateCircle(this.target.groundWidth * Math.SQRT2 * 0.5, this.target.groundWidth * Math.SQRT2 * 0.5 + 0.15);
+        this._selector.position.copyFromFloats(this.target.position2D.x, 0.1, this.target.position2D.y);
+    }
+    _onEnable() { }
+    ;
+    disable() {
+        this._panel.dispose();
+        this._selector.dispose();
+        this._onDisable();
+    }
+    _onDisable() { }
+    ;
+}
+/// <reference path="PropUI.ts"/>
+class ContainerUI extends PropUI {
+    constructor() {
+        super(...arguments);
         this._update = () => {
             this._rockInput.value = this.target.owner.currentRock.toFixed(0);
             this._steelInput.value = this.target.owner.currentSteel.toFixed(0);
             this._cristalInput.value = this.target.owner.currentCristal.toFixed(0);
         };
     }
-    enable() {
-        this._panel = SpacePanel.CreateSpacePanel();
-        this._panel.setTarget(this.target);
-        this._panel.addTitle1(this.target.elementName().toLocaleUpperCase());
-        this._panel.addTitle2(this.target.name.toLocaleUpperCase());
+    _onEnable() {
         this._rockInput = this._panel.addTextInput("ROCK", this.target.owner.currentRock.toFixed(0));
         this._steelInput = this._panel.addTextInput("STEEL", this.target.owner.currentSteel.toFixed(0));
         this._cristalInput = this._panel.addTextInput("CRISTAL", this.target.owner.currentCristal.toFixed(0));
-        this._panel.addLargeButton("LOOK AT", () => { Main.CameraTarget = this.target; });
-        this._selector = ShapeDraw.CreateCircle(this.target.groundWidth * Math.SQRT2 * 0.5, this.target.groundWidth * Math.SQRT2 * 0.5 + 0.15);
-        this._selector.position.copyFromFloats(this.target.position2D.x, 0.1, this.target.position2D.y);
         this.target.getScene().onBeforeRenderObservable.add(this._update);
     }
-    disable() {
-        this._panel.dispose();
-        this._selector.dispose();
+    _onDisable() {
         this.target.getScene().onBeforeRenderObservable.removeCallback(this._update);
-    }
-}
-class TankUI {
-    constructor(target) {
-        this.target = target;
-    }
-    enable() {
-        this._panel = SpacePanel.CreateSpacePanel();
-        this._panel.setTarget(this.target);
-        this._panel.addTitle1(this.target.elementName().toLocaleUpperCase());
-        this._panel.addTitle2(this.target.name.toLocaleUpperCase());
-        this._panel.addLargeButton("LOOK AT", () => { Main.CameraTarget = this.target; });
-        this._selector = ShapeDraw.CreateCircle(this.target.groundWidth * Math.SQRT2 * 0.5, this.target.groundWidth * Math.SQRT2 * 0.5 + 0.15);
-        this._selector.position.copyFromFloats(this.target.position2D.x, 0.1, this.target.position2D.y);
-    }
-    disable() {
-        this._panel.dispose();
-        this._selector.dispose();
-    }
-}
-class TurretUI {
-    constructor(target) {
-        this.target = target;
-    }
-    enable() {
-        this._panel = SpacePanel.CreateSpacePanel();
-        this._panel.setTarget(this.target);
-        this._panel.addTitle1(this.target.elementName().toLocaleUpperCase());
-        this._panel.addTitle2(this.target.name.toLocaleUpperCase());
-        this._panel.addLargeButton("LOOK AT", () => { Main.CameraTarget = this.target; });
-        this._selector = ShapeDraw.CreateCircle(this.target.groundWidth * Math.SQRT2 * 0.5, this.target.groundWidth * Math.SQRT2 * 0.5 + 0.15);
-        this._selector.position.copyFromFloats(this.target.position2D.x, 0.1, this.target.position2D.y);
-    }
-    disable() {
-        this._panel.dispose();
-        this._selector.dispose();
     }
 }
 class ResourceSpot extends Prop {
@@ -3068,15 +3048,15 @@ class VertexDataLoader {
         return vertexDatas;
     }
     async getColorized(name, baseColorHex = "#FFFFFF", frameColorHex = "", color1Hex = "", // Replace red
-    color2Hex = "", // Replace green
-    color3Hex = "" // Replace blue
+        color2Hex = "", // Replace green
+        color3Hex = "" // Replace blue
     ) {
         let vertexDatas = await this.getColorizedMultiple(name, baseColorHex, frameColorHex, color1Hex, color2Hex, color3Hex);
         return vertexDatas[0];
     }
     async getColorizedMultiple(name, baseColorHex = "#FFFFFF", frameColorHex = "", color1Hex = "", // Replace red
-    color2Hex = "", // Replace green
-    color3Hex = "" // Replace blue
+        color2Hex = "", // Replace green
+        color3Hex = "" // Replace blue
     ) {
         let baseColor;
         if (baseColorHex !== "") {

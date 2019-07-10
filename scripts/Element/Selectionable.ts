@@ -1,7 +1,7 @@
 abstract class Selectionable extends BABYLON.Mesh {
 
-    public groundWidth: number;
-    public height: number;
+    public groundWidth: number = 1;
+    public height: number = 1;
 
     public onSelected(): void {};
     public onUnselected(): void {};

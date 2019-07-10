@@ -84,6 +84,8 @@ class DroneWorkerUI {
         this._panel.addLargeButton("BUILD CONTAINER", DroneWorkerUI.GetBuildingBuildCallback(this, Container));
         this._panel.addLargeButton("BUILD TANK", DroneWorkerUI.GetBuildingBuildCallback(this, Tank));
         this._panel.addLargeButton("BUILD TURRET", DroneWorkerUI.GetBuildingBuildCallback(this, Turret));
+        this._panel.addLargeButton("BUILD LANDING PAD", DroneWorkerUI.GetBuildingBuildCallback(this, LandingPad));
+        this._panel.addLargeButton("BUILD DOCK", DroneWorkerUI.GetBuildingBuildCallback(this, Dock));
         if (Cheat.OmniBuilder) {
             this._panel.addLargeButton("BUILD CRISTAL", DroneWorkerUI.GetPropBuildCallback(this, Cristal));
             this._panel.addLargeButton("BUILD ROCK", DroneWorkerUI.GetPropBuildCallback(this, Rock));
