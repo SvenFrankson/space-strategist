@@ -152,6 +152,7 @@ class DroneWorkerUI {
             }
         });
         Board.Instance.addButtonLeftPage("LOOK AT", () => { Main.CameraTarget = this.target; });
+        Board.Instance.updateLeftPageLayout();
 
         this._selector = ShapeDraw.CreateCircle(1.05, 1.2);
         this.target.getScene().onBeforeRenderObservable.add(this._update);

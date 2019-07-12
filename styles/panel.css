@@ -249,18 +249,28 @@ space-panel-label {
     border: 1px solid white;
 }
 
-.board-page-left {
+.board-page-left-scroll {
     display: inline-block;
-    width: calc(50% - 264px);
+    width: 30px;
     height: 100%;
     margin: 0px;
     border: 1px solid white;
     vertical-align: top;
 }
 
+.board-page-left {
+    display: inline-block;
+    width: calc(50% - 274px);
+    height: 100%;
+    margin: 0px;
+    border: 1px solid white;
+    vertical-align: top;
+    text-align: right;
+}
+
 .board-page-right {
     display: inline-block;
-    width: calc(50% - 264px);
+    width: calc(50% - 274px);
     height: 100%;
     margin: 0px;
     border: 1px solid white;
@@ -286,4 +296,17 @@ space-panel-label {
     font-family: "Orbitron Light";
     color: lightgray;
     vertical-align: bottom;
+}
+
+.board-button-vertical {
+    display: inline-block;
+    width: 20px;
+    height: 105px;
+    padding: 5px;
+    margin: 5px;
+    border: solid 1px white;
+    background-color: rgba(40, 66, 57, 0.8);
+    border-radius: 2px;
+    font-family: "Orbitron Light";
+    color: lightgray;
 }
