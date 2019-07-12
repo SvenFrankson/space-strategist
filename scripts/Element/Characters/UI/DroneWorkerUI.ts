@@ -1,7 +1,7 @@
 class DroneWorkerUI {
 
     private _isEnabled: boolean = false;
-    private _panel: SpacePanel;
+    
     private get _ghostProp(): Prop {
         return this._ghostProps[0];
     }
@@ -75,22 +75,24 @@ class DroneWorkerUI {
     }
 
     public enable(): void {
-        this._panel = SpacePanel.CreateSpacePanel();
+        /*
         this._panel.setTarget(this.target);
         this._panel.addTitle1("WORKER");
         this._panel.addTitle2(this.target.name.toLocaleUpperCase());
         this._inventoryInput = this._panel.addTextInput("CRISTAL", this.target.inventory.toFixed(0) + "/" + this.target.carriageCapacity.toFixed(0));
         this._currentActionInput = this._panel.addTextInput("ACTION", this.target.currentAction);
-        this._panel.addLargeButton("BUILD CONTAINER", DroneWorkerUI.GetBuildingBuildCallback(this, Container));
-        this._panel.addLargeButton("BUILD TANK", DroneWorkerUI.GetBuildingBuildCallback(this, Tank));
-        this._panel.addLargeButton("BUILD TURRET", DroneWorkerUI.GetBuildingBuildCallback(this, Turret));
-        this._panel.addLargeButton("BUILD LANDING PAD", DroneWorkerUI.GetBuildingBuildCallback(this, LandingPad));
-        this._panel.addLargeButton("BUILD DOCK", DroneWorkerUI.GetBuildingBuildCallback(this, Dock));
+        */
+        Board.Instance.clearLeftPage();
+        Board.Instance.addButtonLeftPage("CONTAINER", DroneWorkerUI.GetBuildingBuildCallback(this, Container));
+        Board.Instance.addButtonLeftPage("TANK", DroneWorkerUI.GetBuildingBuildCallback(this, Tank));
+        Board.Instance.addButtonLeftPage("TURRET", DroneWorkerUI.GetBuildingBuildCallback(this, Turret));
+        Board.Instance.addButtonLeftPage("LANDING PAD", DroneWorkerUI.GetBuildingBuildCallback(this, LandingPad));
+        Board.Instance.addButtonLeftPage("DOCK", DroneWorkerUI.GetBuildingBuildCallback(this, Dock));
         if (Cheat.OmniBuilder) {
-            this._panel.addLargeButton("BUILD CRISTAL", DroneWorkerUI.GetPropBuildCallback(this, Cristal));
-            this._panel.addLargeButton("BUILD ROCK", DroneWorkerUI.GetPropBuildCallback(this, Rock));
+            Board.Instance.addButtonLeftPage("CRISTAL", DroneWorkerUI.GetPropBuildCallback(this, Cristal));
+            Board.Instance.addButtonLeftPage("ROCK", DroneWorkerUI.GetPropBuildCallback(this, Rock));
         }
-        this._panel.addLargeButton("BUILD WALL", () => {
+        Board.Instance.addButtonLeftPage("WALL", () => {
             this._ghostProp = new WallNode(BABYLON.Vector2.Zero(), Main.WallSystem);
             this._ghostProp.instantiate();
             this._ghostProp.setVisibility(0);
@@ -149,7 +151,7 @@ class DroneWorkerUI {
                 )
             }
         });
-        this._panel.addLargeButton("LOOK AT", () => { Main.CameraTarget = this.target; });
+        Board.Instance.addButtonLeftPage("LOOK AT", () => { Main.CameraTarget = this.target; });
 
         this._selector = ShapeDraw.CreateCircle(1.05, 1.2);
         this.target.getScene().onBeforeRenderObservable.add(this._update);
@@ -158,7 +160,7 @@ class DroneWorkerUI {
     }
 
     public disable(): void {
-        this._panel.dispose();
+        Board.Instance.clearLeftPage();
         this._selector.dispose();
         this.target.getScene().onBeforeRenderObservable.removeCallback(this._update);
         console.log("Disable DroneWorker Panel");
@@ -169,8 +171,8 @@ class DroneWorkerUI {
         if (!this._isEnabled) {
             return;
         }
-        this._inventoryInput.value = this.target.inventory.toFixed(0) + " / " + this.target.carriageCapacity.toFixed(0);
-        this._currentActionInput.value = this.target.currentAction;
+        //this._inventoryInput.value = this.target.inventory.toFixed(0) + " / " + this.target.carriageCapacity.toFixed(0);
+        //this._currentActionInput.value = this.target.currentAction;
     }
 
     private _update = () => {

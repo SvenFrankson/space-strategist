@@ -1774,22 +1774,24 @@ class DroneWorkerUI {
         };
     }
     enable() {
-        this._panel = SpacePanel.CreateSpacePanel();
+        /*
         this._panel.setTarget(this.target);
         this._panel.addTitle1("WORKER");
         this._panel.addTitle2(this.target.name.toLocaleUpperCase());
         this._inventoryInput = this._panel.addTextInput("CRISTAL", this.target.inventory.toFixed(0) + "/" + this.target.carriageCapacity.toFixed(0));
         this._currentActionInput = this._panel.addTextInput("ACTION", this.target.currentAction);
-        this._panel.addLargeButton("BUILD CONTAINER", DroneWorkerUI.GetBuildingBuildCallback(this, Container));
-        this._panel.addLargeButton("BUILD TANK", DroneWorkerUI.GetBuildingBuildCallback(this, Tank));
-        this._panel.addLargeButton("BUILD TURRET", DroneWorkerUI.GetBuildingBuildCallback(this, Turret));
-        this._panel.addLargeButton("BUILD LANDING PAD", DroneWorkerUI.GetBuildingBuildCallback(this, LandingPad));
-        this._panel.addLargeButton("BUILD DOCK", DroneWorkerUI.GetBuildingBuildCallback(this, Dock));
+        */
+        Board.Instance.clearLeftPage();
+        Board.Instance.addButtonLeftPage("CONTAINER", DroneWorkerUI.GetBuildingBuildCallback(this, Container));
+        Board.Instance.addButtonLeftPage("TANK", DroneWorkerUI.GetBuildingBuildCallback(this, Tank));
+        Board.Instance.addButtonLeftPage("TURRET", DroneWorkerUI.GetBuildingBuildCallback(this, Turret));
+        Board.Instance.addButtonLeftPage("LANDING PAD", DroneWorkerUI.GetBuildingBuildCallback(this, LandingPad));
+        Board.Instance.addButtonLeftPage("DOCK", DroneWorkerUI.GetBuildingBuildCallback(this, Dock));
         if (Cheat.OmniBuilder) {
-            this._panel.addLargeButton("BUILD CRISTAL", DroneWorkerUI.GetPropBuildCallback(this, Cristal));
-            this._panel.addLargeButton("BUILD ROCK", DroneWorkerUI.GetPropBuildCallback(this, Rock));
+            Board.Instance.addButtonLeftPage("CRISTAL", DroneWorkerUI.GetPropBuildCallback(this, Cristal));
+            Board.Instance.addButtonLeftPage("ROCK", DroneWorkerUI.GetPropBuildCallback(this, Rock));
         }
-        this._panel.addLargeButton("BUILD WALL", () => {
+        Board.Instance.addButtonLeftPage("WALL", () => {
             this._ghostProp = new WallNode(BABYLON.Vector2.Zero(), Main.WallSystem);
             this._ghostProp.instantiate();
             this._ghostProp.setVisibility(0);
@@ -1844,14 +1846,14 @@ class DroneWorkerUI {
                 });
             };
         });
-        this._panel.addLargeButton("LOOK AT", () => { Main.CameraTarget = this.target; });
+        Board.Instance.addButtonLeftPage("LOOK AT", () => { Main.CameraTarget = this.target; });
         this._selector = ShapeDraw.CreateCircle(1.05, 1.2);
         this.target.getScene().onBeforeRenderObservable.add(this._update);
         console.log("Enable DroneWorker Panel");
         this._isEnabled = true;
     }
     disable() {
-        this._panel.dispose();
+        Board.Instance.clearLeftPage();
         this._selector.dispose();
         this.target.getScene().onBeforeRenderObservable.removeCallback(this._update);
         console.log("Disable DroneWorker Panel");
@@ -1861,8 +1863,8 @@ class DroneWorkerUI {
         if (!this._isEnabled) {
             return;
         }
-        this._inventoryInput.value = this.target.inventory.toFixed(0) + " / " + this.target.carriageCapacity.toFixed(0);
-        this._currentActionInput.value = this.target.currentAction;
+        //this._inventoryInput.value = this.target.inventory.toFixed(0) + " / " + this.target.carriageCapacity.toFixed(0);
+        //this._currentActionInput.value = this.target.currentAction;
     }
     onMouseMove(currentPoint) {
         if (this._ghostProp) {
@@ -2958,42 +2960,9 @@ class WallSystem extends BABYLON.TransformNode {
         }
     }
 }
-class WallNodeUI {
-    constructor(target) {
-        this.target = target;
-    }
-    enable() {
-        console.log("WallNodeUI enable !");
-        this._panel = SpacePanel.CreateSpacePanel();
-        this._panel.setTarget(this.target);
-        this._panel.addTitle1(this.target.elementName().toLocaleUpperCase());
-        this._panel.addTitle2(this.target.name.toLocaleUpperCase());
-        this._panel.addLargeButton("LOOK AT", () => { Main.CameraTarget = this.target; });
-        this._selector = ShapeDraw.CreateCircle(this.target.groundWidth * Math.SQRT2 * 0.5, this.target.groundWidth * Math.SQRT2 * 0.5 + 0.15);
-        this._selector.position.copyFromFloats(this.target.position2D.x, 0.1, this.target.position2D.y);
-    }
-    disable() {
-        this._panel.dispose();
-        this._selector.dispose();
-    }
+class WallNodeUI extends PropUI {
 }
-class WallUI {
-    constructor(target) {
-        this.target = target;
-    }
-    enable() {
-        this._panel = SpacePanel.CreateSpacePanel();
-        this._panel.setTarget(this.target);
-        this._panel.addTitle1(this.target.elementName().toLocaleUpperCase());
-        this._panel.addTitle2(this.target.name.toLocaleUpperCase());
-        this._panel.addLargeButton("LOOK AT", () => { Main.CameraTarget = this.target; });
-        this._selector = ShapeDraw.CreateCircle(this.target.groundWidth * Math.SQRT2 * 0.5, this.target.groundWidth * Math.SQRT2 * 0.5 + 0.15);
-        this._selector.position.copyFromFloats(this.target.position2D.x, 0.1, this.target.position2D.y);
-    }
-    disable() {
-        this._panel.dispose();
-        this._selector.dispose();
-    }
+class WallUI extends PropUI {
 }
 class VertexDataLoader {
     constructor(scene) {
@@ -4507,6 +4476,48 @@ class Ground extends BABYLON.Mesh {
         data.uvs = uvs;
         data.normals = normals;
         data.applyToMesh(this);
+    }
+}
+class Board {
+    static get Instance() {
+        if (!Board._Instance) {
+            Board._Instance = new Board();
+        }
+        return Board._Instance;
+    }
+    constructor() {
+        let main = document.createElement("div");
+        main.classList.add("board");
+        document.body.appendChild(main);
+        let innerBoard = document.createElement("div");
+        innerBoard.classList.add("board-inner-border");
+        main.appendChild(innerBoard);
+        this._leftDiv = document.createElement("div");
+        this._leftDiv.classList.add("board-left");
+        innerBoard.appendChild(this._leftDiv);
+        this._leftPageDiv = document.createElement("div");
+        this._leftPageDiv.classList.add("board-page-left");
+        innerBoard.appendChild(this._leftPageDiv);
+        this._rightPageDiv = document.createElement("div");
+        this._rightPageDiv.classList.add("board-page-right");
+        innerBoard.appendChild(this._rightPageDiv);
+        this._rightDiv = document.createElement("div");
+        this._rightDiv.classList.add("board-right");
+        innerBoard.appendChild(this._rightDiv);
+    }
+    clearLeftPage() {
+        while (this._leftPageDiv.childElementCount > 0) {
+            this._leftPageDiv.removeChild(this._leftPageDiv.firstChild);
+        }
+    }
+    addButtonLeftPage(value, onClickCallback) {
+        let button = document.createElement("button");
+        button.classList.add("board-button");
+        this._leftPageDiv.appendChild(button);
+        button.addEventListener("click", () => {
+            onClickCallback();
+        });
+        button.textContent = value;
     }
 }
 class SpacePanel extends HTMLElement {
