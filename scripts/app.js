@@ -1781,6 +1781,8 @@ class DroneWorkerUI {
         this._inventoryInput = this._panel.addTextInput("CRISTAL", this.target.inventory.toFixed(0) + "/" + this.target.carriageCapacity.toFixed(0));
         this._currentActionInput = this._panel.addTextInput("ACTION", this.target.currentAction);
         */
+        Board.Instance.clearLeft();
+        Board.Instance.setLeftTitle("WORKER");
         Board.Instance.clearLeftPage();
         Board.Instance.addButtonLeftPage("CONTAINER", DroneWorkerUI.GetBuildingBuildCallback(this, Container));
         Board.Instance.addButtonLeftPage("TANK", DroneWorkerUI.GetBuildingBuildCallback(this, Tank));
@@ -1854,6 +1856,7 @@ class DroneWorkerUI {
         this._isEnabled = true;
     }
     disable() {
+        Board.Instance.clearLeft();
         Board.Instance.clearLeftPage();
         this._selector.dispose();
         this.target.getScene().onBeforeRenderObservable.removeCallback(this._update);
@@ -4492,6 +4495,17 @@ class Board {
         this._leftDiv = document.createElement("div");
         this._leftDiv.classList.add("board-left");
         innerBoard.appendChild(this._leftDiv);
+        let titleLine = document.createElement("div");
+        titleLine.classList.add("space-title-1-line");
+        this._leftTitle = document.createElement("h1");
+        this._leftTitle.classList.add("space-title-1");
+        this._leftTitle.textContent = "";
+        titleLine.appendChild(this._leftTitle);
+        this._leftTitleShadow = document.createElement("span");
+        this._leftTitleShadow.classList.add("space-title-1-shadow");
+        this._leftTitleShadow.textContent = "";
+        titleLine.appendChild(this._leftTitleShadow);
+        this._leftDiv.appendChild(titleLine);
         this._leftPageDiv = document.createElement("div");
         this._leftPageDiv.classList.add("board-page-left");
         innerBoard.appendChild(this._leftPageDiv);
@@ -4524,6 +4538,13 @@ class Board {
             Board._Instance = new Board();
         }
         return Board._Instance;
+    }
+    clearLeft() {
+        this.setLeftTitle("");
+    }
+    setLeftTitle(s) {
+        this._leftTitle.textContent = s;
+        this._leftTitleShadow.textContent = s;
     }
     clearLeftPage() {
         while (this._leftPageDiv.childElementCount > 0) {

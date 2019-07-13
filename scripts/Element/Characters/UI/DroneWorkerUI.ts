@@ -82,6 +82,8 @@ class DroneWorkerUI {
         this._inventoryInput = this._panel.addTextInput("CRISTAL", this.target.inventory.toFixed(0) + "/" + this.target.carriageCapacity.toFixed(0));
         this._currentActionInput = this._panel.addTextInput("ACTION", this.target.currentAction);
         */
+        Board.Instance.clearLeft();
+        Board.Instance.setLeftTitle("WORKER");
         Board.Instance.clearLeftPage();
         Board.Instance.addButtonLeftPage("CONTAINER", DroneWorkerUI.GetBuildingBuildCallback(this, Container));
         Board.Instance.addButtonLeftPage("TANK", DroneWorkerUI.GetBuildingBuildCallback(this, Tank));
@@ -161,6 +163,7 @@ class DroneWorkerUI {
     }
 
     public disable(): void {
+        Board.Instance.clearLeft();
         Board.Instance.clearLeftPage();
         this._selector.dispose();
         this.target.getScene().onBeforeRenderObservable.removeCallback(this._update);

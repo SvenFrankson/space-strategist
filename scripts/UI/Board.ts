@@ -9,9 +9,13 @@ class Board {
     }
 
     private _leftDiv: HTMLDivElement;
+    private _leftTitle: HTMLHeadingElement;
+    private _leftTitleShadow: HTMLSpanElement;
+
     private _leftPageDiv: HTMLDivElement;
     private _leftPageUp: HTMLButtonElement;
     private _leftPageDown: HTMLButtonElement;
+
     private _rightPageDiv: HTMLDivElement;
     private _rightDiv: HTMLDivElement;
 
@@ -27,6 +31,18 @@ class Board {
         this._leftDiv = document.createElement("div");
         this._leftDiv.classList.add("board-left");
         innerBoard.appendChild(this._leftDiv);
+
+        let titleLine = document.createElement("div");
+        titleLine.classList.add("space-title-1-line");
+        this._leftTitle = document.createElement("h1");
+        this._leftTitle.classList.add("space-title-1");
+        this._leftTitle.textContent = "";
+        titleLine.appendChild(this._leftTitle);
+        this._leftTitleShadow = document.createElement("span");
+        this._leftTitleShadow.classList.add("space-title-1-shadow");
+        this._leftTitleShadow.textContent = "";
+        titleLine.appendChild(this._leftTitleShadow);
+        this._leftDiv.appendChild(titleLine);
 
         this._leftPageDiv = document.createElement("div");
         this._leftPageDiv.classList.add("board-page-left");
@@ -66,6 +82,15 @@ class Board {
         this._rightDiv.classList.add("board-right");
         innerBoard.appendChild(this._rightDiv);
     }
+
+    public clearLeft(): void {
+        this.setLeftTitle("");
+    }
+
+    public setLeftTitle(s: string): void {
+        this._leftTitle.textContent = s;
+        this._leftTitleShadow.textContent = s;
+    } 
 
     public clearLeftPage(): void {
         while (this._leftPageDiv.childElementCount > 0) {
