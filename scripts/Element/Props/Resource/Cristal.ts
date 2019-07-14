@@ -42,7 +42,7 @@ class Cristal extends ResourceSpot {
                 this.height = Math.max(this.height, y);
             }
         }
-        this.groundWidth = 6;
+        this.groundWidth = 8;
     }
 
     public elementName(): string {

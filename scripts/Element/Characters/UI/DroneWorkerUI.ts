@@ -92,68 +92,72 @@ class DroneWorkerUI {
         Board.Instance.addButtonLeftPage("LANDING PAD", DroneWorkerUI.GetBuildingBuildCallback(this, LandingPad), "/datas/miniatures/LandingPad-miniature.png");
         Board.Instance.addButtonLeftPage("DOCK", DroneWorkerUI.GetBuildingBuildCallback(this, Dock), "/datas/miniatures/Dock-miniature.png");
         if (Cheat.OmniBuilder) {
-            Board.Instance.addButtonLeftPage("CRISTAL", DroneWorkerUI.GetPropBuildCallback(this, Cristal));
-            Board.Instance.addButtonLeftPage("ROCK", DroneWorkerUI.GetPropBuildCallback(this, Rock));
+            Board.Instance.addButtonLeftPage("CRISTAL", DroneWorkerUI.GetPropBuildCallback(this, Cristal), "/datas/miniatures/Cristal-miniature.png");
+            Board.Instance.addButtonLeftPage("ROCK", DroneWorkerUI.GetPropBuildCallback(this, Rock), "/datas/miniatures/Rock-miniature.png");
         }
-        Board.Instance.addButtonLeftPage("WALL", () => {
-            this._ghostProp = new WallNode(BABYLON.Vector2.Zero(), Main.WallSystem);
-            this._ghostProp.instantiate();
-            this._ghostProp.setVisibility(0);
-            this._ghostProp.isPickable = false;
-            this._onRightClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
-                this._ghostProp.dispose();
-                this._ghostProp = undefined;
-                let newWallOrigin: WallNode;
-                let newWallOriginNeedsBuild: boolean = false;
-                if (pickedTarget && pickedTarget instanceof WallNode) {
-                    newWallOrigin = pickedTarget;
-                }
-                else {
-                    newWallOrigin = new WallNode(pickedPoint, Main.WallSystem);
-                    newWallOrigin.instantiate();
-                    this._ghostProp = newWallOrigin;
-                    newWallOriginNeedsBuild = true;
-                }
-                // Go to second WallNode next frame. TODO.
-                let newWallEnd = new WallNode(BABYLON.Vector2.Zero(), Main.WallSystem);
-                newWallEnd.setVisibility(0);
-                newWallEnd.isPickable = false;
-
-                let newWall = new Wall(newWallOrigin, newWallEnd);
-
-                this._ghostProps.splice(0, 0, newWallEnd, newWall);
-                requestAnimationFrame(
-                    () => {
-                        this._onRightClickOverride = async (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
-                            let newWallEndNeedsBuild: boolean = false;
-                            if (pickedTarget && pickedTarget instanceof WallNode) {
-                                newWallEnd.dispose();
-                                newWallEnd = pickedTarget;
-                                newWall.dispose();
-                                newWall = new Wall(newWallOrigin, newWallEnd);
-                                newWallEndNeedsBuild = false;
-                            }
-                            else {
-                                newWallEndNeedsBuild = true;
-                            }
-                            for (let i = 0; i < this._ghostProps.length; i++) {
-                                this._ghostProps[i].setVisibility(1);
-                                this._ghostProps[i].isPickable = true;
-                            }
-                            if (newWallOriginNeedsBuild) {
-                                newWallOrigin.position.y = - 100;
-                            }
-                            await newWall.instantiateBuilding();
-                            if (newWallEndNeedsBuild) {
-                                newWallEnd.position.y = - 100;
-                            }
-                            this.target.currentTask = new BuildTask(this.target, newWall);
-                            this._ghostProp = undefined;
-                        }
+        Board.Instance.addButtonLeftPage(
+            "WALL",
+            () => {
+                this._ghostProp = new WallNode(BABYLON.Vector2.Zero(), Main.WallSystem);
+                this._ghostProp.instantiate();
+                this._ghostProp.setVisibility(0);
+                this._ghostProp.isPickable = false;
+                this._onRightClickOverride = (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
+                    this._ghostProp.dispose();
+                    this._ghostProp = undefined;
+                    let newWallOrigin: WallNode;
+                    let newWallOriginNeedsBuild: boolean = false;
+                    if (pickedTarget && pickedTarget instanceof WallNode) {
+                        newWallOrigin = pickedTarget;
                     }
-                )
-            }
-        });
+                    else {
+                        newWallOrigin = new WallNode(pickedPoint, Main.WallSystem);
+                        newWallOrigin.instantiate();
+                        this._ghostProp = newWallOrigin;
+                        newWallOriginNeedsBuild = true;
+                    }
+                    // Go to second WallNode next frame. TODO.
+                    let newWallEnd = new WallNode(BABYLON.Vector2.Zero(), Main.WallSystem);
+                    newWallEnd.setVisibility(0);
+                    newWallEnd.isPickable = false;
+
+                    let newWall = new Wall(newWallOrigin, newWallEnd);
+
+                    this._ghostProps.splice(0, 0, newWallEnd, newWall);
+                    requestAnimationFrame(
+                        () => {
+                            this._onRightClickOverride = async (pickedPoint: BABYLON.Vector2, pickedTarget: Selectionable) => {
+                                let newWallEndNeedsBuild: boolean = false;
+                                if (pickedTarget && pickedTarget instanceof WallNode) {
+                                    newWallEnd.dispose();
+                                    newWallEnd = pickedTarget;
+                                    newWall.dispose();
+                                    newWall = new Wall(newWallOrigin, newWallEnd);
+                                    newWallEndNeedsBuild = false;
+                                }
+                                else {
+                                    newWallEndNeedsBuild = true;
+                                }
+                                for (let i = 0; i < this._ghostProps.length; i++) {
+                                    this._ghostProps[i].setVisibility(1);
+                                    this._ghostProps[i].isPickable = true;
+                                }
+                                if (newWallOriginNeedsBuild) {
+                                    newWallOrigin.position.y = - 100;
+                                }
+                                await newWall.instantiateBuilding();
+                                if (newWallEndNeedsBuild) {
+                                    newWallEnd.position.y = - 100;
+                                }
+                                this.target.currentTask = new BuildTask(this.target, newWall);
+                                this._ghostProp = undefined;
+                            }
+                        }
+                    )
+                }
+            },
+            "/datas/miniatures/Wall-miniature.png"
+        );
         Board.Instance.addButtonLeftPage("LOOK AT", () => { Main.CameraTarget = this.target; });
         Board.Instance.updateLeftPageLayout();
 

@@ -82,7 +82,7 @@ class Wall extends Building {
             vertexData.positions[3 * i] = cosDir * x - sinDir * z;
             vertexData.positions[3 * i + 2] = sinDir *x + cosDir * z; 
         }
-        this.groundWidth = 2;
+        this.groundWidth = l;
         this.height = - Infinity;
         for (let i = 0; i < vertexData.positions.length / 3; i++) {
             let y = vertexData.positions[3 * i + 1];

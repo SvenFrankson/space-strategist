@@ -2,15 +2,27 @@
 
 class Miniature extends Main {
 
-	public target: Draggable;
+	public targets: Draggable[] = [];
 
 	public updateCameraPosition(): void {
 		Main.Camera.lowerRadiusLimit = 0.01;
 		Main.Camera.upperRadiusLimit = 1000;
-		Main.Camera.target = new BABYLON.Vector3(0, this.target.height / 2, 0);
+		let height = 0;
+		this.targets.forEach(
+			t => {
+				height = Math.max(height, t.height);
+			}
+		)
+		let groundWidth = 0;
+		this.targets.forEach(
+			t => {
+				groundWidth = Math.max(groundWidth, t.groundWidth + t.position.length());
+			}
+		)
+		Main.Camera.target = new BABYLON.Vector3(0, height / 2, 0);
 		let cameraPosition = new BABYLON.Vector3(- 1, 0.5, 1);
-		cameraPosition.scaleInPlace(Math.max(this.target.height, this.target.groundWidth) * 1.5);
-		cameraPosition.y += this.target.height / 2;
+		cameraPosition.scaleInPlace(Math.max(height, groundWidth) * 1.5);
+		cameraPosition.y += height / 2;
 		Main.Camera.setPosition(cameraPosition);
 	}
 
@@ -36,11 +48,14 @@ class Miniature extends Main {
 		await this.createProp("LandingPad");
 		await this.createProp("Dock");
 		await this.createProp("Turret");
+		await this.createProp("Cristal");
+		await this.createProp("Rock");
+		await this.createWall();
 	}
 
 	public async createWorker(): Promise<void> {
-		if (this.target) {
-			this.target.dispose();
+		while (this.targets.length > 0) {
+			this.targets.pop().dispose();
 		}
 		let worker = new DroneWorker(Main.Player);
 		await worker.instantiate(
@@ -50,14 +65,14 @@ class Miniature extends Main {
 			"#ff00ff",
 			"#ffff00"
 		);
-		this.target = worker;
+		this.targets.push(worker);
 		this.updateCameraPosition();
-		await this.makeScreenShot();
+		await this.makeScreenShot("Worker");
 	}
 
 	public async createProp(elementName: string): Promise<void> {
-		if (this.target) {
-			this.target.dispose();
+		while (this.targets.length > 0) {
+			this.targets.pop().dispose();
 		}
 		let data: PropData = new PropData();
 		data.elementName = elementName;
@@ -69,12 +84,26 @@ class Miniature extends Main {
 			"#ff00ff",
 			"#ffff00"
 		);
-		this.target = prop;
+		this.targets.push(prop);
 		this.updateCameraPosition();
 		await this.makeScreenShot();
 	}
 
-	public async makeScreenShot(): Promise<void> {
+	public async createWall(): Promise<void> {
+		while (this.targets.length > 0) {
+			this.targets.pop().dispose();
+		}
+		let node1 = new WallNode(new BABYLON.Vector2(-3, -3), Main.WallSystem);
+		let node2 = new WallNode(new BABYLON.Vector2(-3, 3), Main.WallSystem);
+		let node3 = new WallNode(new BABYLON.Vector2(3, 3), Main.WallSystem);
+		let node4 = new WallNode(new BABYLON.Vector2(3, - 3), Main.WallSystem);
+		this.targets.push(node1, node2, node3, new Wall(node1, node2), new Wall(node2, node3), new Wall(node3, node4), new Wall(node4, node1));
+		await Main.WallSystem.instantiate();
+		this.updateCameraPosition();
+		await this.makeScreenShot("Wall");
+	}
+
+	public async makeScreenShot(miniatureName?: string): Promise<void> {
 		return new Promise<void>(
 			resolve => {
 				requestAnimationFrame(
@@ -148,9 +177,15 @@ class Miniature extends Main {
 									context.putImageData(data, 0, 0);
 
 									var tmpLink = document.createElement( 'a' );
-									let name = "Worker";
-									if (this.target instanceof Prop) {
-										name = this.target.elementName();
+									let name = "Unknown";
+									if (miniatureName) {
+										name = miniatureName;
+									}
+									else {
+										let firstTarget = this.targets[0];
+										if (firstTarget instanceof Prop) {
+											name = firstTarget.elementName();
+										}
 									}
 									tmpLink.download = name + "-miniature.png";
 									tmpLink.href = canvas.toDataURL();  

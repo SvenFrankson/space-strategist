@@ -1794,8 +1794,8 @@ class DroneWorkerUI {
         Board.Instance.addButtonLeftPage("LANDING PAD", DroneWorkerUI.GetBuildingBuildCallback(this, LandingPad), "/datas/miniatures/LandingPad-miniature.png");
         Board.Instance.addButtonLeftPage("DOCK", DroneWorkerUI.GetBuildingBuildCallback(this, Dock), "/datas/miniatures/Dock-miniature.png");
         if (Cheat.OmniBuilder) {
-            Board.Instance.addButtonLeftPage("CRISTAL", DroneWorkerUI.GetPropBuildCallback(this, Cristal));
-            Board.Instance.addButtonLeftPage("ROCK", DroneWorkerUI.GetPropBuildCallback(this, Rock));
+            Board.Instance.addButtonLeftPage("CRISTAL", DroneWorkerUI.GetPropBuildCallback(this, Cristal), "/datas/miniatures/Cristal-miniature.png");
+            Board.Instance.addButtonLeftPage("ROCK", DroneWorkerUI.GetPropBuildCallback(this, Rock), "/datas/miniatures/Rock-miniature.png");
         }
         Board.Instance.addButtonLeftPage("WALL", () => {
             this._ghostProp = new WallNode(BABYLON.Vector2.Zero(), Main.WallSystem);
@@ -1851,7 +1851,7 @@ class DroneWorkerUI {
                     };
                 });
             };
-        });
+        }, "/datas/miniatures/Wall-miniature.png");
         Board.Instance.addButtonLeftPage("LOOK AT", () => { Main.CameraTarget = this.target; });
         Board.Instance.updateLeftPageLayout();
         this._selector = ShapeDraw.CreateCircle(1.05, 1.2);
@@ -2450,19 +2450,25 @@ class PropUI {
         this.target = target;
     }
     enable() {
+        /*
         this._panel = SpacePanel.CreateSpacePanel();
         this._panel.setTarget(this.target);
         this._panel.addTitle1(this.target.elementName().toLocaleUpperCase());
         this._panel.addTitle2(this.target.name.toLocaleUpperCase());
-        this._onEnable();
         this._panel.addLargeButton("LOOK AT", () => { Main.CameraTarget = this.target; });
+        */
+        Board.Instance.clearLeft();
+        Board.Instance.setLeftTitle(this.target.elementName().toLocaleUpperCase());
+        Board.Instance.setMiniature("datas/miniatures/" + this.target.elementName() + "-miniature.png");
+        Board.Instance.clearLeftPage();
+        this._onEnable();
         this._selector = ShapeDraw.CreateCircle(this.target.groundWidth * Math.SQRT2 * 0.5, this.target.groundWidth * Math.SQRT2 * 0.5 + 0.15);
         this._selector.position.copyFromFloats(this.target.position2D.x, 0.1, this.target.position2D.y);
     }
     _onEnable() { }
     ;
     disable() {
-        this._panel.dispose();
+        //this._panel.dispose();
         this._selector.dispose();
         this._onDisable();
     }
@@ -2474,15 +2480,19 @@ class ContainerUI extends PropUI {
     constructor() {
         super(...arguments);
         this._update = () => {
+            /*
             this._rockInput.value = this.target.owner.currentRock.toFixed(0);
             this._steelInput.value = this.target.owner.currentSteel.toFixed(0);
             this._cristalInput.value = this.target.owner.currentCristal.toFixed(0);
+            */
         };
     }
     _onEnable() {
+        /*
         this._rockInput = this._panel.addTextInput("ROCK", this.target.owner.currentRock.toFixed(0));
         this._steelInput = this._panel.addTextInput("STEEL", this.target.owner.currentSteel.toFixed(0));
         this._cristalInput = this._panel.addTextInput("CRISTAL", this.target.owner.currentCristal.toFixed(0));
+        */
         this.target.getScene().onBeforeRenderObservable.add(this._update);
     }
     _onDisable() {
@@ -2530,7 +2540,7 @@ class Cristal extends ResourceSpot {
                 this.height = Math.max(this.height, y);
             }
         }
-        this.groundWidth = 6;
+        this.groundWidth = 8;
     }
     elementName() {
         return "Cristal";
@@ -2571,7 +2581,7 @@ class Rock extends ResourceSpot {
                 this.height = Math.max(this.height, y);
             }
         }
-        this.groundWidth = 6;
+        this.groundWidth = 8;
     }
     elementName() {
         return "Rock";
@@ -2644,7 +2654,7 @@ class Wall extends Building {
             vertexData.positions[3 * i] = cosDir * x - sinDir * z;
             vertexData.positions[3 * i + 2] = sinDir * x + cosDir * z;
         }
-        this.groundWidth = 2;
+        this.groundWidth = l;
         this.height = -Infinity;
         for (let i = 0; i < vertexData.positions.length / 3; i++) {
             let y = vertexData.positions[3 * i + 1];
@@ -3363,13 +3373,25 @@ window.addEventListener("DOMContentLoaded", async () => {
 });
 /// <reference path="Main.ts"/>
 class Miniature extends Main {
+    constructor() {
+        super(...arguments);
+        this.targets = [];
+    }
     updateCameraPosition() {
         Main.Camera.lowerRadiusLimit = 0.01;
         Main.Camera.upperRadiusLimit = 1000;
-        Main.Camera.target = new BABYLON.Vector3(0, this.target.height / 2, 0);
+        let height = 0;
+        this.targets.forEach(t => {
+            height = Math.max(height, t.height);
+        });
+        let groundWidth = 0;
+        this.targets.forEach(t => {
+            groundWidth = Math.max(groundWidth, t.groundWidth + t.position.length());
+        });
+        Main.Camera.target = new BABYLON.Vector3(0, height / 2, 0);
         let cameraPosition = new BABYLON.Vector3(-1, 0.5, 1);
-        cameraPosition.scaleInPlace(Math.max(this.target.height, this.target.groundWidth) * 1.5);
-        cameraPosition.y += this.target.height / 2;
+        cameraPosition.scaleInPlace(Math.max(height, groundWidth) * 1.5);
+        cameraPosition.y += height / 2;
         Main.Camera.setPosition(cameraPosition);
     }
     async initialize() {
@@ -3389,30 +3411,46 @@ class Miniature extends Main {
         await this.createProp("LandingPad");
         await this.createProp("Dock");
         await this.createProp("Turret");
+        await this.createProp("Cristal");
+        await this.createProp("Rock");
+        await this.createWall();
     }
     async createWorker() {
-        if (this.target) {
-            this.target.dispose();
+        while (this.targets.length > 0) {
+            this.targets.pop().dispose();
         }
         let worker = new DroneWorker(Main.Player);
         await worker.instantiate("#ffffff", "#404040", "#00ffff", "#ff00ff", "#ffff00");
-        this.target = worker;
+        this.targets.push(worker);
         this.updateCameraPosition();
-        await this.makeScreenShot();
+        await this.makeScreenShot("Worker");
     }
     async createProp(elementName) {
-        if (this.target) {
-            this.target.dispose();
+        while (this.targets.length > 0) {
+            this.targets.pop().dispose();
         }
         let data = new PropData();
         data.elementName = elementName;
         let prop = Prop.Deserialize(data);
         await prop.instantiate("#ffffff", "#404040", "#00ffff", "#ff00ff", "#ffff00");
-        this.target = prop;
+        this.targets.push(prop);
         this.updateCameraPosition();
         await this.makeScreenShot();
     }
-    async makeScreenShot() {
+    async createWall() {
+        while (this.targets.length > 0) {
+            this.targets.pop().dispose();
+        }
+        let node1 = new WallNode(new BABYLON.Vector2(-3, -3), Main.WallSystem);
+        let node2 = new WallNode(new BABYLON.Vector2(-3, 3), Main.WallSystem);
+        let node3 = new WallNode(new BABYLON.Vector2(3, 3), Main.WallSystem);
+        let node4 = new WallNode(new BABYLON.Vector2(3, -3), Main.WallSystem);
+        this.targets.push(node1, node2, node3, new Wall(node1, node2), new Wall(node2, node3), new Wall(node3, node4), new Wall(node4, node1));
+        await Main.WallSystem.instantiate();
+        this.updateCameraPosition();
+        await this.makeScreenShot("Wall");
+    }
+    async makeScreenShot(miniatureName) {
         return new Promise(resolve => {
             requestAnimationFrame(() => {
                 BABYLON.ScreenshotTools.CreateScreenshot(Main.Engine, Main.Camera, {
@@ -3478,9 +3516,15 @@ class Miniature extends Main {
                         }
                         context.putImageData(data, 0, 0);
                         var tmpLink = document.createElement('a');
-                        let name = "Worker";
-                        if (this.target instanceof Prop) {
-                            name = this.target.elementName();
+                        let name = "Unknown";
+                        if (miniatureName) {
+                            name = miniatureName;
+                        }
+                        else {
+                            let firstTarget = this.targets[0];
+                            if (firstTarget instanceof Prop) {
+                                name = firstTarget.elementName();
+                            }
                         }
                         tmpLink.download = name + "-miniature.png";
                         tmpLink.href = canvas.toDataURL();
