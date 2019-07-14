@@ -21,7 +21,10 @@ class PropUI {
         Board.Instance.clearLeft();
         Board.Instance.setLeftTitle(this.target.elementName().toLocaleUpperCase());
         Board.Instance.setMiniature("datas/miniatures/" + this.target.elementName() + "-miniature.png");
+
         Board.Instance.clearLeftPage();
+        Board.Instance.addButtonLeftPage("RECYCLE", () => { this.target.dispose(); }, "/datas/miniatures/Trash-miniature.png");
+        Board.Instance.updateLeftPageLayout();
 
         this._onEnable();
 

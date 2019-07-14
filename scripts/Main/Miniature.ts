@@ -54,6 +54,7 @@ class Miniature extends Main {
 		await this.createBuildCivilian();
 		await this.createBuildMilitary();
 		await this.createBuildProp();
+		await this.createProp("Trash");
 	}
 
 	public async createWorker(): Promise<void> {
@@ -100,7 +101,7 @@ class Miniature extends Main {
 		let node2 = new WallNode(new BABYLON.Vector2(-3, 3), Main.WallSystem);
 		let node3 = new WallNode(new BABYLON.Vector2(3, 3), Main.WallSystem);
 		let node4 = new WallNode(new BABYLON.Vector2(3, - 3), Main.WallSystem);
-		this.targets.push(node1, node2, node3, new Wall(node1, node2), new Wall(node2, node3), new Wall(node3, node4), new Wall(node4, node1));
+		this.targets.push(node1, node2, node3, node4, new Wall(node1, node2), new Wall(node2, node3), new Wall(node3, node4), new Wall(node4, node1));
 		await Main.WallSystem.instantiate();
 		this.updateCameraPosition();
 		await this.makeScreenShot("Wall");

@@ -2007,6 +2007,9 @@ class Prop extends Draggable {
         if (data.elementName === "Dock") {
             return new Dock(data.name, owner, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
         }
+        if (data.elementName === "Trash") {
+            return new Trash(data.name, owner, new BABYLON.Vector2(data.position2D.x, data.position2D.y), data.rotation2D);
+        }
         return undefined;
     }
     async elasticBounce(duration = 1) {
@@ -2326,6 +2329,33 @@ class Tank extends Building {
         return "Tank";
     }
 }
+class Trash extends Building {
+    constructor(name, owner, position2D, rotation2D) {
+        super(name, owner, position2D, rotation2D);
+        if (this.name === "") {
+            let trashCount = this.getScene().meshes.filter((m) => { return m instanceof Trash; }).length;
+            this.name = "trash-" + trashCount;
+        }
+        this.resourcesAvailableRequired.get(ResourceType.Steel).required = 20;
+        this.resourcesAvailableRequired.get(ResourceType.Rock).required = 10;
+        this.completionRequired = 10;
+        this.obstacle = Obstacle.CreateRectWithPosRotSource(this, 2, 4);
+        this.obstacle.name = name + "-obstacle";
+    }
+    async instantiate(baseColorHex = "#ce7633", frameColorHex = "#383838", color1Hex = "#6d6d6d", // Replace red
+        color2Hex = "#c94022", // Replace green
+        color3Hex = "#1c1c1c" // Replace blue
+    ) {
+        let vertexData = await VertexDataLoader.instance.getColorized("Trash", baseColorHex, frameColorHex, color1Hex, color2Hex, color3Hex);
+        this.height = 4;
+        this.groundWidth = 4;
+        vertexData.applyToMesh(this);
+        this.material = Main.cellShadingMaterial;
+    }
+    elementName() {
+        return "Trash";
+    }
+}
 class Turret extends Building {
     constructor(name, owner, position2D, rotation2D) {
         super(name, owner, position2D, rotation2D);
@@ -2477,6 +2507,8 @@ class PropUI {
         Board.Instance.setLeftTitle(this.target.elementName().toLocaleUpperCase());
         Board.Instance.setMiniature("datas/miniatures/" + this.target.elementName() + "-miniature.png");
         Board.Instance.clearLeftPage();
+        Board.Instance.addButtonLeftPage("RECYCLE", () => { this.target.dispose(); }, "/datas/miniatures/Trash-miniature.png");
+        Board.Instance.updateLeftPageLayout();
         this._onEnable();
         this._selector = ShapeDraw.CreateCircle(this.target.groundWidth * Math.SQRT2 * 0.5, this.target.groundWidth * Math.SQRT2 * 0.5 + 0.15);
         this._selector.position.copyFromFloats(this.target.position2D.x, 0.1, this.target.position2D.y);
@@ -3433,6 +3465,7 @@ class Miniature extends Main {
         await this.createBuildCivilian();
         await this.createBuildMilitary();
         await this.createBuildProp();
+        await this.createProp("Trash");
     }
     async createWorker() {
         while (this.targets.length > 0) {
@@ -3464,7 +3497,7 @@ class Miniature extends Main {
         let node2 = new WallNode(new BABYLON.Vector2(-3, 3), Main.WallSystem);
         let node3 = new WallNode(new BABYLON.Vector2(3, 3), Main.WallSystem);
         let node4 = new WallNode(new BABYLON.Vector2(3, -3), Main.WallSystem);
-        this.targets.push(node1, node2, node3, new Wall(node1, node2), new Wall(node2, node3), new Wall(node3, node4), new Wall(node4, node1));
+        this.targets.push(node1, node2, node3, node4, new Wall(node1, node2), new Wall(node2, node3), new Wall(node3, node4), new Wall(node4, node1));
         await Main.WallSystem.instantiate();
         this.updateCameraPosition();
         await this.makeScreenShot("Wall");
