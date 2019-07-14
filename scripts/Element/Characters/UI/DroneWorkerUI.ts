@@ -85,17 +85,36 @@ class DroneWorkerUI {
         Board.Instance.clearLeft();
         Board.Instance.setLeftTitle("WORKER");
         Board.Instance.setMiniature("datas/miniatures/Worker-miniature.png");
+
         Board.Instance.clearLeftPage();
-        Board.Instance.addButtonLeftPage("CONTAINER", DroneWorkerUI.GetBuildingBuildCallback(this, Container), "/datas/miniatures/Container-miniature.png");
-        Board.Instance.addButtonLeftPage("TANK", DroneWorkerUI.GetBuildingBuildCallback(this, Tank), "/datas/miniatures/Tank-miniature.png");
-        Board.Instance.addButtonLeftPage("TURRET", DroneWorkerUI.GetBuildingBuildCallback(this, Turret), "/datas/miniatures/Turret-miniature.png");
-        Board.Instance.addButtonLeftPage("LANDING PAD", DroneWorkerUI.GetBuildingBuildCallback(this, LandingPad), "/datas/miniatures/LandingPad-miniature.png");
-        Board.Instance.addButtonLeftPage("DOCK", DroneWorkerUI.GetBuildingBuildCallback(this, Dock), "/datas/miniatures/Dock-miniature.png");
+        
+        Board.Instance.addButtonLeftPage("BUILD CIVILIAN", () => { this.buildCivilianPage(); }, "/datas/miniatures/BuildCivilian-miniature.png");
+        Board.Instance.addButtonLeftPage("BUILD MILITARY", () => { this.buildMilitaryPage(); }, "/datas/miniatures/BuildMilitary-miniature.png");
         if (Cheat.OmniBuilder) {
-            Board.Instance.addButtonLeftPage("CRISTAL", DroneWorkerUI.GetPropBuildCallback(this, Cristal), "/datas/miniatures/Cristal-miniature.png");
-            Board.Instance.addButtonLeftPage("ROCK", DroneWorkerUI.GetPropBuildCallback(this, Rock), "/datas/miniatures/Rock-miniature.png");
+            Board.Instance.addButtonLeftPage("BUILD PROP", () => { this.buildPropPage(); }, "/datas/miniatures/BuildProp-miniature.png");
         }
-        Board.Instance.addButtonLeftPage(
+        Board.Instance.addButtonLeftPage("LOOK AT", () => { Main.CameraTarget = this.target; });
+        Board.Instance.updateLeftPageLayout();
+
+        this._selector = ShapeDraw.CreateCircle(1.05, 1.2);
+        this.target.getScene().onBeforeRenderObservable.add(this._update);
+        console.log("Enable DroneWorker Panel");
+        this._isEnabled = true;
+    }
+
+    public buildCivilianPage(): void {
+        Board.Instance.clearRightPage();
+        Board.Instance.addButtonRightPage("CONTAINER", DroneWorkerUI.GetBuildingBuildCallback(this, Container), "/datas/miniatures/Container-miniature.png");
+        Board.Instance.addButtonRightPage("TANK", DroneWorkerUI.GetBuildingBuildCallback(this, Tank), "/datas/miniatures/Tank-miniature.png");
+        Board.Instance.addButtonRightPage("LANDING PAD", DroneWorkerUI.GetBuildingBuildCallback(this, LandingPad), "/datas/miniatures/LandingPad-miniature.png");
+        Board.Instance.addButtonRightPage("DOCK", DroneWorkerUI.GetBuildingBuildCallback(this, Dock), "/datas/miniatures/Dock-miniature.png");
+        Board.Instance.updateRightPageLayout();
+    }
+
+    public buildMilitaryPage(): void {
+        Board.Instance.clearRightPage();
+        Board.Instance.addButtonRightPage("TURRET", DroneWorkerUI.GetBuildingBuildCallback(this, Turret), "/datas/miniatures/Turret-miniature.png");
+        Board.Instance.addButtonRightPage(
             "WALL",
             () => {
                 this._ghostProp = new WallNode(BABYLON.Vector2.Zero(), Main.WallSystem);
@@ -158,18 +177,20 @@ class DroneWorkerUI {
             },
             "/datas/miniatures/Wall-miniature.png"
         );
-        Board.Instance.addButtonLeftPage("LOOK AT", () => { Main.CameraTarget = this.target; });
-        Board.Instance.updateLeftPageLayout();
+        Board.Instance.updateRightPageLayout();
+    }
 
-        this._selector = ShapeDraw.CreateCircle(1.05, 1.2);
-        this.target.getScene().onBeforeRenderObservable.add(this._update);
-        console.log("Enable DroneWorker Panel");
-        this._isEnabled = true;
+    public buildPropPage(): void {
+        Board.Instance.clearRightPage();
+        Board.Instance.addButtonRightPage("CRISTAL", DroneWorkerUI.GetPropBuildCallback(this, Cristal), "/datas/miniatures/Cristal-miniature.png");
+        Board.Instance.addButtonRightPage("ROCK", DroneWorkerUI.GetPropBuildCallback(this, Rock), "/datas/miniatures/Rock-miniature.png");
+        Board.Instance.updateRightPageLayout();
     }
 
     public disable(): void {
         Board.Instance.clearLeft();
         Board.Instance.clearLeftPage();
+        Board.Instance.clearRightPage();
         this._selector.dispose();
         this.target.getScene().onBeforeRenderObservable.removeCallback(this._update);
         console.log("Disable DroneWorker Panel");

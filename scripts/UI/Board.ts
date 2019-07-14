@@ -18,6 +18,9 @@ class Board {
     private _leftPageDown: HTMLButtonElement;
 
     private _rightPageDiv: HTMLDivElement;
+    private _rightPageUp: HTMLButtonElement;
+    private _rightPageDown: HTMLButtonElement;
+
     private _rightDiv: HTMLDivElement;
 
     constructor() {
@@ -54,7 +57,7 @@ class Board {
         innerBoard.appendChild(this._leftPageDiv);
 
         let leftPageScroll = document.createElement("div");
-        leftPageScroll.classList.add("board-page-left-scroll");
+        leftPageScroll.classList.add("board-page-scroll");
         innerBoard.appendChild(leftPageScroll);
 
         this._leftPageUp = document.createElement("button");
@@ -82,6 +85,32 @@ class Board {
         this._rightPageDiv = document.createElement("div");
         this._rightPageDiv.classList.add("board-page-right");
         innerBoard.appendChild(this._rightPageDiv);
+
+        let rightPageScroll = document.createElement("div");
+        rightPageScroll.classList.add("board-page-scroll");
+        innerBoard.appendChild(rightPageScroll);
+
+        this._rightPageUp = document.createElement("button");
+        this._rightPageUp.classList.add("board-button-vertical");
+        rightPageScroll.appendChild(this._rightPageUp);
+        this._rightPageUp.addEventListener(
+            "click",
+            () => {
+                this._rightPageButtonsOffset--;
+                this.updateRightPageLayout();
+            }
+        )
+
+        this._rightPageDown = document.createElement("button");
+        this._rightPageDown.classList.add("board-button-vertical");
+        rightPageScroll.appendChild(this._rightPageDown);
+        this._rightPageDown.addEventListener(
+            "click",
+            () => {
+                this._rightPageButtonsOffset++;
+                this.updateRightPageLayout();
+            }
+        )
 
         this._rightDiv = document.createElement("div");
         this._rightDiv.classList.add("board-right");
@@ -154,6 +183,64 @@ class Board {
         }
         for (let i = (this._leftPageButtonsOffset + 2) * count; i < this._leftPageButtons.length; i++) {
             let button = this._leftPageButtons[i];
+            if (button) {
+                button.style.display = "none";
+            }
+        }
+    }
+
+    public clearRightPage(): void {
+        while (this._rightPageDiv.childElementCount > 0) {
+            this._rightPageDiv.removeChild(this._rightPageDiv.firstChild);
+        }
+        this._rightPageButtons = [];
+        this._rightPageButtonsOffset = 0;
+    }
+
+    private _rightPageButtonsOffset: number = 0;
+    private _rightPageButtons: HTMLButtonElement[] = [];
+
+    public addButtonRightPage(value: string, onClickCallback: () => void, imgPath: string = ""): void {
+        let button = document.createElement("button");
+        button.classList.add("board-button");
+        button.addEventListener(
+            "click",
+            () => {
+                onClickCallback();
+            }
+        );
+        button.textContent = value;
+        if (imgPath !== "") {
+            button.style.backgroundImage = "url(" + imgPath + ")";
+        }
+        button.style.display = "none";
+        this._rightPageDiv.appendChild(button);
+        this._rightPageButtons.push(button);
+    }
+
+    public updateRightPageLayout(): void {
+        let count = Math.floor(this._rightPageDiv.getBoundingClientRect().width / 110);
+        console.log("Count = " + count);
+        if (this._rightPageButtonsOffset < 0) {
+            this._rightPageButtonsOffset = 0;
+        }
+        if (this._rightPageButtonsOffset > Math.floor(this._rightPageButtons.length / count) - 1) {
+            this._rightPageButtonsOffset = Math.floor(this._rightPageButtons.length / count) - 1;
+        }
+        for (let i = 0; i < this._rightPageButtonsOffset * count; i++) {
+            let button = this._rightPageButtons[i];
+            if (button) {
+                button.style.display = "none";
+            }
+        }
+        for (let i = this._rightPageButtonsOffset * count; i < (this._rightPageButtonsOffset + 2) * count; i++) {
+            let button = this._rightPageButtons[i];
+            if (button) {
+                button.style.display = "inline-block";
+            }
+        }
+        for (let i = (this._rightPageButtonsOffset + 2) * count; i < this._rightPageButtons.length; i++) {
+            let button = this._rightPageButtons[i];
             if (button) {
                 button.style.display = "none";
             }

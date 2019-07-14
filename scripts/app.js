@@ -1788,16 +1788,30 @@ class DroneWorkerUI {
         Board.Instance.setLeftTitle("WORKER");
         Board.Instance.setMiniature("datas/miniatures/Worker-miniature.png");
         Board.Instance.clearLeftPage();
-        Board.Instance.addButtonLeftPage("CONTAINER", DroneWorkerUI.GetBuildingBuildCallback(this, Container), "/datas/miniatures/Container-miniature.png");
-        Board.Instance.addButtonLeftPage("TANK", DroneWorkerUI.GetBuildingBuildCallback(this, Tank), "/datas/miniatures/Tank-miniature.png");
-        Board.Instance.addButtonLeftPage("TURRET", DroneWorkerUI.GetBuildingBuildCallback(this, Turret), "/datas/miniatures/Turret-miniature.png");
-        Board.Instance.addButtonLeftPage("LANDING PAD", DroneWorkerUI.GetBuildingBuildCallback(this, LandingPad), "/datas/miniatures/LandingPad-miniature.png");
-        Board.Instance.addButtonLeftPage("DOCK", DroneWorkerUI.GetBuildingBuildCallback(this, Dock), "/datas/miniatures/Dock-miniature.png");
+        Board.Instance.addButtonLeftPage("BUILD CIVILIAN", () => { this.buildCivilianPage(); }, "/datas/miniatures/BuildCivilian-miniature.png");
+        Board.Instance.addButtonLeftPage("BUILD MILITARY", () => { this.buildMilitaryPage(); }, "/datas/miniatures/BuildMilitary-miniature.png");
         if (Cheat.OmniBuilder) {
-            Board.Instance.addButtonLeftPage("CRISTAL", DroneWorkerUI.GetPropBuildCallback(this, Cristal), "/datas/miniatures/Cristal-miniature.png");
-            Board.Instance.addButtonLeftPage("ROCK", DroneWorkerUI.GetPropBuildCallback(this, Rock), "/datas/miniatures/Rock-miniature.png");
+            Board.Instance.addButtonLeftPage("BUILD PROP", () => { this.buildPropPage(); }, "/datas/miniatures/BuildProp-miniature.png");
         }
-        Board.Instance.addButtonLeftPage("WALL", () => {
+        Board.Instance.addButtonLeftPage("LOOK AT", () => { Main.CameraTarget = this.target; });
+        Board.Instance.updateLeftPageLayout();
+        this._selector = ShapeDraw.CreateCircle(1.05, 1.2);
+        this.target.getScene().onBeforeRenderObservable.add(this._update);
+        console.log("Enable DroneWorker Panel");
+        this._isEnabled = true;
+    }
+    buildCivilianPage() {
+        Board.Instance.clearRightPage();
+        Board.Instance.addButtonRightPage("CONTAINER", DroneWorkerUI.GetBuildingBuildCallback(this, Container), "/datas/miniatures/Container-miniature.png");
+        Board.Instance.addButtonRightPage("TANK", DroneWorkerUI.GetBuildingBuildCallback(this, Tank), "/datas/miniatures/Tank-miniature.png");
+        Board.Instance.addButtonRightPage("LANDING PAD", DroneWorkerUI.GetBuildingBuildCallback(this, LandingPad), "/datas/miniatures/LandingPad-miniature.png");
+        Board.Instance.addButtonRightPage("DOCK", DroneWorkerUI.GetBuildingBuildCallback(this, Dock), "/datas/miniatures/Dock-miniature.png");
+        Board.Instance.updateRightPageLayout();
+    }
+    buildMilitaryPage() {
+        Board.Instance.clearRightPage();
+        Board.Instance.addButtonRightPage("TURRET", DroneWorkerUI.GetBuildingBuildCallback(this, Turret), "/datas/miniatures/Turret-miniature.png");
+        Board.Instance.addButtonRightPage("WALL", () => {
             this._ghostProp = new WallNode(BABYLON.Vector2.Zero(), Main.WallSystem);
             this._ghostProp.instantiate();
             this._ghostProp.setVisibility(0);
@@ -1852,16 +1866,18 @@ class DroneWorkerUI {
                 });
             };
         }, "/datas/miniatures/Wall-miniature.png");
-        Board.Instance.addButtonLeftPage("LOOK AT", () => { Main.CameraTarget = this.target; });
-        Board.Instance.updateLeftPageLayout();
-        this._selector = ShapeDraw.CreateCircle(1.05, 1.2);
-        this.target.getScene().onBeforeRenderObservable.add(this._update);
-        console.log("Enable DroneWorker Panel");
-        this._isEnabled = true;
+        Board.Instance.updateRightPageLayout();
+    }
+    buildPropPage() {
+        Board.Instance.clearRightPage();
+        Board.Instance.addButtonRightPage("CRISTAL", DroneWorkerUI.GetPropBuildCallback(this, Cristal), "/datas/miniatures/Cristal-miniature.png");
+        Board.Instance.addButtonRightPage("ROCK", DroneWorkerUI.GetPropBuildCallback(this, Rock), "/datas/miniatures/Rock-miniature.png");
+        Board.Instance.updateRightPageLayout();
     }
     disable() {
         Board.Instance.clearLeft();
         Board.Instance.clearLeftPage();
+        Board.Instance.clearRightPage();
         this._selector.dispose();
         this.target.getScene().onBeforeRenderObservable.removeCallback(this._update);
         console.log("Disable DroneWorker Panel");
@@ -3414,6 +3430,9 @@ class Miniature extends Main {
         await this.createProp("Cristal");
         await this.createProp("Rock");
         await this.createWall();
+        await this.createBuildCivilian();
+        await this.createBuildMilitary();
+        await this.createBuildProp();
     }
     async createWorker() {
         while (this.targets.length > 0) {
@@ -3449,6 +3468,47 @@ class Miniature extends Main {
         await Main.WallSystem.instantiate();
         this.updateCameraPosition();
         await this.makeScreenShot("Wall");
+    }
+    async createBuildCivilian() {
+        while (this.targets.length > 0) {
+            this.targets.pop().dispose();
+        }
+        let container = new Container("Container", Main.Player, new BABYLON.Vector2(-2, 1), -Math.PI / 6);
+        await container.instantiate("#ffffff", "#404040", "#00ffff", "#ff00ff", "#ffff00");
+        this.targets.push(container);
+        let tank = new Tank("Tank", Main.Player, new BABYLON.Vector2(1, -1), 0);
+        await tank.instantiate("#ffffff", "#404040", "#00ffff", "#ff00ff", "#ffff00");
+        this.targets.push(tank);
+        this.updateCameraPosition();
+        await this.makeScreenShot("BuildCivilian");
+    }
+    async createBuildMilitary() {
+        while (this.targets.length > 0) {
+            this.targets.pop().dispose();
+        }
+        let node1 = new WallNode(new BABYLON.Vector2(-3, -3), Main.WallSystem);
+        let node2 = new WallNode(new BABYLON.Vector2(-3, 3), Main.WallSystem);
+        let node3 = new WallNode(new BABYLON.Vector2(3, 3), Main.WallSystem);
+        this.targets.push(node1, node2, node3, new Wall(node1, node2), new Wall(node2, node3));
+        await Main.WallSystem.instantiate();
+        let turret = new Turret("Turret", Main.Player, new BABYLON.Vector2(1, -1), 0);
+        await turret.instantiate("#ffffff", "#404040", "#00ffff", "#ff00ff", "#ffff00");
+        this.targets.push(turret);
+        this.updateCameraPosition();
+        await this.makeScreenShot("BuildMilitary");
+    }
+    async createBuildProp() {
+        while (this.targets.length > 0) {
+            this.targets.pop().dispose();
+        }
+        let rock = new Rock("Rock", new BABYLON.Vector2(-4, 2), -Math.PI / 6);
+        await rock.instantiate();
+        this.targets.push(rock);
+        let cristal = new Cristal("Cristal", new BABYLON.Vector2(2, -2), 0);
+        await cristal.instantiate();
+        this.targets.push(cristal);
+        this.updateCameraPosition();
+        await this.makeScreenShot("BuildProp");
     }
     async makeScreenShot(miniatureName) {
         return new Promise(resolve => {
@@ -4710,6 +4770,8 @@ class Board {
     constructor() {
         this._leftPageButtonsOffset = 0;
         this._leftPageButtons = [];
+        this._rightPageButtonsOffset = 0;
+        this._rightPageButtons = [];
         let main = document.createElement("div");
         main.classList.add("board");
         document.body.appendChild(main);
@@ -4737,7 +4799,7 @@ class Board {
         this._leftPageDiv.classList.add("board-page-left");
         innerBoard.appendChild(this._leftPageDiv);
         let leftPageScroll = document.createElement("div");
-        leftPageScroll.classList.add("board-page-left-scroll");
+        leftPageScroll.classList.add("board-page-scroll");
         innerBoard.appendChild(leftPageScroll);
         this._leftPageUp = document.createElement("button");
         this._leftPageUp.classList.add("board-button-vertical");
@@ -4756,6 +4818,23 @@ class Board {
         this._rightPageDiv = document.createElement("div");
         this._rightPageDiv.classList.add("board-page-right");
         innerBoard.appendChild(this._rightPageDiv);
+        let rightPageScroll = document.createElement("div");
+        rightPageScroll.classList.add("board-page-scroll");
+        innerBoard.appendChild(rightPageScroll);
+        this._rightPageUp = document.createElement("button");
+        this._rightPageUp.classList.add("board-button-vertical");
+        rightPageScroll.appendChild(this._rightPageUp);
+        this._rightPageUp.addEventListener("click", () => {
+            this._rightPageButtonsOffset--;
+            this.updateRightPageLayout();
+        });
+        this._rightPageDown = document.createElement("button");
+        this._rightPageDown.classList.add("board-button-vertical");
+        rightPageScroll.appendChild(this._rightPageDown);
+        this._rightPageDown.addEventListener("click", () => {
+            this._rightPageButtonsOffset++;
+            this.updateRightPageLayout();
+        });
         this._rightDiv = document.createElement("div");
         this._rightDiv.classList.add("board-right");
         innerBoard.appendChild(this._rightDiv);
@@ -4821,6 +4900,55 @@ class Board {
         }
         for (let i = (this._leftPageButtonsOffset + 2) * count; i < this._leftPageButtons.length; i++) {
             let button = this._leftPageButtons[i];
+            if (button) {
+                button.style.display = "none";
+            }
+        }
+    }
+    clearRightPage() {
+        while (this._rightPageDiv.childElementCount > 0) {
+            this._rightPageDiv.removeChild(this._rightPageDiv.firstChild);
+        }
+        this._rightPageButtons = [];
+        this._rightPageButtonsOffset = 0;
+    }
+    addButtonRightPage(value, onClickCallback, imgPath = "") {
+        let button = document.createElement("button");
+        button.classList.add("board-button");
+        button.addEventListener("click", () => {
+            onClickCallback();
+        });
+        button.textContent = value;
+        if (imgPath !== "") {
+            button.style.backgroundImage = "url(" + imgPath + ")";
+        }
+        button.style.display = "none";
+        this._rightPageDiv.appendChild(button);
+        this._rightPageButtons.push(button);
+    }
+    updateRightPageLayout() {
+        let count = Math.floor(this._rightPageDiv.getBoundingClientRect().width / 110);
+        console.log("Count = " + count);
+        if (this._rightPageButtonsOffset < 0) {
+            this._rightPageButtonsOffset = 0;
+        }
+        if (this._rightPageButtonsOffset > Math.floor(this._rightPageButtons.length / count) - 1) {
+            this._rightPageButtonsOffset = Math.floor(this._rightPageButtons.length / count) - 1;
+        }
+        for (let i = 0; i < this._rightPageButtonsOffset * count; i++) {
+            let button = this._rightPageButtons[i];
+            if (button) {
+                button.style.display = "none";
+            }
+        }
+        for (let i = this._rightPageButtonsOffset * count; i < (this._rightPageButtonsOffset + 2) * count; i++) {
+            let button = this._rightPageButtons[i];
+            if (button) {
+                button.style.display = "inline-block";
+            }
+        }
+        for (let i = (this._rightPageButtonsOffset + 2) * count; i < this._rightPageButtons.length; i++) {
+            let button = this._rightPageButtons[i];
             if (button) {
                 button.style.display = "none";
             }

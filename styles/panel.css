@@ -250,14 +250,6 @@ space-panel-label {
     vertical-align: top;
 }
 
-.board-page-left-scroll {
-    display: inline-block;
-    width: 30px;
-    height: 100%;
-    margin: 0px;
-    vertical-align: top;
-}
-
 .board-page-left {
     display: inline-block;
     width: calc(50% - 274px);
@@ -272,6 +264,16 @@ space-panel-label {
     width: calc(50% - 274px);
     height: 100%;
     margin: 0px;
+    vertical-align: top;
+    text-align: right;
+}
+
+.board-page-scroll {
+    display: inline-block;
+    width: 30px;
+    height: 100%;
+    margin: 0px;
+    vertical-align: top;
 }
 
 .board-right {

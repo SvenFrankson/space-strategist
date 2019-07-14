@@ -37,7 +37,7 @@ class Miniature extends Main {
 		Main.Skybox.isVisible = false;
 
 		this.runAllScreenShots();
-        
+		
         console.log("Miniature initialized.");
 	}
 
@@ -51,6 +51,9 @@ class Miniature extends Main {
 		await this.createProp("Cristal");
 		await this.createProp("Rock");
 		await this.createWall();
+		await this.createBuildCivilian();
+		await this.createBuildMilitary();
+		await this.createBuildProp();
 	}
 
 	public async createWorker(): Promise<void> {
@@ -101,6 +104,73 @@ class Miniature extends Main {
 		await Main.WallSystem.instantiate();
 		this.updateCameraPosition();
 		await this.makeScreenShot("Wall");
+	}
+
+	public async createBuildCivilian(): Promise<void> {
+		while (this.targets.length > 0) {
+			this.targets.pop().dispose();
+		}
+		let container = new Container("Container", Main.Player, new BABYLON.Vector2(-2, 1), - Math.PI / 6);
+		await container.instantiate(
+			"#ffffff",
+			"#404040",
+			"#00ffff",
+			"#ff00ff",
+			"#ffff00"
+		);
+		this.targets.push(container);
+		let tank = new Tank("Tank", Main.Player, new BABYLON.Vector2(1, -1), 0);
+		await tank.instantiate(
+			"#ffffff",
+			"#404040",
+			"#00ffff",
+			"#ff00ff",
+			"#ffff00"
+		);
+		this.targets.push(tank);
+
+		this.updateCameraPosition();
+		await this.makeScreenShot("BuildCivilian");
+	}
+
+	public async createBuildMilitary(): Promise<void> {
+		while (this.targets.length > 0) {
+			this.targets.pop().dispose();
+		}
+		let node1 = new WallNode(new BABYLON.Vector2(-3, -3), Main.WallSystem);
+		let node2 = new WallNode(new BABYLON.Vector2(-3, 3), Main.WallSystem);
+		let node3 = new WallNode(new BABYLON.Vector2(3, 3), Main.WallSystem);
+		this.targets.push(node1, node2, node3, new Wall(node1, node2), new Wall(node2, node3));
+		await Main.WallSystem.instantiate();
+
+		let turret = new Turret("Turret", Main.Player, new BABYLON.Vector2(1, - 1), 0);
+		await turret.instantiate(
+			"#ffffff",
+			"#404040",
+			"#00ffff",
+			"#ff00ff",
+			"#ffff00"
+		);
+		this.targets.push(turret);
+
+		this.updateCameraPosition();
+		await this.makeScreenShot("BuildMilitary");
+	}
+
+	public async createBuildProp(): Promise<void> {
+		while (this.targets.length > 0) {
+			this.targets.pop().dispose();
+		}
+		let rock = new Rock("Rock", new BABYLON.Vector2(-4, 2), - Math.PI / 6);
+		await rock.instantiate();
+		this.targets.push(rock);
+
+		let cristal = new Cristal("Cristal", new BABYLON.Vector2(2, -2), 0);
+		await cristal.instantiate();
+		this.targets.push(cristal);
+
+		this.updateCameraPosition();
+		await this.makeScreenShot("BuildProp");
 	}
 
 	public async makeScreenShot(miniatureName?: string): Promise<void> {
