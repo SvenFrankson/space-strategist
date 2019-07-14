@@ -60,16 +60,22 @@ class Turret extends Building {
         super.dispose(doNotRecurse, disposeMaterialAndTextures);
     }
 
-    public async instantiate(): Promise<void> {
-        let data = await VertexDataLoader.instance.getColorized("turret-base", "#ce7633", "#383838", "#6d6d6d", "#d0d0d0", "#ce7633");
-        data.applyToMesh(this);
+    public async instantiate(
+        baseColorHex: string = "#ce7633",
+        frameColorHex: string = "#383838",
+        color1Hex: string = "#6d6d6d", // Replace red
+        color2Hex: string = "#c94022", // Replace green
+        color3Hex: string = "#1c1c1c" // Replace blue
+    ): Promise<void> {
+        let vertexData = await VertexDataLoader.instance.getColorized("turret-base", baseColorHex, frameColorHex, color1Hex, color2Hex, color3Hex);
+        vertexData.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
         
-        let headData = await VertexDataLoader.instance.getColorized("turret-head", "#ce7633", "#383838", "#6d6d6d");
+        let headData = await VertexDataLoader.instance.getColorized("turret-head", baseColorHex, frameColorHex, color1Hex, color2Hex, color3Hex);
         headData.applyToMesh(this._head);
         this._head.material = Main.cellShadingMaterial;
         
-        let canonData = await VertexDataLoader.instance.getColorized("turret-canon", "#ce7633", "#383838", "#6d6d6d");
+        let canonData = await VertexDataLoader.instance.getColorized("turret-canon", baseColorHex, frameColorHex, color1Hex, color2Hex, color3Hex);
         canonData.applyToMesh(this._canon);
         this._canon.material = Main.cellShadingMaterial;
 

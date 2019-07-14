@@ -15,12 +15,26 @@ class Ground extends BABYLON.Mesh {
 
     constructor(
         public size: number,
+        public imagePath: string = "/datas/heightmaps/flat-ground.png",
         public shape: GroundShape = GroundShape.None
     ) {
         super("ground");
         this.size = Math.round(this.size / 4) * 4;
         this.vertexSize = Math.round(this.size / 2) + 1;
         this.offset = - this.size / 2;
+    }
+
+    public setVisibility(v: number): void {
+        if (v === 0) {
+            this.isVisible = false;
+            this._border.isVisible = false;
+        }
+        else {
+            this.isVisible = true;
+            this._border.isVisible = false;
+            this.visibility = v;
+            this._border.visibility = v;
+        }
     }
 
     public heightFunction(i: number, j: number): number {
@@ -80,7 +94,7 @@ class Ground extends BABYLON.Mesh {
                 let normals: number[] = [];
                 
                 let img = document.createElement("img");
-                img.src = "datas/heightmaps/ground.png";
+                img.src = this.imagePath;
                 img.onload = async () => {
                     let c: HTMLCanvasElement = document.createElement("canvas");
                     c.width = 256;

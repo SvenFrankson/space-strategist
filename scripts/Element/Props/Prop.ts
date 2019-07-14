@@ -3,8 +3,8 @@
 class PropData {
     public elementName: string;
     public name: string;
-    public position2D: IVector2;
-    public rotation2D: number;
+    public position2D: IVector2 = BABYLON.Vector2.Zero();
+    public rotation2D: number = 0;
 
     // Banner specific
     public size: number;
@@ -100,7 +100,13 @@ abstract class Prop extends Draggable {
         return undefined;
     }
 
-    public abstract async instantiate(): Promise<void>;
+    public abstract async instantiate(
+        baseColorHex?: string,
+        frameColorHex?: string,
+        color1Hex?: string, // Replace red
+        color2Hex?: string, // Replace green
+        color3Hex?: string // Replace blue
+    ): Promise<void>;
 
     public async elasticBounce(duration: number = 1): Promise<void> {
         return new Promise<void>(

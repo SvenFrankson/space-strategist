@@ -22,8 +22,6 @@ abstract class Building extends Prop {
         this.resourcesAvailableRequired.set(ResourceType.Cristal, new ResourceAvailableRequired());
     }
 
-    public abstract async instantiate(): Promise<void>;
-
     public async instantiateBuilding(): Promise<void> {
         await this.instantiate();
         this.position.y = -10;

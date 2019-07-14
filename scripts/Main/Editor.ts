@@ -4,6 +4,10 @@ class Editor extends Main {
 
     public async initialize(): Promise<void> {
 
+        Main.Ground = new Ground(100, "datas/heightmaps/ground.png", GroundShape.Disc);
+        await Main.Ground.instantiate();
+		Main.Ground.material = Main.groundMaterial;
+		
         let canvasHasFocus: boolean = false;
 		Main.Canvas.addEventListener("pointerleave", () => { canvasHasFocus = false; });
 		Main.Canvas.addEventListener("pointerenter", () => { canvasHasFocus = true; });

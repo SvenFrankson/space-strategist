@@ -213,9 +213,15 @@ class DroneWorker extends Character {
         this.getScene().onBeforeRenderObservable.add(this._update);
     }
 
-    public async instantiate(): Promise<void> {
+    public async instantiate(
+        baseColorHex: string = "#ce7633",
+        frameColorHex: string = "#383838",
+        color1Hex: string = "#6d6d6d", // Replace red
+        color2Hex: string = "#c94022", // Replace green
+        color3Hex: string = "#1c1c1c" // Replace blue
+    ): Promise<void> {
         
-        let data = await VertexDataLoader.instance.getColorized("worker", "#ce7633", "#383838", "#6d6d6d", "#c94022", "#1c1c1c");
+        let data = await VertexDataLoader.instance.getColorized("worker", baseColorHex, frameColorHex, color1Hex, color2Hex, color3Hex);
         data.applyToMesh(this);
 
         let loadedFile = await BABYLON.SceneLoader.ImportMeshAsync(

@@ -15,8 +15,14 @@ class LandingPad extends Building {
         this.obstacle.name = name + "-obstacle";
     }
 
-    public async instantiate(): Promise<void> {
-        let vertexData = await VertexDataLoader.instance.getColorized("landing-pad", "#404040", "", "#e0e0e0");
+    public async instantiate(
+        baseColorHex: string = "#ce7633",
+        frameColorHex: string = "#383838",
+        color1Hex: string = "#6d6d6d", // Replace red
+        color2Hex: string = "#c94022", // Replace green
+        color3Hex: string = "#1c1c1c" // Replace blue
+    ): Promise<void> {
+        let vertexData = await VertexDataLoader.instance.getColorized("landing-pad", baseColorHex, frameColorHex, color1Hex, color2Hex, color3Hex);
 
         let min = Infinity;
         let max = - Infinity;

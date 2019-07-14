@@ -1235,8 +1235,11 @@ class DroneWorker extends Character {
         this._currentAction = s;
         this.ui.update();
     }
-    async instantiate() {
-        let data = await VertexDataLoader.instance.getColorized("worker", "#ce7633", "#383838", "#6d6d6d", "#c94022", "#1c1c1c");
+    async instantiate(baseColorHex = "#ce7633", frameColorHex = "#383838", color1Hex = "#6d6d6d", // Replace red
+        color2Hex = "#c94022", // Replace green
+        color3Hex = "#1c1c1c" // Replace blue
+    ) {
+        let data = await VertexDataLoader.instance.getColorized("worker", baseColorHex, frameColorHex, color1Hex, color2Hex, color3Hex);
         data.applyToMesh(this);
         let loadedFile = await BABYLON.SceneLoader.ImportMeshAsync("", "./datas/worker.babylon", "", Main.Scene);
         loadedFile.meshes[0].dispose();
@@ -1913,6 +1916,10 @@ class DroneWorkerUI {
 }
 /// <reference path="../Draggable.ts"/>
 class PropData {
+    constructor() {
+        this.position2D = BABYLON.Vector2.Zero();
+        this.rotation2D = 0;
+    }
 }
 class Prop extends Draggable {
     constructor(name, position2D = BABYLON.Vector2.Zero(), rotation2D = 0) {
@@ -2161,8 +2168,11 @@ class Container extends Building {
         this.obstacle = Obstacle.CreateRectWithPosRotSource(this, 2, 4);
         this.obstacle.name = name + "-obstacle";
     }
-    async instantiate() {
-        let vertexData = await VertexDataLoader.instance.getColorized("container", "#ce7633", "#383838", "#6d6d6d");
+    async instantiate(baseColorHex = "#ce7633", frameColorHex = "#383838", color1Hex = "#6d6d6d", // Replace red
+        color2Hex = "#c94022", // Replace green
+        color3Hex = "#1c1c1c" // Replace blue
+    ) {
+        let vertexData = await VertexDataLoader.instance.getColorized("container", baseColorHex, frameColorHex, color1Hex, color2Hex, color3Hex);
         let min = Infinity;
         let max = -Infinity;
         this.height = -Infinity;
@@ -2201,8 +2211,11 @@ class Dock extends Building {
         this.obstacle = Obstacle.CreateHexagonWithPosRotSource(this, 1.5);
         this.obstacle.name = name + "-obstacle";
     }
-    async instantiate() {
-        let vertexData = await VertexDataLoader.instance.getColorized("dock", "#6d6d6d", "#383838", "#ce7633", "#6d6d6d");
+    async instantiate(baseColorHex = "#ce7633", frameColorHex = "#383838", color1Hex = "#6d6d6d", // Replace red
+        color2Hex = "#c94022", // Replace green
+        color3Hex = "#1c1c1c" // Replace blue
+    ) {
+        let vertexData = await VertexDataLoader.instance.getColorized("dock", baseColorHex, frameColorHex, color1Hex, color2Hex, color3Hex);
         let min = Infinity;
         let max = -Infinity;
         this.height = -Infinity;
@@ -2235,8 +2248,11 @@ class LandingPad extends Building {
         this.obstacle = Obstacle.CreateHexagonWithPosRotSource(this, 1.5);
         this.obstacle.name = name + "-obstacle";
     }
-    async instantiate() {
-        let vertexData = await VertexDataLoader.instance.getColorized("landing-pad", "#404040", "", "#e0e0e0");
+    async instantiate(baseColorHex = "#ce7633", frameColorHex = "#383838", color1Hex = "#6d6d6d", // Replace red
+        color2Hex = "#c94022", // Replace green
+        color3Hex = "#1c1c1c" // Replace blue
+    ) {
+        let vertexData = await VertexDataLoader.instance.getColorized("landing-pad", baseColorHex, frameColorHex, color1Hex, color2Hex, color3Hex);
         let min = Infinity;
         let max = -Infinity;
         this.height = -Infinity;
@@ -2269,8 +2285,11 @@ class Tank extends Building {
         this.obstacle = Obstacle.CreateHexagonWithPosRotSource(this, 1.5);
         this.obstacle.name = name + "-obstacle";
     }
-    async instantiate() {
-        let vertexData = await VertexDataLoader.instance.getColorized("tank", "#ce7633", "#383838", "#6d6d6d");
+    async instantiate(baseColorHex = "#ce7633", frameColorHex = "#383838", color1Hex = "#6d6d6d", // Replace red
+        color2Hex = "#c94022", // Replace green
+        color3Hex = "#1c1c1c" // Replace blue
+    ) {
+        let vertexData = await VertexDataLoader.instance.getColorized("tank", baseColorHex, frameColorHex, color1Hex, color2Hex, color3Hex);
         let min = Infinity;
         let max = -Infinity;
         this.height = -Infinity;
@@ -2370,14 +2389,17 @@ class Turret extends Building {
         }
         super.dispose(doNotRecurse, disposeMaterialAndTextures);
     }
-    async instantiate() {
-        let data = await VertexDataLoader.instance.getColorized("turret-base", "#ce7633", "#383838", "#6d6d6d", "#d0d0d0", "#ce7633");
-        data.applyToMesh(this);
+    async instantiate(baseColorHex = "#ce7633", frameColorHex = "#383838", color1Hex = "#6d6d6d", // Replace red
+        color2Hex = "#c94022", // Replace green
+        color3Hex = "#1c1c1c" // Replace blue
+    ) {
+        let vertexData = await VertexDataLoader.instance.getColorized("turret-base", baseColorHex, frameColorHex, color1Hex, color2Hex, color3Hex);
+        vertexData.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
-        let headData = await VertexDataLoader.instance.getColorized("turret-head", "#ce7633", "#383838", "#6d6d6d");
+        let headData = await VertexDataLoader.instance.getColorized("turret-head", baseColorHex, frameColorHex, color1Hex, color2Hex, color3Hex);
         headData.applyToMesh(this._head);
         this._head.material = Main.cellShadingMaterial;
-        let canonData = await VertexDataLoader.instance.getColorized("turret-canon", "#ce7633", "#383838", "#6d6d6d");
+        let canonData = await VertexDataLoader.instance.getColorized("turret-canon", baseColorHex, frameColorHex, color1Hex, color2Hex, color3Hex);
         canonData.applyToMesh(this._canon);
         this._canon.material = Main.cellShadingMaterial;
         this.groundWidth = 2;
@@ -3229,22 +3251,19 @@ class Main {
         noPostProcessCamera.layerMask = 0x10000000;
         Main.Scene.activeCameras.push(Main.Camera, noPostProcessCamera);
         // Skybox seed : 1vt3h8rxhb28
-        let skybox = BABYLON.MeshBuilder.CreateBox("skyBox", { size: 2000.0 }, Main.Scene);
-        skybox.layerMask = 1;
-        skybox.rotation.y = Math.PI / 2;
-        skybox.infiniteDistance = true;
+        Main.Skybox = BABYLON.MeshBuilder.CreateBox("skyBox", { size: 2000.0 }, Main.Scene);
+        Main.Skybox.layerMask = 1;
+        Main.Skybox.rotation.y = Math.PI / 2;
+        Main.Skybox.infiniteDistance = true;
         let skyboxMaterial = new BABYLON.StandardMaterial("skyBox", Main.Scene);
         skyboxMaterial.backFaceCulling = false;
         skyboxMaterial.reflectionTexture = new BABYLON.CubeTexture("./datas/skyboxes/sky", Main.Scene, ["-px.png", "-py.png", "-pz.png", "-nx.png", "-ny.png", "-nz.png"]);
         skyboxMaterial.reflectionTexture.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
         skyboxMaterial.diffuseColor = new BABYLON.Color3(0, 0, 0);
         skyboxMaterial.specularColor = new BABYLON.Color3(0, 0, 0);
-        skybox.material = skyboxMaterial;
+        Main.Skybox.material = skyboxMaterial;
         new VertexDataLoader(Main.Scene);
         new NavGraphManager();
-        Main.Ground = new Ground(100, GroundShape.Disc);
-        await Main.Ground.instantiate();
-        Main.Ground.material = Main.groundMaterial;
         Main.Player = new Player();
         Main.WallSystem = new WallSystem();
         let navGraphConsole = new NavGraphConsole(Main.Scene);
@@ -3268,6 +3287,9 @@ class Main {
 /// <reference path="Main.ts"/>
 class Editor extends Main {
     async initialize() {
+        Main.Ground = new Ground(100, "datas/heightmaps/ground.png", GroundShape.Disc);
+        await Main.Ground.instantiate();
+        Main.Ground.material = Main.groundMaterial;
         let canvasHasFocus = false;
         Main.Canvas.addEventListener("pointerleave", () => { canvasHasFocus = false; });
         Main.Canvas.addEventListener("pointerenter", () => { canvasHasFocus = true; });
@@ -3336,6 +3358,61 @@ window.addEventListener("DOMContentLoaded", async () => {
         await maze.initializeScene();
         await maze.initialize();
         maze.animate();
+    }
+});
+/// <reference path="Main.ts"/>
+class Miniature extends Main {
+    updateCameraPosition() {
+        Main.Camera.lowerRadiusLimit = 0.01;
+        Main.Camera.upperRadiusLimit = 1000;
+        Main.Camera.target = new BABYLON.Vector3(0, this.target.height / 2, 0);
+        let cameraPosition = new BABYLON.Vector3(-1, 0.5, 1);
+        cameraPosition.scaleInPlace(Math.max(this.target.height * 1.5, this.target.groundWidth) * 2);
+        cameraPosition.y += this.target.height / 2;
+        Main.Camera.setPosition(cameraPosition);
+    }
+    async initialize() {
+        Main.Ground = new Ground(100, "datas/heightmaps/flat-ground.png", GroundShape.Disc);
+        await Main.Ground.instantiate();
+        Main.Ground.material = Main.groundMaterial;
+        Main.Scene.clearColor.copyFromFloats(0, 1, 0, 1);
+        Main.Ground.setVisibility(0);
+        Main.Skybox.isVisible = false;
+        this.createProp("Tank");
+        setTimeout(() => { this.createProp("Container"); }, 2000);
+        setTimeout(() => { this.createProp("LandingPad"); }, 4000);
+        setTimeout(() => { this.createProp("Dock"); }, 6000);
+        setTimeout(() => { this.createProp("Turret"); }, 8000);
+        console.log("Miniature initialized.");
+    }
+    async createWorker() {
+        if (this.target) {
+            this.target.dispose();
+        }
+        this.target.dispose();
+        let worker = new DroneWorker(Main.Player);
+        await worker.instantiate("#ffffff", "#404040", "#00ffff", "#ff00ff", "#ffff00");
+        this.target = worker;
+        this.updateCameraPosition();
+    }
+    async createProp(elementName) {
+        if (this.target) {
+            this.target.dispose();
+        }
+        let data = new PropData();
+        data.elementName = elementName;
+        let prop = Prop.Deserialize(data);
+        await prop.instantiate("#ffffff", "#404040", "#00ffff", "#ff00ff", "#ffff00");
+        this.target = prop;
+        this.updateCameraPosition();
+    }
+}
+window.addEventListener("DOMContentLoaded", async () => {
+    if (window.location.href.indexOf("miniature.html") > -1) {
+        let miniature = new Miniature("render-canvas");
+        await miniature.initializeScene();
+        await miniature.initialize();
+        miniature.animate();
     }
 });
 /// <reference path="../Main.ts"/>
@@ -3455,6 +3532,9 @@ class Maze extends Main {
         this._targetPosition = BABYLON.Vector2.Zero();
     }
     async initialize() {
+        Main.Ground = new Ground(100, "datas/heightmaps/ground.png", GroundShape.Disc);
+        await Main.Ground.instantiate();
+        Main.Ground.material = Main.groundMaterial;
         Main.Scene.onBeforeRenderObservable.add(() => {
             if (Main.CameraTarget) {
                 Main.Camera.target.x = Main.Camera.target.x * 0.9 + Main.CameraTarget.position.x * 0.1;
@@ -4281,9 +4361,10 @@ var GroundShape;
     GroundShape[GroundShape["Square"] = 2] = "Square";
 })(GroundShape || (GroundShape = {}));
 class Ground extends BABYLON.Mesh {
-    constructor(size, shape = GroundShape.None) {
+    constructor(size, imagePath = "/datas/heightmaps/flat-ground.png", shape = GroundShape.None) {
         super("ground");
         this.size = size;
+        this.imagePath = imagePath;
         this.shape = shape;
         this.heightMap = [];
         this.posYMap = [];
@@ -4293,6 +4374,18 @@ class Ground extends BABYLON.Mesh {
         this.size = Math.round(this.size / 4) * 4;
         this.vertexSize = Math.round(this.size / 2) + 1;
         this.offset = -this.size / 2;
+    }
+    setVisibility(v) {
+        if (v === 0) {
+            this.isVisible = false;
+            this._border.isVisible = false;
+        }
+        else {
+            this.isVisible = true;
+            this._border.isVisible = false;
+            this.visibility = v;
+            this._border.visibility = v;
+        }
     }
     heightFunction(i, j) {
         return Math.cos(3207 * i + 10001 * j);
@@ -4338,7 +4431,7 @@ class Ground extends BABYLON.Mesh {
             let uvs = [];
             let normals = [];
             let img = document.createElement("img");
-            img.src = "datas/heightmaps/ground.png";
+            img.src = this.imagePath;
             img.onload = async () => {
                 let c = document.createElement("canvas");
                 c.width = 256;
