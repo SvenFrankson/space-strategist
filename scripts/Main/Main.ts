@@ -67,7 +67,7 @@ class Main {
 
     constructor(canvasElement: string) {
         Main.Canvas = document.getElementById(canvasElement) as HTMLCanvasElement;
-        Main.Engine = new BABYLON.Engine(Main.Canvas, true);
+        Main.Engine = new BABYLON.Engine(Main.Canvas, true, { preserveDrawingBuffer: true, stencil: true });
     }
 
     public async initializeScene(): Promise<void> {

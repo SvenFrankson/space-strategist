@@ -3186,7 +3186,7 @@ class Main {
     }
     constructor(canvasElement) {
         Main.Canvas = document.getElementById(canvasElement);
-        Main.Engine = new BABYLON.Engine(Main.Canvas, true);
+        Main.Engine = new BABYLON.Engine(Main.Canvas, true, { preserveDrawingBuffer: true, stencil: true });
     }
     async initializeScene() {
         Main.Scene = new BABYLON.Scene(Main.Engine);
@@ -3367,7 +3367,7 @@ class Miniature extends Main {
         Main.Camera.upperRadiusLimit = 1000;
         Main.Camera.target = new BABYLON.Vector3(0, this.target.height / 2, 0);
         let cameraPosition = new BABYLON.Vector3(-1, 0.5, 1);
-        cameraPosition.scaleInPlace(Math.max(this.target.height * 1.5, this.target.groundWidth) * 2);
+        cameraPosition.scaleInPlace(Math.max(this.target.height * 1.5, this.target.groundWidth));
         cameraPosition.y += this.target.height / 2;
         Main.Camera.setPosition(cameraPosition);
     }
@@ -3405,6 +3405,9 @@ class Miniature extends Main {
         await prop.instantiate("#ffffff", "#404040", "#00ffff", "#ff00ff", "#ffff00");
         this.target = prop;
         this.updateCameraPosition();
+        requestAnimationFrame(() => {
+            BABYLON.ScreenshotTools.CreateScreenshot(Main.Engine, Main.Camera, 256);
+        });
     }
 }
 window.addEventListener("DOMContentLoaded", async () => {

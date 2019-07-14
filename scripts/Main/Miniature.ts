@@ -9,7 +9,7 @@ class Miniature extends Main {
 		Main.Camera.upperRadiusLimit = 1000;
 		Main.Camera.target = new BABYLON.Vector3(0, this.target.height / 2, 0);
 		let cameraPosition = new BABYLON.Vector3(- 1, 0.5, 1);
-		cameraPosition.scaleInPlace(Math.max(this.target.height * 1.5, this.target.groundWidth) * 2);
+		cameraPosition.scaleInPlace(Math.max(this.target.height * 1.5, this.target.groundWidth));
 		cameraPosition.y += this.target.height / 2;
 		Main.Camera.setPosition(cameraPosition);
 	}
@@ -78,6 +78,11 @@ class Miniature extends Main {
 		);
 		this.target = prop;
 		this.updateCameraPosition();
+		requestAnimationFrame(
+			() => {
+				BABYLON.ScreenshotTools.CreateScreenshot(Main.Engine, Main.Camera, 256);
+			}
+		)
 	}
 }
 
