@@ -1247,8 +1247,8 @@ class DroneWorker extends Character {
         this.animator = new DroneWorkerAnimator(this);
         await this.animator.instantiate();
         this.material = Main.cellShadingMaterial;
-        this.groundWidth = 1;
-        this.height = 1;
+        this.groundWidth = 1.5;
+        this.height = 1.5;
     }
     kill() {
         super.kill();
@@ -1786,12 +1786,13 @@ class DroneWorkerUI {
         */
         Board.Instance.clearLeft();
         Board.Instance.setLeftTitle("WORKER");
+        Board.Instance.setMiniature("datas/miniatures/Worker-miniature.png");
         Board.Instance.clearLeftPage();
-        Board.Instance.addButtonLeftPage("CONTAINER", DroneWorkerUI.GetBuildingBuildCallback(this, Container));
-        Board.Instance.addButtonLeftPage("TANK", DroneWorkerUI.GetBuildingBuildCallback(this, Tank));
-        Board.Instance.addButtonLeftPage("TURRET", DroneWorkerUI.GetBuildingBuildCallback(this, Turret));
-        Board.Instance.addButtonLeftPage("LANDING PAD", DroneWorkerUI.GetBuildingBuildCallback(this, LandingPad));
-        Board.Instance.addButtonLeftPage("DOCK", DroneWorkerUI.GetBuildingBuildCallback(this, Dock));
+        Board.Instance.addButtonLeftPage("CONTAINER", DroneWorkerUI.GetBuildingBuildCallback(this, Container), "/datas/miniatures/Container-miniature.png");
+        Board.Instance.addButtonLeftPage("TANK", DroneWorkerUI.GetBuildingBuildCallback(this, Tank), "/datas/miniatures/Tank-miniature.png");
+        Board.Instance.addButtonLeftPage("TURRET", DroneWorkerUI.GetBuildingBuildCallback(this, Turret), "/datas/miniatures/Turret-miniature.png");
+        Board.Instance.addButtonLeftPage("LANDING PAD", DroneWorkerUI.GetBuildingBuildCallback(this, LandingPad), "/datas/miniatures/LandingPad-miniature.png");
+        Board.Instance.addButtonLeftPage("DOCK", DroneWorkerUI.GetBuildingBuildCallback(this, Dock), "/datas/miniatures/Dock-miniature.png");
         if (Cheat.OmniBuilder) {
             Board.Instance.addButtonLeftPage("CRISTAL", DroneWorkerUI.GetPropBuildCallback(this, Cristal));
             Board.Instance.addButtonLeftPage("ROCK", DroneWorkerUI.GetPropBuildCallback(this, Rock));
@@ -3367,7 +3368,7 @@ class Miniature extends Main {
         Main.Camera.upperRadiusLimit = 1000;
         Main.Camera.target = new BABYLON.Vector3(0, this.target.height / 2, 0);
         let cameraPosition = new BABYLON.Vector3(-1, 0.5, 1);
-        cameraPosition.scaleInPlace(Math.max(this.target.height * 1.5, this.target.groundWidth));
+        cameraPosition.scaleInPlace(Math.max(this.target.height, this.target.groundWidth) * 1.5);
         cameraPosition.y += this.target.height / 2;
         Main.Camera.setPosition(cameraPosition);
     }
@@ -3378,22 +3379,26 @@ class Miniature extends Main {
         Main.Scene.clearColor.copyFromFloats(0, 1, 0, 1);
         Main.Ground.setVisibility(0);
         Main.Skybox.isVisible = false;
-        this.createProp("Tank");
-        setTimeout(() => { this.createProp("Container"); }, 2000);
-        setTimeout(() => { this.createProp("LandingPad"); }, 4000);
-        setTimeout(() => { this.createProp("Dock"); }, 6000);
-        setTimeout(() => { this.createProp("Turret"); }, 8000);
+        this.runAllScreenShots();
         console.log("Miniature initialized.");
+    }
+    async runAllScreenShots() {
+        await this.createWorker();
+        await this.createProp("Tank");
+        await this.createProp("Container");
+        await this.createProp("LandingPad");
+        await this.createProp("Dock");
+        await this.createProp("Turret");
     }
     async createWorker() {
         if (this.target) {
             this.target.dispose();
         }
-        this.target.dispose();
         let worker = new DroneWorker(Main.Player);
         await worker.instantiate("#ffffff", "#404040", "#00ffff", "#ff00ff", "#ffff00");
         this.target = worker;
         this.updateCameraPosition();
+        await this.makeScreenShot();
     }
     async createProp(elementName) {
         if (this.target) {
@@ -3405,8 +3410,87 @@ class Miniature extends Main {
         await prop.instantiate("#ffffff", "#404040", "#00ffff", "#ff00ff", "#ffff00");
         this.target = prop;
         this.updateCameraPosition();
-        requestAnimationFrame(() => {
-            BABYLON.ScreenshotTools.CreateScreenshot(Main.Engine, Main.Camera, 256);
+        await this.makeScreenShot();
+    }
+    async makeScreenShot() {
+        return new Promise(resolve => {
+            requestAnimationFrame(() => {
+                BABYLON.ScreenshotTools.CreateScreenshot(Main.Engine, Main.Camera, {
+                    width: 256 * Main.Canvas.width / Main.Canvas.height,
+                    height: 256
+                }, (data) => {
+                    let img = document.createElement("img");
+                    img.src = data;
+                    img.onload = () => {
+                        let sx = (img.width - 256) * 0.5;
+                        let sy = (img.height - 256) * 0.5;
+                        let canvas = document.createElement("canvas");
+                        canvas.width = 256;
+                        canvas.height = 256;
+                        let context = canvas.getContext("2d");
+                        context.drawImage(img, sx, sy, 256, 256, 0, 0, 256, 256);
+                        let data = context.getImageData(0, 0, 256, 256);
+                        for (let i = 0; i < data.data.length / 4; i++) {
+                            let r = data.data[4 * i];
+                            let g = data.data[4 * i + 1];
+                            let b = data.data[4 * i + 2];
+                            if (r === 0 && g === 255 && b === 0) {
+                                data.data[4 * i] = 0;
+                                data.data[4 * i + 1] = 0;
+                                data.data[4 * i + 2] = 0;
+                                data.data[4 * i + 3] = 0;
+                            }
+                            else {
+                                let desat = (r + g + b) / 3;
+                                desat = Math.floor(Math.sqrt(desat / 255) * 255);
+                                data.data[4 * i] = desat;
+                                data.data[4 * i + 1] = desat;
+                                data.data[4 * i + 2] = desat;
+                                data.data[4 * i + 3] = 255;
+                            }
+                        }
+                        for (let i = 0; i < data.data.length / 4; i++) {
+                            let a = data.data[4 * i + 3];
+                            if (a === 0) {
+                                let hasColoredNeighbour = false;
+                                for (let ii = -2; ii <= 2; ii++) {
+                                    for (let jj = -2; jj <= 2; jj++) {
+                                        if (ii !== 0 || jj !== 0) {
+                                            let index = 4 * i + 3;
+                                            index += ii * 4;
+                                            index += jj * 4 * 256;
+                                            if (index >= 0 && index < data.data.length) {
+                                                let aNeighbour = data.data[index];
+                                                if (aNeighbour === 255) {
+                                                    hasColoredNeighbour = true;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                if (hasColoredNeighbour) {
+                                    data.data[4 * i] = 255;
+                                    data.data[4 * i + 1] = 255;
+                                    data.data[4 * i + 2] = 255;
+                                    data.data[4 * i + 3] = 254;
+                                }
+                            }
+                        }
+                        context.putImageData(data, 0, 0);
+                        var tmpLink = document.createElement('a');
+                        let name = "Worker";
+                        if (this.target instanceof Prop) {
+                            name = this.target.elementName();
+                        }
+                        tmpLink.download = name + "-miniature.png";
+                        tmpLink.href = canvas.toDataURL();
+                        document.body.appendChild(tmpLink);
+                        tmpLink.click();
+                        document.body.removeChild(tmpLink);
+                        resolve();
+                    };
+                });
+            });
         });
     }
 }
@@ -4602,6 +4686,9 @@ class Board {
         this._leftTitleShadow.textContent = "";
         titleLine.appendChild(this._leftTitleShadow);
         this._leftDiv.appendChild(titleLine);
+        this._leftMiniature = document.createElement("img");
+        this._leftMiniature.classList.add("board-miniature");
+        this._leftDiv.appendChild(this._leftMiniature);
         this._leftPageDiv = document.createElement("div");
         this._leftPageDiv.classList.add("board-page-left");
         innerBoard.appendChild(this._leftPageDiv);
@@ -4637,10 +4724,14 @@ class Board {
     }
     clearLeft() {
         this.setLeftTitle("");
+        this.setMiniature("");
     }
     setLeftTitle(s) {
         this._leftTitle.textContent = s;
         this._leftTitleShadow.textContent = s;
+    }
+    setMiniature(imgPath) {
+        this._leftMiniature.src = imgPath;
     }
     clearLeftPage() {
         while (this._leftPageDiv.childElementCount > 0) {
@@ -4649,13 +4740,16 @@ class Board {
         this._leftPageButtons = [];
         this._leftPageButtonsOffset = 0;
     }
-    addButtonLeftPage(value, onClickCallback) {
+    addButtonLeftPage(value, onClickCallback, imgPath = "") {
         let button = document.createElement("button");
         button.classList.add("board-button");
         button.addEventListener("click", () => {
             onClickCallback();
         });
         button.textContent = value;
+        if (imgPath !== "") {
+            button.style.backgroundImage = "url(" + imgPath + ")";
+        }
         button.style.display = "none";
         this._leftPageDiv.appendChild(button);
         this._leftPageButtons.push(button);

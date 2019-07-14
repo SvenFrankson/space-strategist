@@ -84,12 +84,13 @@ class DroneWorkerUI {
         */
         Board.Instance.clearLeft();
         Board.Instance.setLeftTitle("WORKER");
+        Board.Instance.setMiniature("datas/miniatures/Worker-miniature.png");
         Board.Instance.clearLeftPage();
-        Board.Instance.addButtonLeftPage("CONTAINER", DroneWorkerUI.GetBuildingBuildCallback(this, Container));
-        Board.Instance.addButtonLeftPage("TANK", DroneWorkerUI.GetBuildingBuildCallback(this, Tank));
-        Board.Instance.addButtonLeftPage("TURRET", DroneWorkerUI.GetBuildingBuildCallback(this, Turret));
-        Board.Instance.addButtonLeftPage("LANDING PAD", DroneWorkerUI.GetBuildingBuildCallback(this, LandingPad));
-        Board.Instance.addButtonLeftPage("DOCK", DroneWorkerUI.GetBuildingBuildCallback(this, Dock));
+        Board.Instance.addButtonLeftPage("CONTAINER", DroneWorkerUI.GetBuildingBuildCallback(this, Container), "/datas/miniatures/Container-miniature.png");
+        Board.Instance.addButtonLeftPage("TANK", DroneWorkerUI.GetBuildingBuildCallback(this, Tank), "/datas/miniatures/Tank-miniature.png");
+        Board.Instance.addButtonLeftPage("TURRET", DroneWorkerUI.GetBuildingBuildCallback(this, Turret), "/datas/miniatures/Turret-miniature.png");
+        Board.Instance.addButtonLeftPage("LANDING PAD", DroneWorkerUI.GetBuildingBuildCallback(this, LandingPad), "/datas/miniatures/LandingPad-miniature.png");
+        Board.Instance.addButtonLeftPage("DOCK", DroneWorkerUI.GetBuildingBuildCallback(this, Dock), "/datas/miniatures/Dock-miniature.png");
         if (Cheat.OmniBuilder) {
             Board.Instance.addButtonLeftPage("CRISTAL", DroneWorkerUI.GetPropBuildCallback(this, Cristal));
             Board.Instance.addButtonLeftPage("ROCK", DroneWorkerUI.GetPropBuildCallback(this, Rock));

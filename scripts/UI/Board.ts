@@ -11,6 +11,7 @@ class Board {
     private _leftDiv: HTMLDivElement;
     private _leftTitle: HTMLHeadingElement;
     private _leftTitleShadow: HTMLSpanElement;
+    private _leftMiniature: HTMLImageElement;
 
     private _leftPageDiv: HTMLDivElement;
     private _leftPageUp: HTMLButtonElement;
@@ -43,6 +44,10 @@ class Board {
         this._leftTitleShadow.textContent = "";
         titleLine.appendChild(this._leftTitleShadow);
         this._leftDiv.appendChild(titleLine);
+
+        this._leftMiniature = document.createElement("img");
+        this._leftMiniature.classList.add("board-miniature");
+        this._leftDiv.appendChild(this._leftMiniature);
 
         this._leftPageDiv = document.createElement("div");
         this._leftPageDiv.classList.add("board-page-left");
@@ -85,12 +90,17 @@ class Board {
 
     public clearLeft(): void {
         this.setLeftTitle("");
+        this.setMiniature("");
     }
 
     public setLeftTitle(s: string): void {
         this._leftTitle.textContent = s;
         this._leftTitleShadow.textContent = s;
-    } 
+    }
+
+    public setMiniature(imgPath: string): void {
+        this._leftMiniature.src = imgPath;
+    }
 
     public clearLeftPage(): void {
         while (this._leftPageDiv.childElementCount > 0) {
@@ -103,7 +113,7 @@ class Board {
     private _leftPageButtonsOffset: number = 0;
     private _leftPageButtons: HTMLButtonElement[] = [];
 
-    public addButtonLeftPage(value: string, onClickCallback: () => void): void {
+    public addButtonLeftPage(value: string, onClickCallback: () => void, imgPath: string = ""): void {
         let button = document.createElement("button");
         button.classList.add("board-button");
         button.addEventListener(
@@ -113,6 +123,9 @@ class Board {
             }
         );
         button.textContent = value;
+        if (imgPath !== "") {
+            button.style.backgroundImage = "url(" + imgPath + ")";
+        }
         button.style.display = "none";
         this._leftPageDiv.appendChild(button);
         this._leftPageButtons.push(button);

@@ -237,8 +237,8 @@ class DroneWorker extends Character {
         await this.animator.instantiate();
         
         this.material = Main.cellShadingMaterial;
-        this.groundWidth = 1;
-        this.height = 1;
+        this.groundWidth = 1.5;
+        this.height = 1.5;
     }
 
     public kill(): void {

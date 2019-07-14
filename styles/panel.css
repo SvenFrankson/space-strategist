@@ -96,20 +96,21 @@ space-panel-label {
 }
 
 .space-title-1 {
-    display: inline;
+    display: block;
+    margin-top: 0px;
     padding-top: 0;
     padding-bottom: 0;
     font-family: "Anurati";
 }
 
 .space-title-1-shadow {
-    display: inline-block;
+    display: block;
     padding-top: 0;
     padding-bottom: 0;
-    margin-bottom: 16px;
+    margin-bottom: -32px;
     color: #083325;
     font-size: 16px;
-    transform: translateX(-50%) translateY(16px);
+    transform: translateY(-32px);
 }
 
 .space-title-2 {
@@ -280,17 +281,37 @@ space-panel-label {
     margin: 0px;
 }
 
+.board-miniature {
+    display: block;
+    position: absolute;
+    top: 30px;
+    left: 25px;
+    width: 200px;
+    height: 200px;
+}
+
 .board-button {
     display: inline-block;
     width: 105px;
     height: 105px;
     padding: 5px;
+    padding-top: 60px;
     margin: 5px;
     border: solid 1px white;
     background-color: rgba(40, 66, 57, 0.8);
+    background-size: cover;
     border-radius: 2px;
     font-family: "Orbitron Light";
-    color: lightgray;
+    text-shadow: 
+        1px 0 1px #083325,
+        -1px 0 1px #083325,
+        0 1px 1px #083325,
+        0 -1px 1px #083325,
+        2px 0 1px #083325,
+        -2px 0 1px #083325,
+        0 2px 1px #083325,
+        0 -2px 1px #083325;
+    color: white;
     vertical-align: bottom;
 }
 
