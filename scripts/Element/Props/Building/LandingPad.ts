@@ -16,9 +16,9 @@ class LandingPad extends Building {
     }
 
     public async instantiate(
-        baseColorHex: string = "#ce7633",
+        baseColorHex: string = "#dadada",
         frameColorHex: string = "#383838",
-        color1Hex: string = "#6d6d6d", // Replace red
+        color1Hex: string = "#ce7633", // Replace red
         color2Hex: string = "#c94022", // Replace green
         color3Hex: string = "#1c1c1c" // Replace blue
     ): Promise<void> {
@@ -39,6 +39,9 @@ class LandingPad extends Building {
 
         vertexData.applyToMesh(this);
         this.material = Main.cellShadingMaterial;
+
+        let shuttle = new Shuttle("test-shuttle", this);
+        await shuttle.instantiate();
     }
 
     public elementName(): string {
