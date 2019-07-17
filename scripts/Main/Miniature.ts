@@ -13,16 +13,19 @@ class Miniature extends Main {
 				height = Math.max(height, t.height);
 			}
 		)
+		console.log("h " + height);
 		let groundWidth = 0;
 		this.targets.forEach(
 			t => {
 				groundWidth = Math.max(groundWidth, t.groundWidth + t.position.length());
 			}
 		)
+		console.log("w " + groundWidth);
 		Main.Camera.target = new BABYLON.Vector3(0, height / 2, 0);
 		let cameraPosition = new BABYLON.Vector3(- 1, 0.5, 1);
 		cameraPosition.scaleInPlace(Math.max(height, groundWidth) * 1.5);
 		cameraPosition.y += height / 2;
+		console.log(cameraPosition);
 		Main.Camera.setPosition(cameraPosition);
 	}
 
@@ -36,7 +39,10 @@ class Miniature extends Main {
 		Main.Ground.setVisibility(0);
 		Main.Skybox.isVisible = false;
 
-		this.runAllScreenShots();
+		//this.runAllScreenShots();
+		await this.createResourceStack("Rock");
+		await this.createResourceStack("Cristal");
+		await this.createResourceStack("Steel");
 		
         console.log("Miniature initialized.");
 	}
@@ -55,6 +61,9 @@ class Miniature extends Main {
 		await this.createBuildMilitary();
 		await this.createBuildProp();
 		await this.createProp("Trash");
+		await this.createResourceStack("Rock");
+		await this.createResourceStack("Cristal");
+		await this.createResourceStack("Steel");
 	}
 
 	public async createWorker(): Promise<void> {
@@ -105,6 +114,37 @@ class Miniature extends Main {
 		await Main.WallSystem.instantiate();
 		this.updateCameraPosition();
 		await this.makeScreenShot("Wall");
+	}
+
+	public async createResourceStack(resourceName: string): Promise<void> {
+		while (this.targets.length > 0) {
+			this.targets.pop().dispose();
+		}
+		let resourceStack = new AnyProp("resourceStack", new BABYLON.Vector2(0, 0), 0, resourceName + "-stack");
+		//resourceStack.scaling.copyFromFloats(2, 2, 2);
+		await resourceStack.instantiate(
+			"#ffffff",
+			"#404040",
+			"#00ffff",
+			"#ff00ff",
+			"#ffff00"
+		);
+		this.targets.push(resourceStack);
+		this.updateCameraPosition();
+		return new Promise<void>(
+			(resolve) => {
+				requestAnimationFrame(
+					async () => {
+						requestAnimationFrame(
+							async () => {
+								await this.makeScreenShot();
+								resolve();
+							}
+						)
+					}
+				)
+			}
+		)
 	}
 
 	public async createBuildCivilian(): Promise<void> {
