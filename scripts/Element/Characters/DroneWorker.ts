@@ -90,9 +90,9 @@ class DroneWorkerAnimator {
         if (this._currentResourceType !== this.target.carriedResource) {
             this._currentResourceType = this.target.carriedResource;
             if (this._currentResourceType === ResourceType.Rock) {
-                let vertexData = await VertexDataLoader.instance.getColorized("cristal-stack", "#dadada");
+                let vertexData = await VertexDataLoader.instance.getColorized("rock-stack", "#dadada");
                 vertexData.applyToMesh(this._resourceStack);
-                let vertexDataPiece = await VertexDataLoader.instance.getColorized("cristal-piece", "#dadada");
+                let vertexDataPiece = await VertexDataLoader.instance.getColorized("rock-piece", "#dadada");
                 vertexDataPiece.applyToMesh(this._resourcePiece);
             }
             else if (this._currentResourceType === ResourceType.Steel) {

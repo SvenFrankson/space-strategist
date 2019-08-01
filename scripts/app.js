@@ -1110,9 +1110,9 @@ class DroneWorkerAnimator {
         if (this._currentResourceType !== this.target.carriedResource) {
             this._currentResourceType = this.target.carriedResource;
             if (this._currentResourceType === ResourceType.Rock) {
-                let vertexData = await VertexDataLoader.instance.getColorized("cristal-stack", "#dadada");
+                let vertexData = await VertexDataLoader.instance.getColorized("rock-stack", "#dadada");
                 vertexData.applyToMesh(this._resourceStack);
-                let vertexDataPiece = await VertexDataLoader.instance.getColorized("cristal-piece", "#dadada");
+                let vertexDataPiece = await VertexDataLoader.instance.getColorized("rock-piece", "#dadada");
                 vertexDataPiece.applyToMesh(this._resourcePiece);
             }
             else if (this._currentResourceType === ResourceType.Steel) {
@@ -3524,10 +3524,7 @@ class Miniature extends Main {
         Main.Scene.clearColor.copyFromFloats(0, 1, 0, 1);
         Main.Ground.setVisibility(0);
         Main.Skybox.isVisible = false;
-        //this.runAllScreenShots();
-        await this.createResourceStack("Rock");
-        await this.createResourceStack("Cristal");
-        await this.createResourceStack("Steel");
+        this.runAllScreenShots();
         console.log("Miniature initialized.");
     }
     async runAllScreenShots() {
@@ -3588,18 +3585,21 @@ class Miniature extends Main {
             this.targets.pop().dispose();
         }
         let resourceStack = new AnyProp("resourceStack", new BABYLON.Vector2(0, 0), 0, resourceName + "-stack");
-        //resourceStack.scaling.copyFromFloats(2, 2, 2);
-        await resourceStack.instantiate("#ffffff", "#404040", "#00ffff", "#ff00ff", "#ffff00");
+        resourceStack.scaling.copyFromFloats(2, 2, 2);
+        let baseColor = "#ffffff";
+        if (resourceName === "Cristal") {
+            baseColor = "#9ef442";
+        }
+        else if (resourceName === "Rock") {
+            baseColor = "#dadada";
+        }
+        else if (resourceName === "Steel") {
+            baseColor = "#bababa";
+        }
+        await resourceStack.instantiate(baseColor);
         this.targets.push(resourceStack);
         this.updateCameraPosition();
-        return new Promise((resolve) => {
-            requestAnimationFrame(async () => {
-                requestAnimationFrame(async () => {
-                    await this.makeScreenShot();
-                    resolve();
-                });
-            });
-        });
+        await this.makeScreenShot(resourceName + "Stack", false);
     }
     async createBuildCivilian() {
         while (this.targets.length > 0) {
@@ -3642,7 +3642,7 @@ class Miniature extends Main {
         this.updateCameraPosition();
         await this.makeScreenShot("BuildProp");
     }
-    async makeScreenShot(miniatureName) {
+    async makeScreenShot(miniatureName, desaturate = true) {
         return new Promise(resolve => {
             requestAnimationFrame(() => {
                 BABYLON.ScreenshotTools.CreateScreenshot(Main.Engine, Main.Camera, {
@@ -3670,7 +3670,7 @@ class Miniature extends Main {
                                 data.data[4 * i + 2] = 0;
                                 data.data[4 * i + 3] = 0;
                             }
-                            else {
+                            else if (desaturate) {
                                 let desat = (r + g + b) / 3;
                                 desat = Math.floor(Math.sqrt(desat / 255) * 255);
                                 data.data[4 * i] = desat;
